@@ -1,0 +1,19 @@
+{
+  "name": "tokenomics",
+  "private": true,
+  "description": "Make every AI token earn its keep: automated prevention for the whole AI coding session, in Claude Code and GitHub Copilot CLI: stop the spend before it happens, and prove the saving held up.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 \"tests/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "typescript": "^5.9.2"
+  }
+}

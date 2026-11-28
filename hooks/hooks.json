@@ -1,0 +1,50 @@
+{
+  "modules": ["./band.tsx"],
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" controller.ts prompt claude-code", "timeout": 30 } ] }
+    ],
+    "PreToolUse": [
+      { "matcher": "Read|Bash", "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" diet.ts claude-code", "timeout": 10 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" groundhog.ts claude-code", "timeout": 10 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" haggle.ts guard claude-code", "timeout": 10 } ] },
+      { "matcher": "Edit|Write|MultiEdit|NotebookEdit", "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" blinkers.ts guard claude-code", "timeout": 10 } ] },
+      { "matcher": "Edit|Write|MultiEdit|NotebookEdit", "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" cachebuster.ts claude-code", "timeout": 10 } ] },
+      { "matcher": "Agent|Task", "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" toomanycooks.ts guard claude-code", "timeout": 10 } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Read|Bash", "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" diet.ts measure claude-code", "timeout": 10 } ] },
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" colander.ts claude-code", "timeout": 10 } ] }
+    ],
+    "SubagentStop": [
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" toomanycooks.ts record claude-code", "timeout": 20 } ] }
+    ],
+    "PreCompact": [
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" doggybag.ts compact claude-code", "timeout": 20 } ] }
+    ],
+    "Notification": [
+      { "matcher": "idle_prompt|permission_prompt|agent_needs_input", "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" kettle.ts claude-code", "timeout": 10 } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" spendlens.ts finalize claude-code", "timeout": 20 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" doggybag.ts arm claude-code", "timeout": 10 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" statusline.ts --message", "timeout": 10 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" bangforbuck.ts record claude-code", "timeout": 20 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" haggle.ts settle claude-code", "timeout": 10 } ] }
+    ],
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" doggybag.ts start claude-code", "timeout": 10 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" statusline.ts --sync", "timeout": 10 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" waistline.ts nudge claude-code", "timeout": 10 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" pennywise.ts ensure", "timeout": 10 } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" spendlens.ts finalize claude-code", "timeout": 20 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" doggybag.ts end claude-code", "timeout": 20 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" bangforbuck.ts record claude-code", "timeout": 20 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" sherlock.ts log claude-code", "timeout": 20 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" haggle.ts close claude-code", "timeout": 10 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" pennywise.ts learn --quiet", "timeout": 20 } ] }
+    ]
+  }
+}

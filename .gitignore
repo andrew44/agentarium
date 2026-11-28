@@ -155,3 +155,16 @@ vite.config.ts.timestamp-*
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs
+
+# Editors and OS
+.DS_Store
+.vscode/
+.idea/
+
+# Local databases
+*.db
+*.db-journal
+
+# agentarium doggybags (session notes written into the project folder)
+.doggybag/
+.claude-plugin/types/
