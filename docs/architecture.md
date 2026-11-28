@@ -195,7 +195,7 @@ agentarium/
 
 There's nothing to do by hand: **every pull request to `main` carries its own version, and merging it publishes the release** once the tests pass.
 
-Users install from `main`. The marketplace entry (`.claude-plugin/marketplace.json`), `install.sh`, `install.ps1` and `agentarium update` all fetch it, and each merge is a release, so `main` is always the latest version.
+Users install from `main`. `install.sh`, `install.ps1` and `agentarium update` fetch it, and Claude Code adds the marketplace from it. The marketplace's plugin entry (`"source": "./"` in `.claude-plugin/marketplace.json`) is the marketplace's own checkout, so the plugin is the code at the ref the marketplace was added at: `main` for users, a pull request's head in CI, a folder for development. Each merge is a release, so `main` is always the latest version.
 
 - **The bump happens in the pull request.** [version.yml](../.github/workflows/version.yml) works out the next patch (0.0.1 → 0.0.2) and commits `Release v0.0.2` to your branch, raising `version` in both `.claude-plugin/plugin.json` and `plugin.json`. The version matters: Claude Code only sends plugin users an update when it changes.
 - **Merging publishes it.** [release.yml](../.github/workflows/release.yml) runs the tests on `main`, tags `v0.0.2` and publishes the release with generated notes and the installers attached.

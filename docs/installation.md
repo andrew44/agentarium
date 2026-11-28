@@ -115,7 +115,7 @@ How to open a terminal: on a **Mac** press `Cmd + Space`, type `Terminal`, press
 
 It's safe to run again, and every run ends with the latest version: it downloads `main` (each merge to `main` is a release), and updates an installed plugin rather than leaving it as it was (Claude Code's `plugin install` keeps an installed plugin at its old version, so setup runs `plugin update` first). Setup says which plugin version Claude Code has, and warns if it's still behind; a VS Code status bar item you added is brought up to date too. Nothing that's already right is changed. It replaces only `~/.agentarium/app` (and only if that folder is agentarium's), swapping the new copy in so a run that stops half-way leaves the old one working; your recorded data, your settings and your `config.json` are never touched. The first time it changes a CLI's `settings.json` it keeps the file as it was in `settings.json.agentarium.bak`, and nothing replaces that copy later. Want to look before you run? Read [install.sh](../install.sh) and [install.ps1](../install.ps1).
 
-**Options.** Skip parts with `sh -s -- --no-plugin` or `--no-statusline` (on Windows set `$env:AGENTARIUM_SETUP_ARGS = "--no-statusline"` first). To install from a fork, a tag or a branch, set `AGENTARIUM_REPO=your-org/agentarium` or `AGENTARIUM_REF=v0.0.1`. The default is `main`, which is always the latest release.
+**Options.** Skip parts with `sh -s -- --no-plugin` or `--no-statusline` (on Windows set `$env:AGENTARIUM_SETUP_ARGS = "--no-statusline"` first). To install from a fork, a tag or a branch, set `AGENTARIUM_REPO=your-org/agentarium` or `AGENTARIUM_REF=v0.0.1` (a commit works too, if a branch or tag holds it). The default is `main`, which is always the latest release. The Claude Code plugin comes from the same place: setup adds the marketplace at that ref (`andrew44/agentarium#v0.0.1`). Claude Code keeps a marketplace where it was first added, so when a later run asks for another ref, setup says so and gives the commands that move it.
 
 **Check it worked:** run `agentarium`. It shows which assistants it found and where the status line is installed. In Claude Code, type `/` and look for `/agentarium:coach`; `/hooks` lists the hooks.
 
@@ -378,13 +378,15 @@ From a local folder:
 /plugin install agentarium@agentarium
 ```
 
+The plugin is installed from that folder, at the version checked out there.
+
 Try it for one session without installing:
 
 ```bash
 claude --plugin-dir ./path/to/agentarium
 ```
 
-To host your own copy for a team, push the folder to your own Git repo and use `your-org/agentarium` in place of `andrew44/agentarium`. The repo doubles as a marketplace (`.claude-plugin/marketplace.json`). Its plugin entry names `andrew44/agentarium`, so change `repo` there to your own.
+To host your own copy for a team, push the folder to your own Git repo and use `your-org/agentarium` in place of `andrew44/agentarium`. The repo doubles as a marketplace (`.claude-plugin/marketplace.json`), and its plugin entry is the repo itself (`"source": "./"`), so the plugin comes from your copy with nothing to change. Run the installer with `AGENTARIUM_REPO=your-org/agentarium`.
 
 ---
 

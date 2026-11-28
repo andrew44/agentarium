@@ -8,7 +8,7 @@ import type { AddressInfo } from 'node:net'
 import { dirname, join, parse, sep } from 'node:path'
 import { describe, test } from 'node:test'
 
-import { fakeClaude, runScript, useTemp, withEnv, type Env } from './helpers.ts'
+import { fakeClaude, ROOT, runScript, useTemp, withEnv, type Env } from './helpers.ts'
 
 import { guardUpgrade, keepCount, prune, snapshot, versionNumber } from '../agentarium/engine/backup.ts'
 import { Db } from '../agentarium/engine/db.ts'
@@ -20,7 +20,7 @@ const POSIX = process.platform !== 'win32'
 
 /** A home with a stand-in `claude`, the way the installer finds one, and the user's own settings. */
 function machine(c: Parameters<typeof useTemp>[0], settings: object | null = { theme: 'dark', env: { MY_VAR: '1' } },
-  plugin: { installed?: string, updates?: boolean } = {}) {
+  plugin: { installed?: string, updates?: boolean, marketplace?: string } = {}) {
   const t = useTemp(c)
   const h = t.home
   const fakebin = t.mkdir('fakebin')
@@ -126,6 +126,55 @@ describe('running the installer ends with the latest version', { skip: !POSIX &&
     writeFileSync(codeLog, '')
     assert.ok(!cli('setup').includes('status bar item updated'))
     assert.ok(!readFileSync(codeLog, 'utf8').includes('--install-extension'), 'already current: left as it is')
+  })
+})
+
+describe('the plugin is the same code as the app', () => {
+  test("the marketplace's entry is its own checkout, so the plugin comes from the ref it was added at", () => {
+    // {"source": "github", "repo": ...} clones the default branch, whatever ref the marketplace is at
+    const { plugins } = JSON.parse(readFileSync(join(ROOT, '.claude-plugin', 'marketplace.json'), 'utf8'))
+    assert.deepEqual(plugins.map((p: { name: string, source: unknown }) => [p.name, p.source]), [['agentarium', './']])
+  })
+
+  test('setup adds the marketplace at AGENTARIUM_REF, and from the default branch without one',
+    { skip: !POSIX && 'uses a shell-script stand-in for claude' }, (c) => {
+      const { log, cli } = machine(c)
+      cli('setup')
+      assert.match(readFileSync(log, 'utf8'), /^plugin marketplace add andrew44\/agentarium$/m)
+      const pinned = machine(c)
+      pinned.env.AGENTARIUM_REF = 'v0.0.1'
+      pinned.cli('setup')
+      assert.match(readFileSync(pinned.log, 'utf8'), /^plugin marketplace add andrew44\/agentarium#v0\.0\.1$/m)
+    })
+
+  test('says how to move a marketplace that Claude Code keeps at another ref', { skip: !POSIX && 'uses a shell-script stand-in for claude' }, (c) => {
+    const { env, log, cli } = machine(c, undefined, { installed: VERSION, marketplace: 'andrew44/agentarium#v0.0.1' })
+    const out = cli('setup')
+    assert.ok(out.includes(`! Claude Code: plugin ${VERSION} installed from andrew44/agentarium#v0.0.1, where its marketplace was first added.`), out)
+    const fix = 'claude plugin marketplace remove agentarium --scope user && claude plugin marketplace add andrew44/agentarium && claude plugin install agentarium@agentarium'
+    assert.ok(out.includes(`For andrew44/agentarium, run: ${fix}`), out)
+    assert.ok(!readFileSync(log, 'utf8').includes('marketplace remove'), 'says how, and leaves it to the user')
+    env.AGENTARIUM_REF = 'v0.0.1'
+    const there = cli('setup')
+    assert.ok(there.includes(`plugin ${VERSION} installed (skills + hooks)`) && !there.includes('first added'), there)
+  })
+
+  test('the fix it gives works: the plugin moves to the ref asked for', { skip: !POSIX && 'uses a shell-script stand-in for claude' }, (c) => {
+    const { fakebin, env, cli } = machine(c, undefined, { installed: VERSION, marketplace: 'andrew44/agentarium#v0.0.1' })
+    const fix = cli('setup').match(/run: (claude plugin marketplace remove .*)$/m)?.[1]
+    assert.ok(fix)
+    for (const step of fix.split(' && ')) {
+      const p = spawnSync('sh', ['-c', step], { env, encoding: 'utf8' })
+      assert.equal(p.status, 0, `${step}: ${p.stderr}`)
+    }
+    assert.equal(readFileSync(join(fakebin, '.claude-marketplace'), 'utf8'), 'andrew44/agentarium')
+    assert.ok(!cli('setup').includes('first added'))
+  })
+
+  test('a marketplace added from a folder, for development, is left as it is', { skip: !POSIX && 'uses a shell-script stand-in for claude' }, (c) => {
+    const { cli } = machine(c, undefined, { installed: VERSION, marketplace: '/src/agentarium' })
+    const out = cli('setup')
+    assert.ok(out.includes(`plugin ${VERSION} installed (skills + hooks)`) && !out.includes('first added'), out)
   })
 })
 

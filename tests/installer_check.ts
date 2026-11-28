@@ -3,12 +3,15 @@
  * Checks a real one-line install end to end. Run by .github/workflows/installer.yml on macOS,
  * Windows and Linux right after `install.sh` / `install.ps1`; not part of the unit tests.
  *
- *   node installer_check.ts [--expect-private-node] [--expect-plugin-log FILE]
+ *   node installer_check.ts [--expect-private-node] [--expect-plugin-log FILE] [--expect-claude-plugin]
  *
  * It checks what the installer left behind, then runs every Claude Code hook *the way Claude Code
  * does*: the command string from hooks/hooks.json through bash (Git Bash on Windows) with
  * CLAUDE_PLUGIN_ROOT set. On Windows it also runs the Copilot PowerShell hook strings. Finally it
  * exercises the `agentarium` command and uninstalls. Exits non-zero on the first failure.
+ * --expect-plugin-log reads what a stand-in `claude` was asked to do; --expect-claude-plugin asks the
+ * real Claude Code CLI what it installed (the version downloaded, with its hooks) and, after the
+ * uninstall, that it is gone.
  * Self-contained (Node.js built-ins only), so CI can download and run this one file.
  */
 import { spawnSync } from 'node:child_process'
@@ -54,6 +57,18 @@ function agentarium(...args: string[]) {
   return spawnSync(launcher!, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120_000, shell: WINDOWS })
 }
 
+/** What the real Claude Code CLI lists (`claude plugin list --json`), or null when that can't be read.
+ *  Through the shell on Windows, where npm installs it as claude.cmd. */
+function claudePlugins(): any[] | null {
+  const p = spawnSync('claude', ['plugin', 'list', '--json'], { encoding: 'utf8', timeout: 120_000, shell: WINDOWS })
+  try {
+    const list = JSON.parse(p.stdout)
+    return Array.isArray(list) ? list : null
+  } catch {
+    return null
+  }
+}
+
 const sqlite = () => process.getBuiltinModule('node:sqlite') as typeof import('node:sqlite')
 
 async function main(args: string[]): Promise<void> {
@@ -73,6 +88,14 @@ async function main(args: string[]): Promise<void> {
     const log = readFileSync(args[logArg + 1], 'utf8')
     // the stand-in exits 0 for everything, so `plugin update` (tried first, for an installed plugin) answers
     ok(/plugin (update|install) agentarium@agentarium/.test(log), 'the installer added the Claude Code plugin', log)
+  }
+  const realClaude = args.includes('--expect-claude-plugin')
+  if (realClaude) {
+    // what Claude Code installed, not just that it says so: an entry it can't resolve still "installs"
+    const want = JSON.parse(readFileSync(join(APP, '.claude-plugin', 'plugin.json'), 'utf8')).version
+    const ours = claudePlugins()?.find((p) => p?.id === 'agentarium@agentarium')
+    ok(ours?.version === want && isFile(join(ours.installPath ?? '', 'hooks', 'hooks.json')),
+      `Claude Code has the plugin at ${want}, the version downloaded, with its hooks`, JSON.stringify(ours ?? null))
   }
 
   // 2. The status line renders through the exact command written to settings.json
@@ -132,6 +155,10 @@ async function main(args: string[]): Promise<void> {
   ok(!('statusLine' in after), 'uninstall removed the status line', JSON.stringify(after))
   ok(!existsSync(join(APP, 'scripts')), 'uninstall removed the app')
   ok(isFile(dbPath), 'uninstall kept the recorded data')
+  if (realClaude) {
+    const left = claudePlugins()
+    ok(left !== null && !left.some((p) => p?.id === 'agentarium@agentarium'), 'uninstall removed the Claude Code plugin', JSON.stringify(left))
+  }
   process.stdout.write('\nAll installer checks passed.\n')
 }
 

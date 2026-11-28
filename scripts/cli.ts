@@ -61,6 +61,10 @@
  *                   band), and the status line
  *   Copilot CLI  -> adds or updates the plugin, and the status line
  * It never replaces a status line you already have. Node.js 22.18+, built-ins only.
+ *
+ * Settings: AGENTARIUM_REPO and AGENTARIUM_REF (a branch, a tag or a commit on one) choose what setup
+ * and update fetch, by default andrew44/agentarium at main. Setup adds Claude Code's marketplace at
+ * that ref too, so the plugin is the same code as the app.
  */
 import { spawn, spawnSync } from 'node:child_process'
 import {
@@ -86,6 +90,9 @@ const TK_HOME = process.env.AGENTARIUM_HOME || join(HOME, '.agentarium')
 const APP_DIR = join(TK_HOME, 'app')
 const REPO = process.env.AGENTARIUM_REPO || 'andrew44/agentarium'
 const REF = process.env.AGENTARIUM_REF || 'main'
+// The marketplace entry's source is "./", the marketplace's own checkout, so the ref it is added at is
+// the ref the plugin comes from. Claude Code refuses a commit that no branch or tag holds.
+const SOURCE = REF === 'main' ? REPO : `${REPO}#${REF}`
 const MARKETPLACE = 'agentarium'
 const PLUGIN = 'agentarium@agentarium'
 const WINDOWS = process.platform === 'win32'
@@ -173,7 +180,7 @@ const has = (cli: string) => which(cli) !== null
 
 function claudePlugin(action: 'install' | 'update' | 'uninstall'): boolean {
   if (action !== 'uninstall') {
-    if (action === 'install') run(['claude', 'plugin', 'marketplace', 'add', REPO])
+    if (action === 'install') run(['claude', 'plugin', 'marketplace', 'add', SOURCE])
     run(['claude', 'plugin', 'marketplace', 'update', MARKETPLACE])          // the latest listing
     // update first: `plugin install` leaves an installed plugin at its old version and exits 0;
     // `plugin update` moves it to the latest, and fails when there is none to update
@@ -196,6 +203,24 @@ function claudePluginVersion(): string | null {
     const list = JSON.parse(exec(['claude', 'plugin', 'list', '--json'])?.stdout || '[]')
     const ours = Array.isArray(list) ? list.find((p) => p?.id === PLUGIN) : null
     return typeof ours?.version === 'string' && ours.version !== 'unknown' ? ours.version : null
+  } catch {
+    return null
+  }
+}
+
+/** Claude Code keeps a marketplace at the source it was first added from and refuses to add it again
+ *  from another, so a run at a new ref (or back at main) can't move it. Where it is and the commands
+ *  that move it to SOURCE, or null when it is there already or `marketplace list --json` can't tell. */
+function marketplaceElsewhere(): { at: string, fix: string } | null {
+  try {
+    const list = JSON.parse(exec(['claude', 'plugin', 'marketplace', 'list', '--json'])?.stdout || '[]')
+    const ours = Array.isArray(list) ? list.find((m) => m?.name === MARKETPLACE) : null
+    if (ours?.source !== 'github' || typeof ours.repo !== 'string') return null     // e.g. a folder, for development
+    const ref = typeof ours.ref === 'string' && ours.ref ? ours.ref : 'main'
+    if (ours.repo.toLowerCase() === REPO.toLowerCase() && ref === REF) return null
+    return { at: ref === 'main' ? ours.repo : `${ours.repo}#${ref}`,
+      // removing it at user scope (where setup adds it) uninstalls the plugin, so install, not update, follows
+      fix: `claude plugin marketplace remove ${MARKETPLACE} --scope user && claude plugin marketplace add ${SOURCE} && claude plugin install ${PLUGIN}` }
   } catch {
     return null
   }
@@ -369,13 +394,16 @@ function setup(args: string[]): number {
     if (wantPlugin) {
       if (cli === 'claude' ? claudePlugin('install') : copilotPlugin('install')) {
         const v = cli === 'claude' ? claudePluginVersion() : null
-        if (v && versionNumber(v) < versionNumber(VERSION)) {
+        const elsewhere = cli === 'claude' ? marketplaceElsewhere() : null
+        if (elsewhere) {
+          say(`  ! ${name}: plugin ${v ? `${v} ` : ''}installed from ${elsewhere.at}, where its marketplace was first added. For ${SOURCE}, run: ${elsewhere.fix}`)
+        } else if (v && versionNumber(v) < versionNumber(VERSION)) {
           say(`  ! ${name}: plugin ${v} installed, but ${VERSION} is the latest. Run: claude plugin marketplace update ${MARKETPLACE} && claude plugin update ${PLUGIN}`)
         } else {
           say(`  ✓ ${name}: plugin ${v ? `${v} ` : ''}installed (skills + hooks)`)
         }
       } else {
-        const manual = cli === 'claude' ? `claude plugin marketplace add ${REPO} && claude plugin install ${PLUGIN}`
+        const manual = cli === 'claude' ? `claude plugin marketplace add ${SOURCE} && claude plugin install ${PLUGIN}`
           : `copilot plugin install ${REPO}`
         say(`  ! ${name}: couldn't add the plugin automatically. Run: ${manual}`)
       }
@@ -502,7 +530,11 @@ async function update(args: string[]): Promise<number> {
     process.stderr.write(e.message + '\n')
     return 1
   }
-  if (has('claude')) say(claudePlugin('update') ? '  ✓ Claude Code plugin updated' : '  · Claude Code plugin: no update applied')
+  if (has('claude')) {
+    say(claudePlugin('update') ? '  ✓ Claude Code plugin updated' : '  · Claude Code plugin: no update applied')
+    const elsewhere = marketplaceElsewhere()
+    if (elsewhere) say(`  ! Claude Code plugin: it comes from ${elsewhere.at}, where its marketplace was first added. For ${SOURCE}, run: ${elsewhere.fix}`)
+  }
   if (has('copilot')) say(copilotPlugin('update') ? '  ✓ Copilot CLI plugin updated' : '  · Copilot CLI plugin: no update applied')
   // Re-run setup from the fresh copy so the status line, launcher and anything new are current.
   return spawnSync(process.execPath, [...NODE_FLAGS, join(APP_DIR, 'scripts', 'cli.ts'), 'setup', '--no-plugin', ...args],

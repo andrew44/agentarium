@@ -119,9 +119,14 @@ jobs:
 
   real-claude-code:
     # Informational: the installer against the real Claude Code CLI (no login needed for plugins).
+    # Setup adds the marketplace at AGENTARIUM_REF, and Claude Code takes only a commit that a branch
+    # or tag holds, so a pull request runs at its head, not at the merge commit github.sha names there.
     name: real Claude Code · ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: true
+    env:
+      AGENTARIUM_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+      AGENTARIUM_REF: ${{ github.event.pull_request.head.sha || github.sha }}
     strategy:
       fail-fast: false
       matrix:
@@ -131,23 +136,24 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g @anthropic-ai/claude-code
-      - name: Install (macOS)
+      - name: Install and check (macOS)
         if: runner.os == 'macOS'
-        env:
-          AGENTARIUM_REPO: ${{ github.repository }}
-          AGENTARIUM_REF: ${{ github.sha }}
         run: |
-          curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh" | sh
+          curl -fsSL "https://raw.githubusercontent.com/$AGENTARIUM_REPO/$AGENTARIUM_REF/install.sh" | sh
           claude plugin list
-          claude plugin list | grep -i agentarium
-      - name: Install (Windows)
+          export PATH="$HOME/.local/bin:$PATH"
+          curl -fsSL "https://raw.githubusercontent.com/$AGENTARIUM_REPO/$AGENTARIUM_REF/tests/installer_check.ts" -o "$RUNNER_TEMP/check.mts"
+          "$(cat ~/.agentarium/node)" "$RUNNER_TEMP/check.mts" --expect-claude-plugin
+      - name: Install and check (Windows)
         if: runner.os == 'Windows'
         shell: powershell
-        env:
-          AGENTARIUM_REPO: ${{ github.repository }}
-          AGENTARIUM_REF: ${{ github.sha }}
         run: |
-          irm "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.ps1" | iex
+          irm "https://raw.githubusercontent.com/$env:AGENTARIUM_REPO/$env:AGENTARIUM_REF/install.ps1" | iex
           if ($LASTEXITCODE -ne 0) { exit 1 }
           claude plugin list
-          if (-not ((claude plugin list) -match 'agentarium')) { exit 1 }
+          $env:Path = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path   # as a new terminal would
+          $check = Join-Path $env:RUNNER_TEMP 'check.mts'
+          Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/$env:AGENTARIUM_REPO/$env:AGENTARIUM_REF/tests/installer_check.ts" -OutFile $check
+          $node = (Get-Content "$HOME\.agentarium\node" | Select-Object -First 1)
+          & $node $check --expect-claude-plugin
+          if ($LASTEXITCODE -ne 0) { exit 1 }

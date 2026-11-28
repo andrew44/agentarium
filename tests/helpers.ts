@@ -120,16 +120,35 @@ export function useTemp(t: { after: (fn: () => void) => void }): TempEnv {
 /** A stand-in `claude` that behaves as the real one does where the installer cares (checked against
  *  Claude Code 2.1.332): `plugin update` fails when the plugin isn't installed and moves an installed
  *  one to `latest`; `plugin install` leaves an installed one at its version and exits 0; `plugin list
- *  --json` says which version is installed. Every call is logged to `log`. `installed` starts it with
- *  that version in place; `updates: false` makes `plugin update` succeed without moving it. */
-export function fakeClaude(bin: string, log: string, opts: { latest: string, installed?: string, updates?: boolean }): string {
+ *  --json` says which version is installed. The marketplace stays at the source it was first added
+ *  from (`owner/repo#ref`, or a folder): adding it from another fails, `marketplace list --json`
+ *  reports it as the real one does, and removing it uninstalls the plugin. Every call is logged to
+ *  `log`. `installed` starts it with that version in place; `updates: false` makes `plugin update`
+ *  succeed without moving it; `marketplace` starts it with the marketplace added from that source. */
+export function fakeClaude(bin: string, log: string,
+  opts: { latest: string, installed?: string, updates?: boolean, marketplace?: string }): string {
   const state = join(bin, '.claude-installed')
+  const market = join(bin, '.claude-marketplace')
   if (opts.installed) writeFileSync(state, opts.installed)
+  if (opts.marketplace) writeFileSync(market, opts.marketplace)
   const updates = opts.updates === false ? 'no' : 'yes'
   const path = join(bin, 'claude')
   writeFileSync(path, `#!/bin/sh
 echo "$*" >> "${log}"
 state="${state}"
+market="${market}"
+case "$1 $2 $3" in
+  "plugin marketplace add") if [ ! -f "$market" ]; then printf '%s' "$4" > "$market"; elif [ "$(cat "$market")" != "$4" ]; then exit 1; fi ;;
+  "plugin marketplace list")
+    if [ ! -f "$market" ]; then echo '[]'; exit 0; fi
+    src=$(cat "$market"); repo=\${src%%#*}; ref=\${src#"$repo"}; ref=\${ref#"#"}
+    case "$src" in
+      /*|./*) printf '[{"name":"agentarium","source":"directory","path":"%s"}]\\n' "$src" ;;
+      *) if [ -n "$ref" ]; then printf '[{"name":"agentarium","source":"github","repo":"%s","ref":"%s"}]\\n' "$repo" "$ref"
+         else printf '[{"name":"agentarium","source":"github","repo":"%s"}]\\n' "$repo"; fi ;;
+    esac ;;
+  "plugin marketplace remove") rm -f "$market" "$state" ;;
+esac
 case "$1 $2" in
   "plugin update") [ -f "$state" ] || exit 1; [ "${updates}" = yes ] && printf '%s' "${opts.latest}" > "$state"; exit 0 ;;
   "plugin install") [ -f "$state" ] || printf '%s' "${opts.latest}" > "$state"; exit 0 ;;
