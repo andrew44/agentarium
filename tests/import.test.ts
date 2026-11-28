@@ -159,6 +159,9 @@ describe('agentarium import', () => {
       { profile: 'frugal', projects: { '~/a': 'quality' }, settings: { currency: 'USD', budget_daily: 5 } })
     assert.deepEqual(merged, { profile: 'balanced', projects: { '~/a': 'quality' }, settings: { currency: 'EUR', budget_daily: 5 } })
     assert.equal(added, 2)
+    // a setting spelled the other way is still the same setting: agentarium's value stays the only one
+    assert.deepEqual(merge({ settings: { budget_daily: 5 } }, translateConfig({ settings: { TOKENOMICS_BUDGET_DAILY: 20, TOKENOMICS_DIET: 'warn' } })).merged,
+      { settings: { budget_daily: 5, AGENTARIUM_DIET: 'warn' } })
   })
 
   test("TOKENOMICS_ settings come from the shell and Claude Code's env; where tokenomics lives does not", (c) => {

@@ -674,7 +674,8 @@ function overview(): number {
   say('')
   say(`  version      ${VERSION}`)
   for (const [cli, name] of [['claude', 'Claude Code'], ['copilot', 'Copilot CLI']]) say(`  ${name.padEnd(12)} ${has(cli) ? 'found' : 'not found'}`)
-  script('statusline.ts', '--status')
+  const status = spawnSync(process.execPath, [...NODE_FLAGS, join(HERE, 'statusline.ts'), '--status'], { encoding: 'utf8' })
+  for (const line of String(status.stdout ?? '').split('\n')) if (line.trim()) say(`  ${line}`)   // in line with the rows around it
   const db = defaultDbPath()
   say(`  data         ${existsSync(db) ? db : 'nothing recorded yet'}`)
   if (statusline.tokenomicsPluginOn()) say('  tokenomics   still installed, so every prompt is checked twice: claude plugin uninstall tokenomics@tokenomics')

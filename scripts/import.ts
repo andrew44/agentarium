@@ -27,7 +27,7 @@
  */
 import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 
 import { dataDir, defaultDbPath } from '../agentarium/config.ts'
 import { Db } from '../agentarium/engine/db.ts'
@@ -97,6 +97,9 @@ export function translateConfig(cfg: Obj): Obj {
   return out
 }
 
+/** A setting's one name, however config.json spells it: budget_daily and AGENTARIUM_BUDGET_DAILY are the same. */
+const settingName = (k: string) => (k.startsWith('AGENTARIUM_') ? k : `AGENTARIUM_${k.toUpperCase()}`)
+
 /** Add what `ours` lacks from `theirs`, one level into "settings" and "projects"; ours wins. */
 export function merge(ours: Obj, theirs: Obj): { merged: Obj, added: number } {
   const merged: Obj = { ...ours }
@@ -107,8 +110,10 @@ export function merge(ours: Obj, theirs: Obj): { merged: Obj, added: number } {
       added += isObj(v) ? Object.keys(v).length || 1 : 1
     } else if ((k === 'settings' || k === 'projects') && isObj(merged[k]) && isObj(v)) {
       const inner = { ...merged[k] }
+      const name = k === 'settings' ? settingName : (key: string) => key
+      const have = new Set(Object.keys(inner).map(name))
       for (const [ik, iv] of Object.entries(v)) {
-        if (!(ik in inner)) {
+        if (!have.has(name(ik))) {
           inner[ik] = iv
           added++
         }
@@ -137,22 +142,27 @@ function copyDb(from: string, to: string): void {
   mkdirSync(dirname(to), { recursive: true })
   const tmp = `${to}.import`
   rmSync(tmp, { force: true })
-  const src = new Db(from, { readOnly: true })
   try {
-    src.exec(`VACUUM INTO '${tmp.replaceAll("'", "''")}'`)
-  } finally {
-    src.close()
+    const src = new Db(from, { readOnly: true })
+    try {
+      src.exec(`VACUUM INTO '${tmp.replaceAll("'", "''")}'`)
+    } finally {
+      src.close()
+    }
+    const db = new Db(tmp)
+    try {
+      // doggybag's table had the name it had before it was doggybag; the controller's first step was spendlens
+      if (db.columns('handoff_events').size && !db.columns('doggybag_events').size) db.exec('ALTER TABLE handoff_events RENAME TO doggybag_events')
+      if (db.columns('controller_events').has('step')) db.run("UPDATE controller_events SET step='till' WHERE step='spendlens'")
+    } finally {
+      db.close()
+    }
+    connect(tmp).close()                           // any columns tokenomics's schema predates
+    renameSync(tmp, to)
+  } catch (e) {
+    rmSync(tmp, { force: true })                   // a half-made copy never stays behind
+    throw e
   }
-  const db = new Db(tmp)
-  try {
-    // doggybag's table had the name it had before it was doggybag; the controller's first step was spendlens
-    if (db.columns('handoff_events').size && !db.columns('doggybag_events').size) db.exec('ALTER TABLE handoff_events RENAME TO doggybag_events')
-    if (db.columns('controller_events').has('step')) db.run("UPDATE controller_events SET step='till' WHERE step='spendlens'")
-  } finally {
-    db.close()
-  }
-  connect(tmp).close()                             // any columns tokenomics's schema predates
-  renameSync(tmp, to)
 }
 
 /** A tokenomics install at `from`: its database or any of its settings files. */
@@ -200,7 +210,7 @@ export function bringOver(opts: { from?: string, force?: boolean, dryRun?: boole
       continue
     }
     const key = name.toLowerCase()
-    if (key in settings || `AGENTARIUM_${name}` in settings) continue
+    if (Object.keys(settings).some((k) => settingName(k) === `AGENTARIUM_${name}`)) continue
     settings[key] = value
     added++
     r.settings.push(key)
@@ -252,7 +262,7 @@ export function summary(r: Result): string[] {
   } else if (r.db.action === 'kept') {
     L.push(`  · history: kept agentarium's own ${n(r.db.kept, 'session')}; --force replaces them with tokenomics's ${n(r.db.sessions, 'session')}`)
   } else if (r.db.action !== 'none') {
-    L.push(`  ✓ history: ${n(r.db.sessions, 'session')}, into ${r.db.path}${r.db.action === 'replaced' && r.db.kept ? ` (agentarium's ${n(r.db.kept, 'session')} kept in till.db.bak)` : ''}`)
+    L.push(`  ✓ history: ${n(r.db.sessions, 'session')}, into ${r.db.path}${r.db.action === 'replaced' && r.db.kept ? ` (agentarium's ${n(r.db.kept, 'session')} kept in ${basename(r.db.path)}.bak)` : ''}`)
   }
   for (const f of r.files) L.push(`  ✓ ${f.name}: ${n(f.keys, 'value')}${f.created ? '' : ' added, yours kept'}`)
   if (r.settings.length) L.push(`  ✓ settings from your environment: ${r.settings.join(', ')}, into config.json (agentarium doesn't read TOKENOMICS_ variables)`)
