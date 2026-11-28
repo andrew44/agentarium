@@ -245,18 +245,36 @@ function writeIfChanged(path: string, text: string): void {
 /** An app folder this installer made: replacing or deleting anything else would lose someone's files. */
 export const isApp = (dir: string) => isFile(join(dir, 'scripts', 'cli.ts'))
 
+/** `p` with links resolved, through its deepest parent that exists when `p` itself doesn't yet. */
+function resolvedPath(p: string): string {
+  let head = resolve(p)
+  const tail: string[] = []
+  while (!existsSync(head) && dirname(head) !== head) {
+    tail.unshift(basename(head))
+    head = dirname(head)
+  }
+  return join(real(head), ...tail)
+}
+
+/** Both spellings of a pair of paths: as given, and with links resolved (macOS links /var and /home
+ *  elsewhere), so a check can't miss either way. */
+function spellings(a: string, b: string): [string, string][] {
+  const plain = (p: string) => (WINDOWS ? resolve(p).toLowerCase() : resolve(p))
+  const linked = (p: string) => (WINDOWS ? resolvedPath(p).toLowerCase() : resolvedPath(p))
+  return [[plain(a), plain(b)], [linked(a), linked(b)]]
+}
+
+const inside = (child: string, dir: string) => child.startsWith(dir.endsWith(sep) ? dir : dir + sep)
+
 /** True when till's database (AGENTARIUM_DB) sits inside `dir`, which an update or uninstall replaces. */
 export function holdsDb(dir: string, db = defaultDbPath()): boolean {
-  const d = real(dir)
-  return real(db).startsWith(d.endsWith(sep) ? d : d + sep)
+  return spellings(dir, db).some(([d, f]) => inside(f, d))
 }
 
 /** A folder `--purge` must never delete, whatever AGENTARIUM_HOME says: the home folder, one that
  *  holds it, or the root of a drive. */
 export function unsafeToPurge(dir: string, home = HOME): boolean {
-  const d = real(dir)
-  const h = real(home)
-  return d === h || h.startsWith(d.endsWith(sep) ? d : d + sep) || dirname(d) === d
+  return spellings(dir, home).some(([d, h]) => d === h || inside(h, d) || dirname(d) === d)
 }
 
 /** Record this Node.js for scripts/run.sh and the Copilot hooks, so they never have to guess. */

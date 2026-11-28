@@ -2,7 +2,7 @@
  *  isn't agentarium's is replaced or deleted. (The real one-liners run in .github/workflows/installer.yml.) */
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, utimesSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { dirname, join, parse, sep } from 'node:path'
@@ -58,7 +58,8 @@ describe('running setup again', { skip: !POSIX && 'uses a shell-script stand-in 
     assert.deepEqual(files.map(mtime), before, 'nothing rewritten')
     assert.equal(readFileSync(claudeSettings, 'utf8'), text)
     assert.deepEqual(JSON.parse(readFileSync(backup, 'utf8')), { theme: 'dark', env: { MY_VAR: '1' } })
-    assert.equal(readFileSync(join(h, '.bashrc'), 'utf8').split('agentarium installer').length - 1, 1, 'one PATH line')
+    const rc = join(h, process.platform === 'darwin' ? '.bash_profile' : '.bashrc')   // what bash reads
+    assert.equal(readFileSync(rc, 'utf8').split('agentarium installer').length - 1, 1, 'one PATH line')
   })
 
   test('a settings file agentarium created is backed up as the empty one it was, so uninstall never backs up its own', (c) => {
@@ -299,6 +300,19 @@ describe('an upgrade never loses the database', () => {
 })
 
 describe('what --purge may delete', () => {
+  test('a linked folder (as macOS links /home and /var) is still caught, the path existing or not', { skip: !POSIX && 'symlinks' }, (c) => {
+    const t = useTemp(c)
+    const realDir = t.mkdir('real')
+    const link = join(t.home, 'link')
+    symlinkSync(realDir, link)
+    assert.ok(unsafeToPurge(link, join(link, 'ada')), 'holds a home that does not exist yet')
+    assert.ok(unsafeToPurge(realDir, join(link, 'ada')))
+    const app = join(link, 'app')
+    mkdirSync(app)
+    assert.ok(holdsDb(app, join(link, 'app', 'till.db')), 'a database not created yet')
+    assert.ok(holdsDb(join(realDir, 'app'), join(link, 'app', 'till.db')))
+  })
+
   test('never the home folder, a folder holding it, or a root', () => {
     const home = join(sep, 'home', 'ada')
     assert.ok(unsafeToPurge(home, home))
