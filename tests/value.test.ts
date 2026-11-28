@@ -11,14 +11,14 @@ import * as groundhogScript from '../scripts/groundhog.ts'
 import * as springclean from '../scripts/springclean.ts'
 import * as tastetest from '../scripts/tastetest.ts'
 import * as waistline from '../scripts/waistline.ts'
-import * as contract from '../tokenomics/engine/contract.ts'
-import { investigate } from '../tokenomics/engine/forensics.ts'
-import * as ledger from '../tokenomics/engine/ledger.ts'
-import { detect } from '../tokenomics/engine/loops.ts'
-import { classifyCommand, outcomesOf } from '../tokenomics/engine/outcomes.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { today } from '../tokenomics/util.ts'
+import * as contract from '../agentarium/engine/contract.ts'
+import { investigate } from '../agentarium/engine/forensics.ts'
+import * as ledger from '../agentarium/engine/ledger.ts'
+import { detect } from '../agentarium/engine/loops.ts'
+import { classifyCommand, outcomesOf } from '../agentarium/engine/outcomes.ts'
+import * as store from '../agentarium/engine/store.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { today } from '../agentarium/util.ts'
 
 const SONNET = 'claude-sonnet-5-5'
 
@@ -324,10 +324,10 @@ describe('groundhog', () => {
     assert.equal(hook(t, 'groundhog.ts', ['claude-code'], payload), null, 'then it stays quiet')
 
     const t2 = useTemp(c)
-    hook(t2, 'groundhog.ts', ['claude-code'], payload, { TOKENOMICS_GROUNDHOG: 'interrupt' })
-    assert.equal(hook(t2, 'groundhog.ts', ['claude-code'], payload, { TOKENOMICS_GROUNDHOG: 'interrupt' }).continue, false)
-    assert.ok(hook(useTemp(c), 'groundhog.ts', ['claude-code'], payload, { TOKENOMICS_GROUNDHOG: 'warn' }).systemMessage)
-    assert.equal(hook(useTemp(c), 'groundhog.ts', ['claude-code'], payload, { TOKENOMICS_GROUNDHOG: 'off' }), null)
+    hook(t2, 'groundhog.ts', ['claude-code'], payload, { AGENTARIUM_GROUNDHOG: 'interrupt' })
+    assert.equal(hook(t2, 'groundhog.ts', ['claude-code'], payload, { AGENTARIUM_GROUNDHOG: 'interrupt' }).continue, false)
+    assert.ok(hook(useTemp(c), 'groundhog.ts', ['claude-code'], payload, { AGENTARIUM_GROUNDHOG: 'warn' }).systemMessage)
+    assert.equal(hook(useTemp(c), 'groundhog.ts', ['claude-code'], payload, { AGENTARIUM_GROUNDHOG: 'off' }), null)
 
     const bash = new Tx('g2').call('Bash', { command: 'ls' }, 'a').call('Bash', { command: 'ls' }, 'a').write(t.home)
     assert.equal(hook(t, 'groundhog.ts', ['claude-code'], { session_id: 'g2', transcript_path: bash, tool_name: 'Bash',
@@ -377,7 +377,7 @@ describe('haggle', () => {
     const x = new Tx('h1').ask('hello').say('hi')
     const path = x.write(t.home)
     const out = hook(t, 'haggle.ts', ['prompt', 'claude-code'], { session_id: 'h1', transcript_path: path,
-      prompt: 'haggle $0.01: refactor the authentication module and migrate every caller to the new token API' }, { TOKENOMICS_CURRENCY: 'USD' })
+      prompt: 'haggle $0.01: refactor the authentication module and migrate every caller to the new token API' }, { AGENTARIUM_CURRENCY: 'USD' })
     assert.ok(out.systemMessage.startsWith('haggle:'))
     assert.ok(out.systemMessage.includes('Agreed cap $0.01'))
     assert.ok(out.hookSpecificOutput.additionalContext.includes('hard cap'))
@@ -385,7 +385,7 @@ describe('haggle', () => {
     assert.equal(hook(t, 'haggle.ts', ['guard', 'claude-code'], guard), null, 'nothing spent yet')
     for (let i = 0; i < 10; i++) x.call('Read', { file_path: `/f${i}` }, 'x', { grow: 5_000 })
     x.write(t.home)
-    const stop = hook(t, 'haggle.ts', ['guard', 'claude-code'], guard, { TOKENOMICS_CURRENCY: 'USD' })
+    const stop = hook(t, 'haggle.ts', ['guard', 'claude-code'], guard, { AGENTARIUM_CURRENCY: 'USD' })
     assert.equal(stop.hookSpecificOutput.permissionDecision, 'deny')
     assert.ok(stop.hookSpecificOutput.permissionDecisionReason.includes('approve'))
     assert.equal(t.rows('SELECT status FROM contracts')[0].status, 'capped')

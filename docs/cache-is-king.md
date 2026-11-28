@@ -9,7 +9,7 @@ This guide covers:
 1. **[How the cache works](#how-the-cache-works)**: what gets cached, for how long and what it costs.
 2. **[Why it matters so much](#why-it-matters-so-much)**: a worked session, with and without it.
 3. **[What breaks it](#what-breaks-it)**: the things that send it cold, most of them avoidable.
-4. **[Tips and tricks](#tips-and-tricks)**: habits that keep it warm, and how tokenomics helps.
+4. **[Tips and tricks](#tips-and-tricks)**: habits that keep it warm, and how agentarium helps.
 
 It builds on [How tokens work](how-tokens-work.md). If *input*, *output* and *context* are new to you, read Part 1 of that guide first (five minutes).
 
@@ -138,7 +138,7 @@ Don't flip between models within a conversation. If you want a different model f
 
 ### 4. Make instruction and setup changes between sessions
 
-Edits to `CLAUDE.md`, `.claude/settings.json`, `.mcp.json` or your skills all change the start of the prompt. Note the change you want, finish the task, then make it before the next session. **cache-buster** catches these edits mid-session, prices the rebuild and lets you decide (set `TOKENOMICS_CACHEBUSTER=ask` to confirm every time).
+Edits to `CLAUDE.md`, `.claude/settings.json`, `.mcp.json` or your skills all change the start of the prompt. Note the change you want, finish the task, then make it before the next session. **cache-buster** catches these edits mid-session, prices the rebuild and lets you decide (set `AGENTARIUM_CACHEBUSTER=ask` to confirm every time).
 
 ### 5. Keep the top of the prompt boring
 
@@ -180,11 +180,11 @@ Anthropic's [prompt caching guide](https://platform.claude.com/docs/en/build-wit
 | **[coach](reference.md#coach)** | Cache rebuilds alongside the other waste in a finished conversation |
 
 ```bash
-tokenomics cold-snap              # the newest session in this folder
-tokenomics cold-snap --days 7     # every session this week, coldest first
+agentarium cold-snap              # the newest session in this folder
+agentarium cold-snap --days 7     # every session this week, coldest first
 ```
 
-**On GitHub Copilot**, you pay per premium request, not per token, so the cache doesn't change what Copilot bills you. tokenomics never converts premium requests to tokens or money. The habits above still keep responses quick, and doggybag works there too.
+**On GitHub Copilot**, you pay per premium request, not per token, so the cache doesn't change what Copilot bills you. agentarium never converts premium requests to tokens or money. The habits above still keep responses quick, and doggybag works there too.
 
 ---
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / audit: every "where is it leaking?" check in one report.
+ * agentarium / audit: every "where is it leaking?" check in one report.
  *
  * pennywise, the band and the guard-rails prevent spend as it happens. The audits find what they
  * can't: the fixed load every request carries, output nobody needed, cold caches, context dragged
@@ -24,7 +24,7 @@
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 
-import { argValue, isMain, type Obj } from '../tokenomics/util.ts'
+import { argValue, isMain, type Obj } from '../agentarium/util.ts'
 
 type Section = { name: string, about: string, args: (days: string) => string[] }
 
@@ -85,8 +85,8 @@ export function audit(opts: { days?: string, only?: string[], currency?: string 
 }
 
 export function markdown(rs: Result[]): string {
-  const L = ['# tokenomics audit', '',
-    '_Every leak check in one place, biggest money first. Each section is also its own command (`tokenomics <name>`)._', '']
+  const L = ['# agentarium audit', '',
+    '_Every leak check in one place, biggest money first. Each section is also its own command (`agentarium <name>`)._', '']
   // a section with no money in it and only a line or two is a "nothing yet": fold it into one line
   const quiet = (r: Result) => !r.ok || !r.markdown || (r.money === 0 && r.markdown.split('\n').filter((l) => l.trim()).length <= 4)
   const empty = rs.filter(quiet)

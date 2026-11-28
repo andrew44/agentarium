@@ -16,7 +16,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" toomanycooks.ts report --days 30 --jso
 - `agents`: count, total and average cost per subagent type, measured at SubagentStop.
 - `caught`: findings by rule (`overlap`, `lookup`, `fan_out`) and their estimated cost.
 - For waste inside one finished session, `sherlock` has the overlapping and needless subagents, costed.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name toomanycooks.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name toomanycooks.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 
@@ -26,4 +26,4 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" toomanycooks.ts report --days 30 --jso
 
 ## 3. The hook (explain if asked)
 
-Before a Task or Agent call it checks the brief against the subagents already sent in this session (half the words in common: `overlap`), whether it is a single lookup (`lookup`) and how many went out since the last prompt (`fan_out`, more than `TOKENOMICS_TOOMANYCOOKS_FANOUT`, default 5). Each rule speaks once per session. `TOKENOMICS_TOOMANYCOOKS=warn` (default), `ask`, `block` (the agent does the work itself) or `off`. Briefs are compared in memory and never stored.
+Before a Task or Agent call it checks the brief against the subagents already sent in this session (half the words in common: `overlap`), whether it is a single lookup (`lookup`) and how many went out since the last prompt (`fan_out`, more than `AGENTARIUM_TOOMANYCOOKS_FANOUT`, default 5). Each rule speaks once per session. `AGENTARIUM_TOOMANYCOOKS=warn` (default), `ask`, `block` (the agent does the work itself) or `off`. Briefs are compared in memory and never stored.

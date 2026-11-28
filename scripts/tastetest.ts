@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / taste-test: never sacrifice quality for savings. A blind taste test of two ways of
+ * agentarium / taste-test: never sacrifice quality for savings. A blind taste test of two ways of
  * doing the same task (baseline vs optimised: another model, a trimmed CLAUDE.md, a new prompt):
  * what each cost, how good each result is, and whether the saving survives the quality check.
  *
@@ -24,20 +24,20 @@
  *   git worktree add ../try-a && git worktree add ../try-b
  *   (run the task in each) then:  tastetest.ts --a <id-a> --a-dir ../try-a --b <id-b> --b-dir ../try-b
  *
- * Env: TOKENOMICS_TASTETEST_TIMEOUT  seconds per check (default 600)
+ * Env: AGENTARIUM_TASTETEST_TIMEOUT  seconds per check (default 600)
  */
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 import { findTranscript } from './coach.ts'
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import { classifyCommand, passed } from '../tokenomics/engine/outcomes.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { argValue, isMain, now, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import { classifyCommand, passed } from '../agentarium/engine/outcomes.ts'
+import * as store from '../agentarium/engine/store.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { argValue, isMain, now, type Obj } from '../agentarium/util.ts'
 
 export type Check = { command: string, exit: number | null, passed: number | null, failed: number | null, score: number, seconds: number }
 export type Side = {
@@ -89,7 +89,7 @@ export function detectChecks(dir: string): string[] {
 }
 
 function runCheck(command: string, dir: string): Check {
-  const timeout = Math.max(10, Number(process.env.TOKENOMICS_TASTETEST_TIMEOUT ?? 600) || 600) * 1000
+  const timeout = Math.max(10, Number(process.env.AGENTARIUM_TASTETEST_TIMEOUT ?? 600) || 600) * 1000
   const t0 = Date.now()
   const p = spawnSync(command, { cwd: dir, shell: true, encoding: 'utf8', timeout, maxBuffer: 64 * 1024 * 1024,
     env: { ...process.env, CI: '1', FORCE_COLOR: '0', NO_COLOR: '1' } })

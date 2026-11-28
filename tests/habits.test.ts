@@ -9,12 +9,12 @@ import { runScript, useTemp, withEnv } from './helpers.ts'
 import * as allyoucaneat from '../scripts/allyoucaneat.ts'
 import * as coldsnap from '../scripts/coldsnap.ts'
 import * as parrot from '../scripts/parrot.ts'
-import { analyse } from '../tokenomics/engine/coldcache.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import { corrections, normalise, phrases, repeats, sentences } from '../tokenomics/engine/parrot.ts'
-import { ratesFor } from '../tokenomics/engine/pricing.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
+import { analyse } from '../agentarium/engine/coldcache.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import { corrections, normalise, phrases, repeats, sentences } from '../agentarium/engine/parrot.ts'
+import { ratesFor } from '../agentarium/engine/pricing.ts'
+import * as store from '../agentarium/engine/store.ts'
+import * as trace from '../agentarium/engine/trace.ts'
 
 const SONNET = 'claude-sonnet-5-5'
 const OPUS = 'claude-opus-5-5'
@@ -161,7 +161,7 @@ describe('parrot: what you keep telling the AI', () => {
     assert.equal(send('s4').stdout, '')                          // once
     assert.ok(e.rows('SELECT key FROM parrot_events').every((r) => /^[0-9a-f]{16}$/.test(r.key)))
     assert.equal(e.rows("SELECT * FROM parrot_events WHERE action='nudged'").length, 2)   // the rule and the whole prompt
-    assert.equal(send('s5', 'Never edit generated files by hand ok', { TOKENOMICS_PARROT: 'off' }).stdout, '')
+    assert.equal(send('s5', 'Never edit generated files by hand ok', { AGENTARIUM_PARROT: 'off' }).stdout, '')
     assert.equal(e.rows("SELECT * FROM parrot_events WHERE session_id='s5'").length, 0)
     assert.equal(runScript('parrot.ts', ['claude-code'], { input: 'not json', env: e.env() }).status, 0)
   })
@@ -206,7 +206,7 @@ describe('allyoucaneat: plan fit', () => {
   test('pay-as-you-go heavy user: subscriptions below their spend are candidates', async (ctx) => {
     const e = useTemp(ctx)
     seed(e.db, [...month('2026-09', 10), ...month('2026-10', 10)])
-    const r = await withEnv({ TOKENOMICS_CURRENCY: 'USD' }, () => allyoucaneat.build(['--plan', 'api'], e.db, '2026-11-03'))
+    const r = await withEnv({ AGENTARIUM_CURRENCY: 'USD' }, () => allyoucaneat.build(['--plan', 'api'], e.db, '2026-11-03'))
     assert.equal(r.typical_usd, 300)
     assert.equal(r.verdict, 'consider_subscription')
     assert.match(r.advice[0], /Claude Pro.*Max 5x.*Max 20x/)
@@ -218,12 +218,12 @@ describe('allyoucaneat: plan fit', () => {
   test('light user on Max: overpaying, with the cheaper plan named', async (ctx) => {
     const e = useTemp(ctx)
     seed(e.db, month('2026-10', 1))                                  // $30 a month
-    const r = await withEnv({ TOKENOMICS_CURRENCY: 'USD' }, () => allyoucaneat.build(['--plan', 'max20'], e.db, '2026-11-03'))
+    const r = await withEnv({ AGENTARIUM_CURRENCY: 'USD' }, () => allyoucaneat.build(['--plan', 'max20'], e.db, '2026-11-03'))
     assert.equal(r.verdict, 'overpaying')
     assert.match(r.advice[1], /Max 5x.*\$100/)
-    const good = await withEnv({ TOKENOMICS_CURRENCY: 'USD' }, () => allyoucaneat.build(['--plan', 'pro'], e.db, '2026-11-03'))
+    const good = await withEnv({ AGENTARIUM_CURRENCY: 'USD' }, () => allyoucaneat.build(['--plan', 'pro'], e.db, '2026-11-03'))
     assert.equal(good.verdict, 'good_value')
-    const light = await withEnv({ TOKENOMICS_CURRENCY: 'USD' }, () => allyoucaneat.build([], e.db, '2026-11-03'))
+    const light = await withEnv({ AGENTARIUM_CURRENCY: 'USD' }, () => allyoucaneat.build([], e.db, '2026-11-03'))
     assert.equal(light.verdict, 'consider_subscription')             // $30 > Pro's $20
     assert.match(light.advice.at(-1), /--plan/)
   })

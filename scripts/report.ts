@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * tokenomics / report: a spend report over the last N days from the spendlens database.
+ * agentarium / report: a spend report over the last N days from the till database.
  *
  *   report.ts                 # last 7 days, Markdown
  *   report.ts --days 30       # any window (0 = all time)
  *   report.ts --json          # machine-readable (used by the spend-report skill)
- *   report.ts --currency USD  # GBP (default), USD or EUR; default from TOKENOMICS_CURRENCY / statusline.json
- *   report.ts --db PATH       # another database (default $TOKENOMICS_DB or ~/.tokenomics/spendlens.db)
+ *   report.ts --currency USD  # GBP (default), USD or EUR; default from AGENTARIUM_CURRENCY / statusline.json
+ *   report.ts --db PATH       # another database (default $AGENTARIUM_DB or ~/.agentarium/till.db)
  *
  * Covers: spend in your currency (GBP, USD or EUR; token-billed platforms only) and how it splits
  * OPEX / CAPEX, by project and by model; cache efficiency; the costliest sessions; and what the
@@ -16,10 +16,10 @@
 import { existsSync, statSync } from 'node:fs'
 import { basename } from 'node:path'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import { argValue, fmt, isMain, today, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import { argValue, fmt, isMain, today, type Obj } from '../agentarium/util.ts'
 
 const LABELS = ['opex', 'capex', 'mixed', 'unknown'] as const
 
@@ -162,14 +162,14 @@ export function build(dbPath: string, days = 7, money?: [string, string, number]
 export function markdown(r: Obj): string {
   if (r.empty) {
     const why: Record<string, string> = {
-      'no-database': `No database at ${r.db_path} yet: spendlens has not recorded a session.`,
+      'no-database': `No database at ${r.db_path} yet: till has not recorded a session.`,
       'no-table': 'The database has no sessions table yet.',
       'no-rows': 'No sessions in this window.',
     }
-    return `# tokenomics report\n\n${why[r.reason] ?? 'No data.'}\n`
+    return `# agentarium report\n\n${why[r.reason] ?? 'No data.'}\n`
   }
   const window = r.days ? `last ${r.days} days (since ${r.since})` : 'all time'
-  const L: string[] = [`# tokenomics report: ${window}`, '']
+  const L: string[] = [`# agentarium report: ${window}`, '']
   const lab = r.by_label
   const spend: number = r.spend
   const m = (v: number) => currency.formatMoney(v, r.symbol)
@@ -261,7 +261,7 @@ function main(args: string[]): number {
       process.stderr.write(`report.ts: error: unknown currency ${JSON.stringify(cur)}: use GBP, USD or EUR\n`)
       return 2
     }
-    process.env.TOKENOMICS_CURRENCY = code
+    process.env.AGENTARIUM_CURRENCY = code
   }
   const days = Number.parseInt(argValue(args, '--days') ?? '7', 10)
   const r = build(argValue(args, '--db') ?? defaultDbPath(), Math.max(0, Number.isNaN(days) ? 7 : days))

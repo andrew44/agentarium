@@ -1,23 +1,23 @@
 /**
  * Shared test helpers. Importing this first gives the whole test process a throwaway HOME,
- * TOKENOMICS_HOME and TOKENOMICS_DB, so no test ever touches the real ~/.tokenomics.
+ * AGENTARIUM_HOME and AGENTARIUM_DB, so no test ever touches the real ~/.agentarium.
  */
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { Db, type Row } from '../tokenomics/engine/db.ts'
+import { Db, type Row } from '../agentarium/engine/db.ts'
 
 export const ROOT = join(import.meta.dirname, '..')
 export const SCRIPTS = join(ROOT, 'scripts')
 
-const sandbox = mkdtempSync(join(tmpdir(), 'tokenomics-test-'))
-for (const k of Object.keys(process.env)) if (k.startsWith('TOKENOMICS_')) delete process.env[k]
+const sandbox = mkdtempSync(join(tmpdir(), 'agentarium-test-'))
+for (const k of Object.keys(process.env)) if (k.startsWith('AGENTARIUM_')) delete process.env[k]
 process.env.HOME = sandbox
 process.env.USERPROFILE = sandbox
-process.env.TOKENOMICS_HOME = join(sandbox, '.tokenomics')
-process.env.TOKENOMICS_DB = join(sandbox, '.tokenomics', 'spendlens.db')
+process.env.AGENTARIUM_HOME = join(sandbox, '.agentarium')
+process.env.AGENTARIUM_DB = join(sandbox, '.agentarium', 'till.db')
 process.on('exit', () => rmSync(sandbox, { recursive: true, force: true }))
 
 export const USAGE = { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 10, cache_read_input_tokens: 1000 }
@@ -69,19 +69,19 @@ export class TempEnv {
   db: string
 
   constructor() {
-    this.home = mkdtempSync(join(tmpdir(), 'tokenomics-t-'))
-    this.db = join(this.home, 'spendlens.db')
+    this.home = mkdtempSync(join(tmpdir(), 'agentarium-t-'))
+    this.db = join(this.home, 'till.db')
   }
 
   env(extra: Env = {}): Env {
     const e: Env = { ...process.env }
-    for (const k of Object.keys(e)) if (k.startsWith('TOKENOMICS_')) delete e[k]
-    return { ...e, HOME: this.home, USERPROFILE: this.home, TOKENOMICS_DB: this.db, ...extra }
+    for (const k of Object.keys(e)) if (k.startsWith('AGENTARIUM_')) delete e[k]
+    return { ...e, HOME: this.home, USERPROFILE: this.home, AGENTARIUM_DB: this.db, ...extra }
   }
 
   hook(mode: string, source: string, payload: unknown, extra: Env = {}) {
     const data = typeof payload === 'string' ? payload : JSON.stringify(payload)
-    return runScript('spendlens.ts', [mode, source], { input: data, env: this.env(extra) })
+    return runScript('till.ts', [mode, source], { input: data, env: this.env(extra) })
   }
 
   rows(sql: string, ...args: (string | number)[]): Row[] {

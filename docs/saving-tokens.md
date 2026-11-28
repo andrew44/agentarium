@@ -41,7 +41,7 @@ The AI has no memory between messages: **the whole conversation is sent again ev
 - **Start a new conversation when you change task.** Fixing a bug and then "while you're here, can you also look at the login page" drags the whole bug-fix history into the login work. In Claude Code, `/clear` starts afresh. The **ballast** hook spots the switch and tells you what carrying on would cost.
 - **Avoid side quests.** A quick unrelated question mid-task ("what's the syntax for X again?") gets re-sent for the rest of the session. Ask it in a separate window.
 - **Summarise and restart long sessions.** If a session has grown huge but you're not finished, compact it (`/compact` in Claude Code) or let **doggybag** pack a short note and `/clear` to continue from it.
-- **Watch the fuel gauge.** The tokenomics **statusline** shows how full the conversation is. When it is past halfway, consider wrapping up or restarting.
+- **Watch the fuel gauge.** The agentarium **statusline** shows how full the conversation is. When it is past halfway, consider wrapping up or restarting.
 
 ---
 
@@ -189,7 +189,7 @@ Habits are easier to change when you can see the effect.
 
 - **statusline** shows tokens used, cost so far and the cache timer as you work.
 - **coach** reviews a finished conversation and points out the biggest wastes, such as large pastes, cache rebuilds and long outputs.
-- **spendlens** records every session so you can compare before and after.
+- **till** records every session so you can compare before and after.
 - **parrot** spots the instructions you keep re-typing every session; written into `CLAUDE.md` once, they stop costing you a correction each time.
 - **all-you-can-eat** sets your month's usage against pay-as-you-go and each subscription, so you pay for the plan that fits.
 - In Claude Code, `/cost` and `/context` show what the current session has used and what is taking up room.

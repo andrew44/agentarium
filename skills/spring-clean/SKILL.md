@@ -14,7 +14,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" springclean.ts --json
 ```
 
 - Runs on the current folder; `--dir <path>` for another. Read-only.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name springclean.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name springclean.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 

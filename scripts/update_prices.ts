@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / update_prices: refresh data/model-prices.json from Claude's official pricing page.
+ * agentarium / update_prices: refresh data/model-prices.json from Claude's official pricing page.
  *
  * Reads the "Model pricing" table on https://platform.claude.com/docs/en/about-claude/pricing (the
  * docs serve Markdown when the URL ends in .md), turns each row into a price entry keyed by API
@@ -22,7 +22,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 
-import { argValue, isMain, type Obj } from '../tokenomics/util.ts'
+import { argValue, isMain, type Obj } from '../agentarium/util.ts'
 
 export const PRICING_URL = 'https://platform.claude.com/docs/en/about-claude/pricing.md'
 export const PRICES_FILE = join(import.meta.dirname, '..', 'data', 'model-prices.json')
@@ -158,7 +158,7 @@ export function merge(current: Obj | null, fresh: Record<string, Obj>): Obj {
 }
 
 async function fetchPage(url = PRICING_URL): Promise<string> {
-  const r = await fetch(url, { headers: { 'User-Agent': 'tokenomics-price-updater' }, signal: AbortSignal.timeout(30_000) })
+  const r = await fetch(url, { headers: { 'User-Agent': 'agentarium-price-updater' }, signal: AbortSignal.timeout(30_000) })
   if (!r.ok) throw new Error(`HTTP ${r.status} from ${url}`)
   return r.text()
 }

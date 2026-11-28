@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * tokenomics / controller: one decision and one message per prompt.
+ * agentarium / controller: one decision and one message per prompt.
  *
- * Claude Code's UserPromptSubmit used to start eight Node.js processes per prompt (spendlens,
+ * Claude Code's UserPromptSubmit used to start eight Node.js processes per prompt (till,
  * pennywise, budget, doggybag, haggle, blinkers, ballast, parrot), each reading the session on its
  * own, in parallel, each free to add its own message. The controller runs them in one process, in
  * an order that lets the stronger decision win:
  *
- *   1. spendlens   records the prompt (never says anything)
+ *   1. till        records the prompt (never says anything)
  *   2. budget      a limit reached pauses the prompt: nothing else runs
  *   3. holdup      a huge paste (a log, a document, a data dump) or a blatantly broad ask pauses the prompt
  *   4. pennywise   picks the model (it already routes down harder as the budget runs out)
@@ -15,7 +15,7 @@
  *   6. ballast · doggybag · blinkers · parrot   advice for the next steps
  *
  * Copilot CLI gets the same: one process for its prompt hook, with the helpers that work there
- * (COPILOT_STEPS): spendlens records the prompt, premium pauses it once the month's premium
+ * (COPILOT_STEPS): till records the prompt, premium pauses it once the month's premium
  * requests are used up (when Copilot honours prompt-hook output; until then it only records),
  * doggybag arms its cold-cache check, blinkers notes what the task asked for.
  * VS Code (VSCODE_STEPS) runs the same without doggybag, and its prompt hook does honour a pause,
@@ -23,26 +23,26 @@
  *
  * The first helper to pause (block) the prompt decides alone. Otherwise every notice is joined into
  * one message, and every piece of context into one block, so the user sees one line per prompt.
- * Each helper keeps its own switch (TOKENOMICS_BUDGET_MODE, TOKENOMICS_PENNYWISE, ...), and a
+ * Each helper keeps its own switch (AGENTARIUM_BUDGET_MODE, AGENTARIUM_PENNYWISE, ...), and a
  * helper that throws is skipped: the others still run, and a crash never blocks a prompt.
  *
  * Every prompt also times each step (loading it included: each prompt is a fresh process) and
- * records the times in controller_events, so `tokenomics doctor` can name a helper that slows
+ * records the times in controller_events, so `agentarium doctor` can name a helper that slows
  * every prompt down.
  *
  * Usage (hook command):   controller.ts prompt [source]        source = claude-code (default) | copilot | vscode
  *                         controller.ts explain [source]          print the order and what each step does
  *                         controller.ts latency [--json]          each step's median and p90 time, slow ones flagged
- * Env: TOKENOMICS_CONTROLLER_SKIP     comma-separated helpers to leave out, e.g. "parrot,blinkers"
- *      TOKENOMICS_CONTROLLER_TIMING   on (default) | off: don't record step times
- *      TOKENOMICS_CONTROLLER_SLOW_MS  a step whose median time is at least this is flagged (default 150)
+ * Env: AGENTARIUM_CONTROLLER_SKIP     comma-separated helpers to leave out, e.g. "parrot,blinkers"
+ *      AGENTARIUM_CONTROLLER_TIMING   on (default) | off: don't record step times
+ *      AGENTARIUM_CONTROLLER_SLOW_MS  a step whose median time is at least this is flagged (default 150)
  * Always exits 0. Errors go to <db>.err.
  */
 import { existsSync } from 'node:fs'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import { errText, isMain, isObj, logErr, now, readStdin, setStdin, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import { errText, isMain, isObj, logErr, now, readStdin, setStdin, type Obj } from '../agentarium/util.ts'
 
 type Step = { name: string, run: (source: string) => Promise<unknown> | unknown, blocks: boolean, about: string }
 
@@ -51,8 +51,8 @@ const HOLDUP: Step = { name: 'holdup', blocks: true, about: 'pauses a prompt tha
 
 /** The prompt-time helpers, in decision order. Imported lazily so a broken one can't stop the rest. */
 export const STEPS: Step[] = [
-  { name: 'spendlens', blocks: false, about: 'records the prompt',
-    run: async (s) => (await import('./spendlens.ts')).main(['prompt', s]) },
+  { name: 'till', blocks: false, about: 'records the prompt',
+    run: async (s) => (await import('./till.ts')).main(['prompt', s]) },
   { name: 'budget', blocks: true, about: 'pauses the prompt once a daily or session limit is reached',
     run: async (s) => (await import('./budget.ts')).main([s]) },
   HOLDUP,
@@ -74,8 +74,8 @@ export const STEPS: Step[] = [
  *  that do their work without it: recording, the allowance guard (records until Copilot honours a
  *  pause), doggybag's arming and blinkers' note of the task. */
 export const COPILOT_STEPS: Step[] = [
-  { name: 'spendlens', blocks: false, about: 'records the prompt',
-    run: async (s) => (await import('./spendlens.ts')).main(['prompt', s]) },
+  { name: 'till', blocks: false, about: 'records the prompt',
+    run: async (s) => (await import('./till.ts')).main(['prompt', s]) },
   { name: 'premium', blocks: true, about: "pauses the prompt once the month's premium requests are used up",
     run: async (s) => (await import('./premium.ts')).main([s]) },
   { name: 'doggybag', blocks: false, about: 'arms the cold-cache check for the next prompt',
@@ -184,11 +184,11 @@ export async function decide(raw: string, source = 'claude-code', skip = new Set
 // ---- latency ------------------------------------------------------------------------------------
 
 const KEEP_ROWS = 20_000
-export const slowMs = () => Number(process.env.TOKENOMICS_CONTROLLER_SLOW_MS) > 0 ? Number(process.env.TOKENOMICS_CONTROLLER_SLOW_MS) : 150
+export const slowMs = () => Number(process.env.AGENTARIUM_CONTROLLER_SLOW_MS) > 0 ? Number(process.env.AGENTARIUM_CONTROLLER_SLOW_MS) : 150
 
-/** Store one prompt's step times in controller_events. Never throws; off with TOKENOMICS_CONTROLLER_TIMING=off. */
+/** Store one prompt's step times in controller_events. Never throws; off with AGENTARIUM_CONTROLLER_TIMING=off. */
 function record(raw: string, source: string, timings: [string, number][]): void {
-  if ((process.env.TOKENOMICS_CONTROLLER_TIMING ?? 'on').trim().toLowerCase() === 'off') return
+  if ((process.env.AGENTARIUM_CONTROLLER_TIMING ?? 'on').trim().toLowerCase() === 'off') return
   try {
     let sid = ''
     try {
@@ -250,7 +250,7 @@ export function latency(dbPath = defaultDbPath(), prompts = 200): StepLatency[] 
   }
 }
 
-/** The latency table as lines for `tokenomics doctor`, or one line when nothing is recorded. */
+/** The latency table as lines for `agentarium doctor`, or one line when nothing is recorded. */
 export function latencyLines(rows = latency()): string[] {
   if (!rows.length) return ['  prompt time  nothing recorded yet (the controller times each prompt)']
   const L: string[] = []
@@ -260,7 +260,7 @@ export function latencyLines(rows = latency()): string[] {
     L.push(`  prompt time  ${src}: ~${Math.round(total.median)} ms a prompt (p90 ${Math.round(total.p90)} ms, last ${total.prompts} prompts)`)
     for (const r of rs.filter((x) => x.step !== 'total').sort((a, b) => b.median - a.median)) {
       L.push(`    ${r.step.padEnd(10)} ${String(Math.round(r.median)).padStart(5)} ms  p90 ${String(Math.round(r.p90)).padStart(5)} ms  ` +
-        `${String(Math.round(r.share * 100)).padStart(3)}%` + (r.slow ? `  ! slows every prompt: TOKENOMICS_CONTROLLER_SKIP=${r.step} leaves it out` : ''))
+        `${String(Math.round(r.share * 100)).padStart(3)}%` + (r.slow ? `  ! slows every prompt: AGENTARIUM_CONTROLLER_SKIP=${r.step} leaves it out` : ''))
     }
   }
   return L
@@ -278,7 +278,7 @@ export async function main(argv: string[]): Promise<number> {
     return 0
   }
   try {
-    const skip = new Set((process.env.TOKENOMICS_CONTROLLER_SKIP ?? '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean))
+    const skip = new Set((process.env.AGENTARIUM_CONTROLLER_SKIP ?? '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean))
     const d = await decide(readStdin(), source, skip)
     if (d.output) process.stdout.write(JSON.stringify(d.output) + '\n')
   } catch (e) {

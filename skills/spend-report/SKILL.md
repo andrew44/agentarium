@@ -1,11 +1,11 @@
 ---
 name: spend-report
-description: Reports where AI coding spend went over a period (default the last 7 days) - money spent in the user's currency, the OPEX/CAPEX split, projects, models, the costliest sessions and what the tokenomics helpers saved - with three concrete ways to spend less. Use when asked for a spend report, weekly AI cost summary, "where did my tokens go this week", budget status, or to compare OPEX and CAPEX spend.
+description: Reports where AI coding spend went over a period (default the last 7 days) - money spent in the user's currency, the OPEX/CAPEX split, projects, models, the costliest sessions and what the agentarium helpers saved - with three concrete ways to spend less. Use when asked for a spend report, weekly AI cost summary, "where did my tokens go this week", budget status, or to compare OPEX and CAPEX spend.
 ---
 
 # Spend report
 
-You turn the tokenomics database into a short, decision-ready report. Every number you state must come from the report output. Never estimate or invent figures.
+You turn the agentarium database into a short, decision-ready report. Every number you state must come from the report output. Never estimate or invent figures.
 
 ## 1. Gather the data
 
@@ -15,8 +15,8 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" report.ts --json --days 7
 
 - If the user asks for a currency ("in dollars", "in euros"), add `--currency USD` or `--currency EUR`. Otherwise use the configured one.
 - Use the period the user asked for: `--days 30` for a month, `--days 1` for today, `--days 0` for all time.
-- If `CLAUDE_PLUGIN_ROOT` is empty, locate the script: `find ~/.claude/plugins ./ -name report.ts -path "*tokenomics*" 2>/dev/null | head -1`.
-- If `empty` is true, explain the `reason` plainly (for `no-database`: spendlens is installed with the plugin and starts recording from the next session) and stop.
+- If `CLAUDE_PLUGIN_ROOT` is empty, locate the script: `find ~/.claude/plugins ./ -name report.ts -path "*agentarium*" 2>/dev/null | head -1`.
+- If `empty` is true, explain the `reason` plainly (for `no-database`: till is installed with the plugin and starts recording from the next session) and stop.
 - For budget questions also run `sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" budget.ts status`.
 
 ## 2. Reply format
@@ -35,6 +35,6 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" report.ts --json --days 7
    - Large `bang-for-buck.nothing_to_show`: suggest the `bang-for-buck` skill to see which models and sessions deliver results.
    - Large `sherlock.wasted`: suggest a CLAUDE.md rule for the habit sherlock finds most (e.g. read each file once).
 
-Copilot sessions are counted (sessions and prompts) but not priced: Copilot bills premium requests, which tokenomics cannot see. Say so if Copilot appears in `by_source`.
+Copilot sessions are counted (sessions and prompts) but not priced: Copilot bills premium requests, which agentarium cannot see. Say so if Copilot appears in `by_source`.
 
-Keep it under about 25 lines. Offer the dashboard (`/tokenomics:dashboard`) for charts.
+Keep it under about 25 lines. Offer the dashboard (`/agentarium:dashboard`) for charts.

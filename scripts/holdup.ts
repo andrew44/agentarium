@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / hold-up: pause a prompt that pastes in what the agent could read for itself.
+ * agentarium / hold-up: pause a prompt that pastes in what the agent could read for itself.
  *
  * A pasted 100,000-token log joins the conversation for good: written to the cache with the prompt,
  * then re-read at every later step, though the agent could have grepped the file for the ten lines
@@ -8,7 +8,7 @@
  * encoded blob, a diff, source code, a document or other pasted text), what carrying it costs and what
  * to do instead. It also catches a short prompt that is blatantly too broad ("refactor the whole
  * codebase", "fix all the bugs") with nothing named to start from. Send the same prompt again to go
- * ahead as it is. Rules: tokenomics/engine/holdup.ts.
+ * ahead as it is. Rules: agentarium/engine/holdup.ts.
  *
  * Prompt hook, run by the controller: Claude Code (UserPromptSubmit) and VS Code, which bills premium
  * requests, so there it says what the paste does to the context but never what it costs. Copilot CLI
@@ -18,27 +18,27 @@
  *
  *   holdup.ts [source]          hook (stdin: hook JSON)
  *
- * Env: TOKENOMICS_HOLDUP             block (default: pause once; send it again to go ahead) |
+ * Env: AGENTARIUM_HOLDUP             block (default: pause once; send it again to go ahead) |
  *                                    warn (a notice; the prompt goes ahead) | off
- *      TOKENOMICS_HOLDUP_MIN_TOKENS  speak up from this prompt size (default 10000, about 40 KB)
- *      TOKENOMICS_HOLDUP_BROAD       block | warn | off for a prompt that is too broad (default: as TOKENOMICS_HOLDUP)
+ *      AGENTARIUM_HOLDUP_MIN_TOKENS  speak up from this prompt size (default 10000, about 40 KB)
+ *      AGENTARIUM_HOLDUP_BROAD       block | warn | off for a prompt that is too broad (default: as AGENTARIUM_HOLDUP)
  * Logged to holdup_events: the size, the kind ('broad' for scope) and a hash of the prompt (to know a
  * resend), never the text.
  * Always exits 0; a crash never blocks a prompt.
  */
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { lastContext, stepsPerPrompt } from '../tokenomics/engine/ballast.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as holdup from '../tokenomics/engine/holdup.ts'
-import * as lessons from '../tokenomics/engine/lessons.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { BILLING_ANTHROPIC_TOKENS, Capability } from '../tokenomics/platform/capabilities.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { CostEngine, PolicyEngine } from '../tokenomics/services/index.ts'
-import { errText, first, isMain, logErr, readPayload, sha1, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { lastContext, stepsPerPrompt } from '../agentarium/engine/ballast.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as holdup from '../agentarium/engine/holdup.ts'
+import * as lessons from '../agentarium/engine/lessons.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { BILLING_ANTHROPIC_TOKENS, Capability } from '../agentarium/platform/capabilities.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { CostEngine, PolicyEngine } from '../agentarium/services/index.ts'
+import { errText, first, isMain, logErr, readPayload, sha1, type Obj } from '../agentarium/util.ts'
 
 const TAIL_BYTES = 2 * 1024 * 1024
-export const minTokens = () => PolicyEngine.threshold('TOKENOMICS_HOLDUP_MIN_TOKENS', 10_000, { min: 500 })
+export const minTokens = () => PolicyEngine.threshold('AGENTARIUM_HOLDUP_MIN_TOKENS', 10_000, { min: 500 })
 
 /** Was this exact prompt paused before in this session? Then sending it again means go ahead. */
 function pausedBefore(dbPath: string, sid: string, digest: string): boolean {
@@ -68,8 +68,8 @@ function cost(payload: Obj, tokens: number): holdup.Price {
 }
 
 function hook(source: string): void {
-  const mode = PolicyEngine.mode('TOKENOMICS_HOLDUP', 'block', ['block', 'warn', 'off'])
-  const broadMode = PolicyEngine.mode('TOKENOMICS_HOLDUP_BROAD', mode, ['block', 'warn', 'off'])
+  const mode = PolicyEngine.mode('AGENTARIUM_HOLDUP', 'block', ['block', 'warn', 'off'])
+  const broadMode = PolicyEngine.mode('AGENTARIUM_HOLDUP_BROAD', mode, ['block', 'warn', 'off'])
   if (mode === 'off' && broadMode === 'off') return
   const dbPath = defaultDbPath()
   try {

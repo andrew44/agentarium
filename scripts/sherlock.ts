@@ -1,28 +1,28 @@
 #!/usr/bin/env node
 /**
- * tokenomics / sherlock: agent forensics. Not what the session spent, but what the agent did,
+ * agentarium / sherlock: agent forensics. Not what the session spent, but what the agent did,
  * and exactly where money went that bought nothing: files read twice, calls repeated with the
  * same answer, searches rephrased into the same results, big outputs never used, subagents
  * doing overlapping or one-step jobs. Each finding has a cost, a reason and a fix.
- * Rules and costing: tokenomics/engine/forensics.ts.
+ * Rules and costing: agentarium/engine/forensics.ts.
  *
  *   sherlock.ts                        the newest session in this folder
  *   sherlock.ts --session ID | --transcript FILE
  *   sherlock.ts --json                 machine-readable (used by the sherlock skill)
  *   sherlock.ts log [source]           hook (SessionEnd): record the session's waste for the spend report
  *
- * Read-only on transcripts. Env: TOKENOMICS_SHERLOCK=off turns the hook off.
+ * Read-only on transcripts. Env: AGENTARIUM_SHERLOCK=off turns the hook off.
  */
 import { basename } from 'node:path'
 
 import { findTranscript } from './coach.ts'
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import * as events from '../tokenomics/engine/events.ts'
-import { investigate, type Investigation } from '../tokenomics/engine/forensics.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { premiumBilled } from '../tokenomics/platform/registry.ts'
-import { argValue, errText, first, fmt, isMain, logErr, readPayload, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import * as events from '../agentarium/engine/events.ts'
+import { investigate, type Investigation } from '../agentarium/engine/forensics.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { premiumBilled } from '../agentarium/platform/registry.ts'
+import { argValue, errText, first, fmt, isMain, logErr, readPayload, type Obj } from '../agentarium/util.ts'
 
 const KIND_NAMES: Record<string, string> = {
   repeated_read: 'Repeated file reads', redundant_call: 'Redundant tool calls', repeated_search: 'Searches returning the same thing',
@@ -58,7 +58,7 @@ export function markdown(r: Obj, money: [string, string, number] = currency.curr
 }
 
 function hook(source: string): void {
-  if ((process.env.TOKENOMICS_SHERLOCK ?? '').trim().toLowerCase() === 'off' || premiumBilled(source)) return
+  if ((process.env.AGENTARIUM_SHERLOCK ?? '').trim().toLowerCase() === 'off' || premiumBilled(source)) return
   try {
     const payload = readPayload()
     const path = first(payload, ['transcript_path', 'transcriptPath'])

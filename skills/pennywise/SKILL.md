@@ -25,4 +25,4 @@ sh "$R" pennywise.ts off                    # undo it
 - **What did it save?** `status`. Savings are net of what the hand-off costs, and routes up are counted separately as what quality cost extra. They are estimates from list prices, not a bill.
 - **Is it any good?** `eval`. "Routed too low" is the costly mistake; say how many.
 - **Turn on the proxy** only when the user asks: it changes their Claude Code settings and needs a new session. Say `off` undoes it.
-- **More or less aggressive:** suggest a profile (`tokenomics profile frugal | balanced | quality`) rather than editing thresholds by hand.
+- **More or less aggressive:** suggest a profile (`agentarium profile frugal | balanced | quality`) rather than editing thresholds by hand.

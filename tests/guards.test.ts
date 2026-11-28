@@ -13,15 +13,15 @@ import * as dryrun from '../scripts/dryrun.ts'
 import * as kettle from '../scripts/kettle.ts'
 import * as receipt from '../scripts/receipt.ts'
 import * as cooks from '../scripts/toomanycooks.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as diet from '../tokenomics/engine/diet.ts'
-import { TOOL_READ, TOOL_SHELL, toolCall } from '../tokenomics/engine/evidence.ts'
-import * as holdup from '../tokenomics/engine/holdup.ts'
-import { prefixKind, rebuildCost } from '../tokenomics/engine/prefix.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { PolicyEngine } from '../tokenomics/services/index.ts'
-import { today } from '../tokenomics/util.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as diet from '../agentarium/engine/diet.ts'
+import { TOOL_READ, TOOL_SHELL, toolCall } from '../agentarium/engine/evidence.ts'
+import * as holdup from '../agentarium/engine/holdup.ts'
+import { prefixKind, rebuildCost } from '../agentarium/engine/prefix.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { PolicyEngine } from '../agentarium/services/index.ts'
+import { today } from '../agentarium/util.ts'
 
 const MODEL = 'claude-opus-5-5'
 
@@ -78,10 +78,10 @@ describe('cache-buster', () => {
     assert.equal(hook(t, 'cachebuster.ts', ['claude-code'], edit(join(cwd, 'CLAUDE.md'))), null)            // once per file
     assert.equal(hook(t, 'cachebuster.ts', ['claude-code'], edit(join(cwd, 'src.ts'), big, 's2')), null)
     assert.equal(hook(t, 'cachebuster.ts', ['claude-code'], edit(join(cwd, 'CLAUDE.md'), small, 's3')), null)
-    assert.equal(hook(t, 'cachebuster.ts', ['claude-code'], edit(join(cwd, 'CLAUDE.md'), big, 's4'), { TOKENOMICS_CACHEBUSTER: 'off' }), null)
-    const asked = hook(t, 'cachebuster.ts', ['claude-code'], edit(join(cwd, 'CLAUDE.md'), big, 's5'), { TOKENOMICS_CACHEBUSTER: 'ask' })
+    assert.equal(hook(t, 'cachebuster.ts', ['claude-code'], edit(join(cwd, 'CLAUDE.md'), big, 's4'), { AGENTARIUM_CACHEBUSTER: 'off' }), null)
+    const asked = hook(t, 'cachebuster.ts', ['claude-code'], edit(join(cwd, 'CLAUDE.md'), big, 's5'), { AGENTARIUM_CACHEBUSTER: 'ask' })
     assert.equal(asked.hookSpecificOutput.permissionDecision, 'ask')
-    const denied = hook(t, 'cachebuster.ts', ['claude-code'], edit(join(cwd, 'CLAUDE.md'), big, 's6'), { TOKENOMICS_CACHEBUSTER: 'block' })
+    const denied = hook(t, 'cachebuster.ts', ['claude-code'], edit(join(cwd, 'CLAUDE.md'), big, 's6'), { AGENTARIUM_CACHEBUSTER: 'block' })
     assert.match(denied.hookSpecificOutput.permissionDecisionReason, /Leave the change as a note/)
     assert.deepEqual(t.rows('SELECT session_id, kind, action FROM cachebuster_events ORDER BY id'),
       [{ session_id: 's1', kind: 'instructions', action: 'warn' }, { session_id: 's5', kind: 'instructions', action: 'ask' },
@@ -118,8 +118,8 @@ describe('too-many-cooks', () => {
       tool_name: 'Agent', tool_input: { description: 'dup', prompt: brief } }, env)
     assert.match(call('s1').systemMessage, /^too-many-cooks: its brief shares \d+% of its words with "payments audit"/)
     assert.equal(call('s1'), null)
-    assert.equal(call('s2', { TOKENOMICS_TOOMANYCOOKS: 'block' }).hookSpecificOutput.permissionDecision, 'deny')
-    assert.equal(call('s3', { TOKENOMICS_TOOMANYCOOKS: 'off' }), null)
+    assert.equal(call('s2', { AGENTARIUM_TOOMANYCOOKS: 'block' }).hookSpecificOutput.permissionDecision, 'deny')
+    assert.equal(call('s3', { AGENTARIUM_TOOMANYCOOKS: 'off' }), null)
     const sub = join(t.mkdir('main', 'subagents'), 'agent-1.jsonl')
     writeFileSync(sub, [turn('x1', 15_000), turn('x2', 18_000)].map((r) => JSON.stringify(r)).join('\n') + '\n')
     assert.equal(hook(t, 'toomanycooks.ts', ['record'], { session_id: 's1', agent_type: 'Explore', agent_transcript_path: sub }), null)
@@ -151,7 +151,7 @@ describe('kettle', () => {
     assert.equal(out.systemMessage, undefined)
     assert.equal(hook(t, 'kettle.ts', ['claude-code'], p), null)
     assert.equal(hook(t, 'kettle.ts', ['claude-code'], { ...p, session_id: 'x', notification_type: 'auth_success' }), null)
-    assert.equal(hook(t, 'kettle.ts', ['claude-code'], { ...p, session_id: 'y' }, { TOKENOMICS_KETTLE: 'off' }), null)
+    assert.equal(hook(t, 'kettle.ts', ['claude-code'], { ...p, session_id: 'y' }, { AGENTARIUM_KETTLE: 'off' }), null)
   })
 })
 
@@ -191,7 +191,7 @@ describe('diet: what calls actually print', () => {
     const out = hook(t, 'diet.ts', ['claude-code'], { session_id: 's', tool_name: 'Bash', tool_input: { command: 'terraform plan' } })
     assert.match(out.hookSpecificOutput.permissionDecisionReason, /`terraform` has typically printed about 76,800 tokens here/)
     assert.equal(hook(t, 'diet.ts', ['claude-code'], { session_id: 's', tool_name: 'Bash', tool_input: { command: 'terraform plan' } },
-      { TOKENOMICS_DIET_LEARN: 'off' }), null)
+      { AGENTARIUM_DIET_LEARN: 'off' }), null)
     const sizes = JSON.parse(runScript('diet.ts', ['sizes', '--json'], { env: t.env() }).stdout)
     assert.deepEqual(sizes.kinds.map((k: any) => [k.kind, k.runs, k.flagged]), [['terraform', 5, true]])
   })
@@ -317,10 +317,10 @@ describe('hold-up', () => {
     assert.ok(!/[$£€]/.test(first.reason.split('\n')[0]))
     assert.match(first.reason, /\nWhy: An agent's cost is mostly reading/)            // the big-task lesson
     assert.equal(hook(t, 'holdup.ts', ['claude-code'], p), null)
-    assert.match(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 'b2' }, { TOKENOMICS_HOLDUP_BROAD: 'warn' }).systemMessage, /^hold-up: that prompt asked/)
-    assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 'b3' }, { TOKENOMICS_HOLDUP_BROAD: 'off' }), null)
-    assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 'b4' }, { TOKENOMICS_HOLDUP: 'off' }), null)
-    assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 'b5' }, { TOKENOMICS_HOLDUP: 'off', TOKENOMICS_HOLDUP_BROAD: 'block' }).decision, 'block')
+    assert.match(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 'b2' }, { AGENTARIUM_HOLDUP_BROAD: 'warn' }).systemMessage, /^hold-up: that prompt asked/)
+    assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 'b3' }, { AGENTARIUM_HOLDUP_BROAD: 'off' }), null)
+    assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 'b4' }, { AGENTARIUM_HOLDUP: 'off' }), null)
+    assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 'b5' }, { AGENTARIUM_HOLDUP: 'off', AGENTARIUM_HOLDUP_BROAD: 'block' }).decision, 'block')
     assert.deepEqual(t.rows('SELECT kind, action, usd FROM holdup_events ORDER BY id').map((r) => [r.kind, r.action, r.usd]),
       [['broad', 'block', null], ['broad', 'resent', null], ['broad', 'warn', null], ['broad', 'block', null]])
   })
@@ -362,10 +362,10 @@ describe('hold-up', () => {
     assert.ok(Number(rows[0].usd) > 0 && rows[1].usd === null)
     assert.ok(rows.every((r) => !Object.values(r).some((v) => typeof v === 'string' && v.includes('worker['))), 'never the prompt itself')
 
-    const warned = hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 's2' }, { TOKENOMICS_HOLDUP: 'warn' })
+    const warned = hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 's2' }, { AGENTARIUM_HOLDUP: 'warn' })
     assert.match(warned.systemMessage, /^hold-up: that prompt was/)
-    assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 's3' }, { TOKENOMICS_HOLDUP: 'off' }), null)
-    assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 's4' }, { TOKENOMICS_HOLDUP_MIN_TOKENS: '60000' }), null)
+    assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 's3' }, { AGENTARIUM_HOLDUP: 'off' }), null)
+    assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 's4' }, { AGENTARIUM_HOLDUP_MIN_TOKENS: '60000' }), null)
     assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 's5', prompt: 'fix the typo in the README' }), null)
     assert.equal(hook(t, 'holdup.ts', ['claude-code'], { ...p, session_id: 's6', transcript_path: join(t.home, 'gone.jsonl') }).decision, 'block')
     assert.equal(runScript('holdup.ts', ['claude-code'], { input: 'not json', env: t.env() }).status, 0)
@@ -384,12 +384,12 @@ describe('hold-up', () => {
   test('the controller runs it before pennywise, and a pause stops the rest', async (c) => {
     const t = useTemp(c)
     const raw = JSON.stringify({ session_id: 'k1', cwd: t.home, prompt: BIG })
-    const vars = { TOKENOMICS_DB: t.db, TOKENOMICS_HOME: join(t.home, '.tk'), TOKENOMICS_CONTROLLER_TIMING: 'off', TOKENOMICS_HOLDUP: undefined,
-      TOKENOMICS_BUDGET_DAILY: undefined, TOKENOMICS_BUDGET_SESSION: undefined, ANTHROPIC_BASE_URL: '' }
+    const vars = { AGENTARIUM_DB: t.db, AGENTARIUM_HOME: join(t.home, '.tk'), AGENTARIUM_CONTROLLER_TIMING: 'off', AGENTARIUM_HOLDUP: undefined,
+      AGENTARIUM_BUDGET_DAILY: undefined, AGENTARIUM_BUDGET_SESSION: undefined, ANTHROPIC_BASE_URL: '' }
     const d = await withEnv(vars, () => controller.decide(raw))
     assert.equal(d.output!.decision, 'block')
     assert.equal(d.decidedBy, 'holdup')
-    assert.deepEqual(d.ran, ['spendlens', 'budget', 'holdup'])
+    assert.deepEqual(d.ran, ['till', 'budget', 'holdup'])
   })
 
   test('the dashboard counts the pauses, and tokens kept out only for pastes not sent again', (c) => {

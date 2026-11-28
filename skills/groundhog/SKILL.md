@@ -12,7 +12,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" groundhog.ts check --json
 ```
 
 - Newest session in this folder by default; `--session <id>` or `--transcript <file.jsonl>` for another.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name groundhog.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name groundhog.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 
@@ -22,4 +22,4 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" groundhog.ts check --json
 
 ## 3. The hook (explain if asked)
 
-The groundhog hook watches every tool call. The first time a loop is caught it refuses the call and tells the agent to change strategy. Settings: `TOKENOMICS_GROUNDHOG=block` (default: refuse twice, then let it through and tell the user), `interrupt` (refuse once, then end the turn), `warn` (never refuse), `off`. `TOKENOMICS_GROUNDHOG_REPEAT` (default 3) and `TOKENOMICS_GROUNDHOG_FAILS` (default 3) set the thresholds. A shell command ending in `# groundhog-ok` is never stopped.
+The groundhog hook watches every tool call. The first time a loop is caught it refuses the call and tells the agent to change strategy. Settings: `AGENTARIUM_GROUNDHOG=block` (default: refuse twice, then let it through and tell the user), `interrupt` (refuse once, then end the turn), `warn` (never refuse), `off`. `AGENTARIUM_GROUNDHOG_REPEAT` (default 3) and `AGENTARIUM_GROUNDHOG_FAILS` (default 3) set the thresholds. A shell command ending in `# groundhog-ok` is never stopped.

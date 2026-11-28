@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / pennywise: a model router. "Penny wise, pound foolish": stop paying top-model
+ * agentarium / pennywise: a model router. "Penny wise, pound foolish": stop paying top-model
  * prices for trivial prompts, and stop sending hard ones to a model that will flounder.
  *
  * Every prompt gets a complexity score from weighted signals (length, code, reasoning words,
@@ -49,14 +49,14 @@
  *
  * Learning. `learn` (run at every session end) reads which routes held and which missed (escalated,
  *   or kept with 'keep-model:') and moves each tier's threshold, within bounds, for every project
- *   (the repository, or TOKENOMICS_PROJECT) with enough routes of its own, and globally for the rest; bang-for-buck's cost
+ *   (the repository, or AGENTARIUM_PROJECT) with enough routes of its own, and globally for the rest; bang-for-buck's cost
  *   per *successful* result suggests tier swaps (applied with --apply-tiers). `eval` scores the
  *   labelled prompts in data/pennywise-eval.json.
  *
  * A growing evaluation set. Each escalation, and each 'keep-model:' on a prompt pennywise would have
  *   routed down, is kept as a labelled case (one tier above where it landed) in
- *   ~/.tokenomics/pennywise_eval.json: a hash and its score by default, the prompt text only with
- *   TOKENOMICS_PENNYWISE_EVAL=text. `eval --mine` scores them; `eval --check` fails (exit 1) when the
+ *   ~/.agentarium/pennywise_eval.json: a hash and its score by default, the prompt text only with
+ *   AGENTARIUM_PENNYWISE_EVAL=text. `eval --mine` scores them; `eval --check` fails (exit 1) when the
  *   scorer regresses, which CI runs on the shipped set.
  *
  * Per-prompt overrides (both modes): start a prompt with
@@ -76,28 +76,28 @@
  *   pennywise.ts env [--port N]       print the shell lines that point Claude Code at the proxy
  *
  * Env:
- *   TOKENOMICS_PENNYWISE   route (default) | block (pause once, suggest /model) | warn | off
+ *   AGENTARIUM_PENNYWISE   route (default) | block (pause once, suggest /model) | warn | off
  *                          | proxy (the hook steps aside; the proxy does the routing)
- *   TOKENOMICS_PENNYWISE_UP        on (default) | off: also route prompts UP to a stronger model
- *   TOKENOMICS_PENNYWISE_BUDGET    on (default) | off: once a budget (TOKENOMICS_BUDGET_DAILY/_MONTHLY or
+ *   AGENTARIUM_PENNYWISE_UP        on (default) | off: also route prompts UP to a stronger model
+ *   AGENTARIUM_PENNYWISE_BUDGET    on (default) | off: once a budget (AGENTARIUM_BUDGET_DAILY/_MONTHLY or
  *                                  _SESSION) passes its warning share, route down harder (every tier
  *                                  threshold rises by BUDGET_SQUEEZE) and never route up, so the
  *                                  budget lasts instead of running out mid-task. Both modes: the
  *                                  proxy reads the session from Claude Code's session-id header
- *   TOKENOMICS_PENNYWISE_OVERHEAD  on (default) | off: route down even when the hand-off would eat the saving
- *   TOKENOMICS_PENNYWISE_LEARN     on (default) | off: ignore what `learn` wrote (~/.tokenomics/pennywise_learned.json)
- *   TOKENOMICS_PENNYWISE_EVAL      hash (default: keep each miss as a labelled case, hash and score only)
+ *   AGENTARIUM_PENNYWISE_OVERHEAD  on (default) | off: route down even when the hand-off would eat the saving
+ *   AGENTARIUM_PENNYWISE_LEARN     on (default) | off: ignore what `learn` wrote (~/.agentarium/pennywise_learned.json)
+ *   AGENTARIUM_PENNYWISE_EVAL      hash (default: keep each miss as a labelled case, hash and score only)
  *                                  | text (keep the prompt text too, so `eval --mine` can re-score it) | off
- *   TOKENOMICS_ROUTER_TIERS        e.g. "SIMPLE=haiku,MEDIUM=sonnet,COMPLEX=opus,REASONING=fable"
- *   TOKENOMICS_ROUTER_PORT         proxy port (default 8787)
- *   TOKENOMICS_ROUTER_UPSTREAM     where the proxy forwards (default https://api.anthropic.com)
- *   TOKENOMICS_ROUTER_MODELS       request model names the proxy routes (default "pennywise,auto");
+ *   AGENTARIUM_ROUTER_TIERS        e.g. "SIMPLE=haiku,MEDIUM=sonnet,COMPLEX=opus,REASONING=fable"
+ *   AGENTARIUM_ROUTER_PORT         proxy port (default 8787)
+ *   AGENTARIUM_ROUTER_UPSTREAM     where the proxy forwards (default https://api.anthropic.com)
+ *   AGENTARIUM_ROUTER_MODELS       request model names the proxy routes (default "pennywise,auto");
  *                                  "*" routes every main-model request
- *   TOKENOMICS_ROUTER_FALLBACK     model to retry on when a routed request fails (default: COMPLEX tier)
- *   TOKENOMICS_ROUTER_STICKY_TOKENS  below this context the proxy may move down while the cache is
+ *   AGENTARIUM_ROUTER_FALLBACK     model to retry on when a routed request fails (default: COMPLEX tier)
+ *   AGENTARIUM_ROUTER_STICKY_TOKENS  below this context the proxy may move down while the cache is
  *                                  warm (default 20000)
- *   ~/.tokenomics/router.json      the same settings as a file: {"tiers": {...}, "thresholds": {...}}
- *   TOKENOMICS_DB                  SQLite path shared with spendlens (default ~/.tokenomics/spendlens.db)
+ *   ~/.agentarium/router.json      the same settings as a file: {"tiers": {...}, "thresholds": {...}}
+ *   AGENTARIUM_DB                  SQLite path shared with till (default ~/.agentarium/till.db)
  *
  * The hook always exits 0; a crash never blocks a prompt (errors go to <db>.err).
  */
@@ -109,24 +109,24 @@ import type { AddressInfo } from 'node:net'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as budget from '../tokenomics/engine/budget.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import * as lessons from '../tokenomics/engine/lessons.ts'
-import { tokenUsage } from '../tokenomics/engine/evidence.ts'
-import { usageCostUsd } from '../tokenomics/engine/pricing.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { withDb, type Db } from '../tokenomics/engine/db.ts'
-import * as outcome from '../tokenomics/services/outcome.ts'
-import * as telemetry from '../tokenomics/services/telemetry.ts'
-import { argValue, errText, isMain, isObj, logErr, now, readStdin, sha1, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as budget from '../agentarium/engine/budget.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import * as lessons from '../agentarium/engine/lessons.ts'
+import { tokenUsage } from '../agentarium/engine/evidence.ts'
+import { usageCostUsd } from '../agentarium/engine/pricing.ts'
+import * as store from '../agentarium/engine/store.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { withDb, type Db } from '../agentarium/engine/db.ts'
+import * as outcome from '../agentarium/services/outcome.ts'
+import * as telemetry from '../agentarium/services/telemetry.ts'
+import { argValue, errText, isMain, isObj, logErr, now, readStdin, sha1, type Obj } from '../agentarium/util.ts'
 
 const env = (name: string, fallback = '') => process.env[name] ?? fallback
-const mode = () => env('TOKENOMICS_PENNYWISE', 'route').trim().toLowerCase()
-const routeUp = () => env('TOKENOMICS_PENNYWISE_UP', 'on').trim().toLowerCase() !== 'off'
+const mode = () => env('AGENTARIUM_PENNYWISE', 'route').trim().toLowerCase()
+const routeUp = () => env('AGENTARIUM_PENNYWISE_UP', 'on').trim().toLowerCase() !== 'off'
 const statePath = () => join(dirname(defaultDbPath()), 'pennywise_state.json')
-const configPath = () => join(process.env.TOKENOMICS_HOME || join(homedir(), '.tokenomics'), 'router.json')
+const configPath = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'router.json')
 const PRICES_PATH = join(import.meta.dirname, '..', 'data', 'model-prices.json')
 
 export const FAMILY_TIER: Record<string, number> = { haiku: 1, sonnet: 2, opus: 3, fable: 4, mythos: 4 }
@@ -198,9 +198,9 @@ const round2 = (v: number) => Math.round(v * 100) / 100
 
 /** How far every tier threshold rises while a budget is under pressure. */
 export const BUDGET_SQUEEZE = 0.35
-/** TOKENOMICS_PENNYWISE_OVERHEAD=off routes down even when the hand-off would eat the saving. */
-const overheadGate = () => env('TOKENOMICS_PENNYWISE_OVERHEAD', 'on').trim().toLowerCase() !== 'off'
-const budgetAware = () => env('TOKENOMICS_PENNYWISE_BUDGET', 'on').trim().toLowerCase() !== 'off'
+/** AGENTARIUM_PENNYWISE_OVERHEAD=off routes down even when the hand-off would eat the saving. */
+const overheadGate = () => env('AGENTARIUM_PENNYWISE_OVERHEAD', 'on').trim().toLowerCase() !== 'off'
+const budgetAware = () => env('AGENTARIUM_PENNYWISE_BUDGET', 'on').trim().toLowerCase() !== 'off'
 
 /** The budget pressing on this session (see engine/budget.ts `pressure`), or null. Never throws. */
 export function budgetPressure(sid: string): budget.Pressure | null {
@@ -230,8 +230,8 @@ export type RouterConfig = { tiers: Record<string, string>, thresholds: Record<s
 
 /** What `pennywise learn` wrote: threshold offsets from routes that missed or held, and tier
  *  swaps from outcomes (only after `learn --apply-tiers`). */
-export const learnedPath = () => join(process.env.TOKENOMICS_HOME || join(homedir(), '.tokenomics'), 'pennywise_learned.json')
-const learning = () => env('TOKENOMICS_PENNYWISE_LEARN', 'on').trim().toLowerCase() !== 'off'
+export const learnedPath = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'pennywise_learned.json')
+const learning = () => env('AGENTARIUM_PENNYWISE_LEARN', 'on').trim().toLowerCase() !== 'off'
 
 /** The router's settings. With `project`, a tier whose threshold that project has learned on its
  *  own routes uses the project's offset; every other tier uses the global one. */
@@ -265,7 +265,7 @@ export function loadConfig(project?: string | null): RouterConfig {
   } catch {
     // no router.json: the defaults
   }
-  for (const part of env('TOKENOMICS_ROUTER_TIERS').split(',')) {
+  for (const part of env('AGENTARIUM_ROUTER_TIERS').split(',')) {
     const i = part.indexOf('=')
     const k = (i >= 0 ? part.slice(0, i) : part).trim().toUpperCase()
     const v = i >= 0 ? part.slice(i + 1).trim() : ''
@@ -442,7 +442,7 @@ export function estimateRequest(requested: string, chosen: string, ctx: number, 
 
 export type LogExtra = { saved?: number | null, ctx?: number | null, tier?: string | null, score?: number | null, digest?: string | null,
   estRouted?: number | null, cache?: string | null, project?: string | null,
-  /** never logged: carried to the evaluation set when TOKENOMICS_PENNYWISE_EVAL=text */
+  /** never logged: carried to the evaluation set when AGENTARIUM_PENNYWISE_EVAL=text */
   text?: string | null }
 
 // est_routed_usd: the estimate's "routed" part; measured_*: what the routed subagent really used
@@ -542,10 +542,10 @@ export function lastTurn(path: string): { model: string | null, ctx: number, ts:
   return { model: null, ctx: 0, ts: null, ttl: 300 }
 }
 
-/** The session's cache right now, from its newest turn; TOKENOMICS_CACHE_TTL (seconds) overrides
+/** The session's cache right now, from its newest turn; AGENTARIUM_CACHE_TTL (seconds) overrides
  *  the TTL, as on the statusline. A session with no turn yet has nothing cached: cold. */
 export function cacheState(t: { ts: number | null, ttl: number }, at = Date.now()): Cache {
-  const set = Number.parseInt(env('TOKENOMICS_CACHE_TTL'), 10)
+  const set = Number.parseInt(env('AGENTARIUM_CACHE_TTL'), 10)
   const ttl = set > 0 ? set : t.ttl
   return { cold: t.ts === null || at - t.ts > ttl * 1000, ttl }
 }
@@ -730,13 +730,13 @@ function currentModel(d: Obj): string | null {
 }
 
 function proxyActive(): boolean {
-  const port = env('TOKENOMICS_ROUTER_PORT', '8787')
+  const port = env('AGENTARIUM_ROUTER_PORT', '8787')
   return mode() === 'proxy' || new RegExp(`^https?://(127\\.0\\.0\\.1|localhost):${port}\\b`).test(env('ANTHROPIC_BASE_URL'))
 }
 
 function routeInstruction(tier: number, why: string, up: boolean): string {
   const reason = up ? "it needs more than this session's model" : 'a cheaper model can do it'
-  return `[tokenomics pennywise model router] This prompt was scored ${why}, so it is routed to ` +
+  return `[agentarium pennywise model router] This prompt was scored ${why}, so it is routed to ` +
     `${NAMES[tier]} (${reason}). Do not do the task yourself. Make one call to the Agent tool ` +
     `(the subagent tool) with model: "${ALIASES[tier]}", passing the user's request word for word as its ` +
     'prompt, plus only the facts from this conversation it needs (file paths, names, earlier ' +
@@ -801,7 +801,7 @@ const readState = (): Record<string, string> => readJson(statePath())
 
 type LastRoute = { tier: number, cur: number, ts: number, label: string | null, score: number | null,
   id?: number | null, estRouted?: number | null, measured?: boolean,
-  /** the routed prompt, for the evaluation set: its hash, and its text only with TOKENOMICS_PENNYWISE_EVAL=text */
+  /** the routed prompt, for the evaluation set: its hash, and its text only with AGENTARIUM_PENNYWISE_EVAL=text */
   sha?: string | null, text?: string | null }
 const routesPath = () => join(dirname(defaultDbPath()), 'pennywise_routes.json')
 
@@ -853,7 +853,7 @@ export function handle(d: Obj): Obj | null {
         { tier: last.label, score: last.score, project })
       return { systemMessage: `pennywise: the last answer came from ${NAMES[last.tier]} and ${said ? "it didn't land" : ev}, so ` +
         `${NAMES[cur]} takes this one itself. pennywise learns from this: similar prompts will route higher.` +
-        (kept ? ' It is kept as a labelled case for `tokenomics router eval --mine`.' : '') }
+        (kept ? ' It is kept as a labelled case for `agentarium router eval --mine`.' : '') }
     }
   }
   if (BYPASS_RE.test(prompt)) {
@@ -973,9 +973,9 @@ export class Router {
   constructor(cfg?: RouterConfig, opts: { pressure?: (sid: string) => budget.Pressure | null } = {}) {
     this.cfg = cfg ?? loadConfig()
     this.pressure = opts.pressure ?? budgetPressure
-    this.match = new Set(env('TOKENOMICS_ROUTER_MODELS', 'pennywise,auto').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean))
-    this.stickyTokens = Number.parseInt(env('TOKENOMICS_ROUTER_STICKY_TOKENS'), 10) || 20000
-    this.fallback = resolveModel(env('TOKENOMICS_ROUTER_FALLBACK') || this.cfg.tiers.COMPLEX)
+    this.match = new Set(env('AGENTARIUM_ROUTER_MODELS', 'pennywise,auto').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean))
+    this.stickyTokens = Number.parseInt(env('AGENTARIUM_ROUTER_STICKY_TOKENS'), 10) || 20000
+    this.fallback = resolveModel(env('AGENTARIUM_ROUTER_FALLBACK') || this.cfg.tiers.COMPLEX)
   }
 
   routes(model: unknown): boolean {
@@ -1119,7 +1119,7 @@ export function sessionId(headers: IncomingMessage['headers'], body: Obj): strin
 
 /** Start the routing proxy on 127.0.0.1:port (0 = any free port); resolves once it listens. */
 export function serve(port: number, opts: { upstream?: string, router?: Router } = {}): Promise<Server> {
-  const upstream = (opts.upstream || env('TOKENOMICS_ROUTER_UPSTREAM') || 'https://api.anthropic.com').replace(/\/+$/, '')
+  const upstream = (opts.upstream || env('AGENTARIUM_ROUTER_UPSTREAM') || 'https://api.anthropic.com').replace(/\/+$/, '')
   const router = opts.router ?? new Router()
   const srv = createServer(async (req, res) => {
     const method = req.method ?? 'GET'
@@ -1331,8 +1331,8 @@ export async function learn(dbPath = defaultDbPath(), opts: { days?: number, dry
 
 export const EVAL_PATH = join(import.meta.dirname, '..', 'data', 'pennywise-eval.json')
 /** Your own labelled cases, from escalations and 'keep-model:' (see addCase). */
-export const myEvalPath = () => join(process.env.TOKENOMICS_HOME || join(homedir(), '.tokenomics'), 'pennywise_eval.json')
-const evalMode = () => env('TOKENOMICS_PENNYWISE_EVAL', 'hash').trim().toLowerCase()
+export const myEvalPath = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'pennywise_eval.json')
+const evalMode = () => env('AGENTARIUM_PENNYWISE_EVAL', 'hash').trim().toLowerCase()
 const MY_EVAL_KEEP = 500
 
 /** One tier up: the label for a prompt that was routed too low. */
@@ -1353,7 +1353,7 @@ export function addCase(c: Case, path = myEvalPath()): boolean {
       // the first case
     }
     set.about ??= 'Your own labelled prompts, from pennywise escalations and keep-model: overrides. Hash-only cases are ' +
-      'scored by their recorded score; set TOKENOMICS_PENNYWISE_EVAL=text to keep the wording so the scorer can re-read them.'
+      'scored by their recorded score; set AGENTARIUM_PENNYWISE_EVAL=text to keep the wording so the scorer can re-read them.'
     const rec: Case = { tier: c.tier, sha: c.sha, score: c.score, from: c.from, ts: now() }
     if (c.prompt) rec.prompt = c.prompt
     set.prompts = [...set.prompts.filter((p) => p.sha !== c.sha), rec].slice(-MY_EVAL_KEEP)
@@ -1396,8 +1396,8 @@ export function evaluate(cfg?: RouterConfig, path = EVAL_PATH): EvalResult {
 
 // ------------------------------------------------------------------ the proxy, in the background
 
-const pidPath = () => join(process.env.TOKENOMICS_HOME || join(homedir(), '.tokenomics'), 'router.pid')
-const routerLog = () => join(process.env.TOKENOMICS_HOME || join(homedir(), '.tokenomics'), 'router.log')
+const pidPath = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'router.pid')
+const routerLog = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'router.log')
 
 /** True when a pennywise proxy answers on `port`. */
 export async function healthy(port: number, timeoutMs = 800): Promise<boolean> {
@@ -1415,7 +1415,7 @@ export async function startBackground(port: number): Promise<boolean> {
   mkdirSync(dirname(pidPath()), { recursive: true })
   const fd = openSync(routerLog(), 'a')
   const child = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', import.meta.filename, 'serve', '--port', String(port)],
-    { detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, TOKENOMICS_PENNYWISE: 'proxy' } })
+    { detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, AGENTARIUM_PENNYWISE: 'proxy' } })
   child.unref()
   closeSync(fd)
   writeFileSync(pidPath(), String(child.pid))
@@ -1471,7 +1471,7 @@ export function setProxyEnv(file: string, on: boolean, port: number): void {
 export async function ensure(): Promise<void> {
   const m = /^https?:\/\/(127\.0\.0\.1|localhost):(\d+)/.exec(env('ANTHROPIC_BASE_URL'))
   // only our proxy: the router's port, or a session asking for the "pennywise" model
-  if (!m || (m[2] !== env('TOKENOMICS_ROUTER_PORT', '8787') && env('ANTHROPIC_MODEL').toLowerCase() !== 'pennywise')) return
+  if (!m || (m[2] !== env('AGENTARIUM_ROUTER_PORT', '8787') && env('ANTHROPIC_MODEL').toLowerCase() !== 'pennywise')) return
   try {
     await startBackground(Number(m[2]))
   } catch (e) {
@@ -1497,7 +1497,7 @@ export function explain(prompt: string, cwd = process.cwd()): string {
 }
 
 function portArg(args: string[]): number {
-  return Number.parseInt(argValue(args, '--port') ?? env('TOKENOMICS_ROUTER_PORT', '8787'), 10) || 8787
+  return Number.parseInt(argValue(args, '--port') ?? env('AGENTARIUM_ROUTER_PORT', '8787'), 10) || 8787
 }
 
 export async function main(args: string[]): Promise<number> {
@@ -1529,7 +1529,7 @@ export async function main(args: string[]): Promise<number> {
     process.stdout.write(`pennywise proxy on: http://127.0.0.1:${p} (running in the background, log: ${routerLog()}).\n` +
       `${file} now points Claude Code at it; start a new session to use it. Each request is routed per turn, ` +
       `cache-aware, with fallback, and no subagent hand-off. A SessionStart hook restarts it if it isn't running.\n` +
-      `Undo: tokenomics router off${args.includes('--project') ? ' --project' : ''}\n`)
+      `Undo: agentarium router off${args.includes('--project') ? ' --project' : ''}\n`)
     return 0
   }
   if (cmd === 'status') {
@@ -1580,7 +1580,7 @@ export async function main(args: string[]): Promise<number> {
       for (const [t, off] of Object.entries(pr.offsets)) L.push(`    ${t.padEnd(9)} ${off > 0 ? '+' : ''}${off}${off ? '' : ' (holding)'}`)
     }
     for (const sug of r.suggestions) L.push('', `  suggestion: ${sug}` + (args.includes('--apply-tiers') ? ' (applied)' : ' (apply with --apply-tiers)'))
-    L.push('', args.includes('--dry-run') ? '(dry run: nothing written)' : `written to ${learnedPath()}  ·  TOKENOMICS_PENNYWISE_LEARN=off ignores it`)
+    L.push('', args.includes('--dry-run') ? '(dry run: nothing written)' : `written to ${learnedPath()}  ·  AGENTARIUM_PENNYWISE_LEARN=off ignores it`)
     process.stdout.write(L.join('\n') + '\n')
     return 0
   }
@@ -1622,7 +1622,7 @@ export async function main(args: string[]): Promise<number> {
     const p = portArg(args)
     await serve(p)
     const tiers = loadConfig().tiers
-    process.stdout.write(`pennywise router on http://127.0.0.1:${p}  ->  ${env('TOKENOMICS_ROUTER_UPSTREAM') || 'https://api.anthropic.com'}\n` +
+    process.stdout.write(`pennywise router on http://127.0.0.1:${p}  ->  ${env('AGENTARIUM_ROUTER_UPSTREAM') || 'https://api.anthropic.com'}\n` +
       `tiers: ${TIERS.map((t) => `${t}=${resolveModel(tiers[t])}`).join(', ')}\n` +
       `use it:  ANTHROPIC_BASE_URL=http://127.0.0.1:${p} ANTHROPIC_MODEL=pennywise claude\n`)
     process.on('SIGINT', () => process.exit(0))

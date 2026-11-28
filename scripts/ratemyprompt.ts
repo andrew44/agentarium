@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * tokenomics / rate-my-prompt (alias: judge): a prompt scored out of 10 for what it will cost to carry out.
+ * agentarium / rate-my-prompt (alias: judge): a prompt scored out of 10 for what it will cost to carry out.
  *
- * Five criteria, up to 2 points each (rules: tokenomics/engine/promptscore.ts):
+ * Five criteria, up to 2 points each (rules: agentarium/engine/promptscore.ts):
  *
  *   target   points at the code: a file, a function, a line, the error
  *   done     says what done looks like: a passing test, an expected result
@@ -22,9 +22,9 @@
 import { readFileSync } from 'node:fs'
 
 import { findTranscript } from './coach.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { rate, type Rating } from '../tokenomics/engine/promptscore.ts'
-import { argValue, isMain, readStdin } from '../tokenomics/util.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { rate, type Rating } from '../agentarium/engine/promptscore.ts'
+import { argValue, isMain, readStdin } from '../agentarium/util.ts'
 import { write } from './common.ts'
 
 // a prompt asking for the rating is not the one to rate

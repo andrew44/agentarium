@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / bazaar: find the cheapest equivalent capability across the whole AI provider market,
+ * agentarium / bazaar: find the cheapest equivalent capability across the whole AI provider market,
  * not just a cheaper model from one vendor.
  *
  * Takes the work you actually did (from the ledger: fresh input, cache writes, cache reads and output,
@@ -22,15 +22,15 @@
  *   bazaar.ts list [--json]                                                       the catalogue, priced
  *
  * Catalogue: data/providers.json, plus your own rows / prices / benchmark scores in
- * ~/.tokenomics/providers.json. Copilot sessions report no tokens, so only Claude Code work is priced.
+ * ~/.agentarium/providers.json. Copilot sessions report no tokens, so only Claude Code work is priced.
  */
 import { existsSync } from 'node:fs'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as ledger from '../tokenomics/engine/ledger.ts'
-import { CostEngine, InsightsEngine } from '../tokenomics/services/index.ts'
-import { argValue, isMain, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as ledger from '../agentarium/engine/ledger.ts'
+import { CostEngine, InsightsEngine } from '../agentarium/services/index.ts'
+import { argValue, isMain, type Obj } from '../agentarium/util.ts'
 import { numArg, period, useCurrency, write } from './common.ts'
 
 const JUDGED = new Set(['succeeded', 'failed', 'discarded', 'abandoned'])
@@ -141,7 +141,7 @@ export function markdown(r: Obj): string {
     L.push('')
   }
   L.push('\\* indicative list price. Rows without a cached-token price charge cache reads as fresh input. Add prices from your contract, ' +
-    'benchmark scores (`quality`), `latency_s` and `availability` in `~/.tokenomics/providers.json`.')
+    'benchmark scores (`quality`), `latency_s` and `availability` in `~/.agentarium/providers.json`.')
   return L.join('\n')
 }
 

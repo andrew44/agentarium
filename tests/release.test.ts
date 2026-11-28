@@ -51,9 +51,9 @@ describe('next version', () => {
     const d = mkdtempSync(join(tmpdir(), 'nv-'))
     try {
       const p = join(d, 'plugin.json')
-      writeFileSync(p, '{\n  "name": "tokenomics",\n  "version": "1.3.0",\n  "x": "1.3.0"\n}\n')
+      writeFileSync(p, '{\n  "name": "agentarium",\n  "version": "1.3.0",\n  "x": "1.3.0"\n}\n')
       nv.write('1.3.1', [p])
-      assert.deepEqual(JSON.parse(readFileSync(p, 'utf8')), { name: 'tokenomics', version: '1.3.1', x: '1.3.0' })
+      assert.deepEqual(JSON.parse(readFileSync(p, 'utf8')), { name: 'agentarium', version: '1.3.1', x: '1.3.0' })
     } finally {
       rmSync(d, { recursive: true, force: true })
     }

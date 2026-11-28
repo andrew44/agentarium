@@ -2,7 +2,7 @@
 
 # How tokens work
 
-Every number tokenomics shows you (tokens used, cache countdown, cost in pounds) comes back to one idea: **tokens**. This guide explains them in two parts:
+Every number agentarium shows you (tokens used, cache countdown, cost in pounds) comes back to one idea: **tokens**. This guide explains them in two parts:
 
 1. **[The simple version](#part-1-the-simple-version)**: no technical background needed. Five minutes.
 2. **[The technical version](#part-2-the-technical-version)**: how tokenisers, input, output and the prompt cache actually work, and how they show up in your bill.
@@ -18,7 +18,7 @@ Read Part 1 and stop there if that is all you need. New to AI altogether? Start 
 An AI model doesn't read words the way you do. It chops text into small pieces called **tokens**, a bit like how a child sounds out a long word one chunk at a time.
 
 - A short, common word is usually **one token**: `cat`, `the`, `hello`.
-- A longer or rarer word is split into **a few tokens**: `tokenomics` might become `token` + `omics`.
+- A longer or rarer word is split into **a few tokens**: `agentarium` might become `agent` + `arium`.
 - Spaces, punctuation, numbers and code symbols take up tokens too.
 
 **Rule of thumb:** in everyday English, 100 tokens is roughly 75 words. A page of text is about 500 to 700 tokens.
@@ -81,7 +81,7 @@ The **tokeniser** is the tool that does the chopping. Different AI models use di
 
 For more on each of these, with worked examples, see [Saving tokens](saving-tokens.md).
 
-That's all you need to know to use tokenomics well. If you want to see the machinery, read on.
+That's all you need to know to use agentarium well. If you want to see the machinery, read on.
 
 ---
 
@@ -219,9 +219,9 @@ The expensive moment is when a large conversation's cache **expires**. The next 
 
 #### Reading the usage fields
 
-Each Claude API response reports four token counts. tokenomics stores them as the columns described in the [helper reference](reference.md#token-columns):
+Each Claude API response reports four token counts. agentarium stores them as the columns described in the [helper reference](reference.md#token-columns):
 
-| API field | tokenomics column | Meaning |
+| API field | agentarium column | Meaning |
 |-----------|-------------------|---------|
 | `input_tokens` | `input_tokens` | Uncached input only: the remainder after the cache. |
 | `cache_creation_input_tokens` | `cache_creation_tokens` | Tokens written to the cache this request (write premium). |

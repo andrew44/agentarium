@@ -41,6 +41,6 @@ export type PaneTab = 'now' | 'ahead' | 'advice'
 
 declare module 'claude-code' {
   interface PluginState {
-    tokenomics: { line: Line | null, paneTab: PaneTab }
+    agentarium: { line: Line | null, paneTab: PaneTab }
   }
 }

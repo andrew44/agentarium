@@ -30,26 +30,26 @@ jobs:
           echo "$RUNNER_TEMP/fakebin" >> "$GITHUB_PATH"
       - name: The one-liner from the README
         env:
-          TOKENOMICS_REPO: ${{ github.repository }}
-          TOKENOMICS_REF: ${{ github.sha }}
-          TOKENOMICS_NODE: ${{ matrix.node == 'standalone' && 'standalone' || '' }}
+          AGENTARIUM_REPO: ${{ github.repository }}
+          AGENTARIUM_REF: ${{ github.sha }}
+          AGENTARIUM_NODE: ${{ matrix.node == 'standalone' && 'standalone' || '' }}
         run: curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh" | sh
       - name: Check the install
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/tests/installer_check.ts" -o "$RUNNER_TEMP/check.mts"
-          "$(cat ~/.tokenomics/node)" "$RUNNER_TEMP/check.mts" --expect-plugin-log "$RUNNER_TEMP/claude.log" \
+          "$(cat ~/.agentarium/node)" "$RUNNER_TEMP/check.mts" --expect-plugin-log "$RUNNER_TEMP/claude.log" \
             ${{ matrix.node == 'standalone' && '--expect-private-node' || '' }}
       - name: Running it again repairs, and doesn't duplicate anything
         env:
-          TOKENOMICS_REPO: ${{ github.repository }}
-          TOKENOMICS_REF: ${{ github.sha }}
+          AGENTARIUM_REPO: ${{ github.repository }}
+          AGENTARIUM_REF: ${{ github.sha }}
         run: |
           curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh" | sh
           curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh" | sh
           for rc in ~/.zshrc ~/.bashrc ~/.bash_profile ~/.profile; do
             [ -f "$rc" ] || continue
-            n=$(grep -c "tokenomics installer" "$rc" || true)
+            n=$(grep -c "agentarium installer" "$rc" || true)
             [ "$n" -le 1 ] || { echo "$rc has $n PATH lines"; exit 1; }
           done
 
@@ -77,9 +77,9 @@ jobs:
           Add-Content -Path $env:GITHUB_PATH -Value $fake
       - name: The one-liner from the README
         env:
-          TOKENOMICS_REPO: ${{ github.repository }}
-          TOKENOMICS_REF: ${{ github.sha }}
-          TOKENOMICS_NODE: ${{ matrix.node == 'standalone' && 'standalone' || '' }}
+          AGENTARIUM_REPO: ${{ github.repository }}
+          AGENTARIUM_REF: ${{ github.sha }}
+          AGENTARIUM_NODE: ${{ matrix.node == 'standalone' && 'standalone' || '' }}
         run: |
           irm "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.ps1" | iex
           if ($LASTEXITCODE -ne 0) { exit 1 }
@@ -88,7 +88,7 @@ jobs:
           $env:Path = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path   # as a new terminal would
           $check = Join-Path $env:RUNNER_TEMP 'check.mts'
           Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/tests/installer_check.ts" -OutFile $check
-          $node = (Get-Content "$HOME\.tokenomics\node" | Select-Object -First 1)
+          $node = (Get-Content "$HOME\.agentarium\node" | Select-Object -First 1)
           $extra = @()
           if ('${{ matrix.node }}' -eq 'standalone') { $extra += '--expect-private-node' }
           & $node $check --expect-plugin-log "$env:RUNNER_TEMP\claude.log" @extra
@@ -111,20 +111,20 @@ jobs:
       - name: Install (macOS)
         if: runner.os == 'macOS'
         env:
-          TOKENOMICS_REPO: ${{ github.repository }}
-          TOKENOMICS_REF: ${{ github.sha }}
+          AGENTARIUM_REPO: ${{ github.repository }}
+          AGENTARIUM_REF: ${{ github.sha }}
         run: |
           curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh" | sh
           claude plugin list
-          claude plugin list | grep -i tokenomics
+          claude plugin list | grep -i agentarium
       - name: Install (Windows)
         if: runner.os == 'Windows'
         shell: powershell
         env:
-          TOKENOMICS_REPO: ${{ github.repository }}
-          TOKENOMICS_REF: ${{ github.sha }}
+          AGENTARIUM_REPO: ${{ github.repository }}
+          AGENTARIUM_REF: ${{ github.sha }}
         run: |
           irm "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.ps1" | iex
           if ($LASTEXITCODE -ne 0) { exit 1 }
           claude plugin list
-          if (-not ((claude plugin list) -match 'tokenomics')) { exit 1 }
+          if (-not ((claude plugin list) -match 'agentarium')) { exit 1 }

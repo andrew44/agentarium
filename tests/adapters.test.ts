@@ -4,11 +4,11 @@ import { describe, mock, test } from 'node:test'
 
 import { assistant, useTemp, user, writeTranscript } from './helpers.ts'
 
-import { settings } from '../tokenomics/config.ts'
-import * as llm from '../tokenomics/engine/llm.ts'
-import * as session from '../tokenomics/engine/session.ts'
-import { ALL_CAPABILITIES, BILLING_ANTHROPIC_TOKENS, BILLING_COPILOT_PREMIUM_REQUESTS, Capability } from '../tokenomics/platform/capabilities.ts'
-import * as registry from '../tokenomics/platform/registry.ts'
+import { settings } from '../agentarium/config.ts'
+import * as llm from '../agentarium/engine/llm.ts'
+import * as session from '../agentarium/engine/session.ts'
+import { ALL_CAPABILITIES, BILLING_ANTHROPIC_TOKENS, BILLING_COPILOT_PREMIUM_REQUESTS, Capability } from '../agentarium/platform/capabilities.ts'
+import * as registry from '../agentarium/platform/registry.ts'
 
 const { getAdapter } = registry
 

@@ -1,6 +1,6 @@
 ---
 name: dashboard
-description: Opens the tokenomics dashboard, a local web page showing where tokens and money went (OPEX vs CAPEX, by project, by day, recent sessions) and what tokenomics saved (what pennywise and each guard stopped, priced). Use when asked to open, show, start or stop the dashboard, for charts of token usage or spend, or to see what tokenomics has saved.
+description: Opens the agentarium dashboard, a local web page showing where tokens and money went (OPEX vs CAPEX, by project, by day, recent sessions) and what agentarium saved (what pennywise and each guard stopped, priced). Use when asked to open, show, start or stop the dashboard, for charts of token usage or spend, or to see what agentarium has saved.
 argument-hint: "[demo|stop]"
 allowed-tools: Bash(sh *run.sh dashboard.ts*), Bash(node *dashboard.ts*)
 ---
@@ -17,6 +17,6 @@ The user asked: `$ARGUMENTS` (empty means open the dashboard with their real dat
 | A preview with sample data | `... --background --demo` |
 | Stop it | `... --stop` |
 
-The `run.sh` launcher finds a working Node.js 22.18+ on any OS (including Windows). If `CLAUDE_PLUGIN_ROOT` is empty, locate the script: `find ~/.claude/plugins -name dashboard.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+The `run.sh` launcher finds a working Node.js 22.18+ on any OS (including Windows). If `CLAUDE_PLUGIN_ROOT` is empty, locate the script: `find ~/.claude/plugins -name dashboard.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
-Reply in one sentence with the URL it printed. If it says there's no data yet, suggest `demo` for a preview: spendlens fills it in as they work.
+Reply in one sentence with the URL it printed. If it says there's no data yet, suggest `demo` for a preview: till fills it in as they work.

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * tokenomics / cache-buster: catch an edit that would make the prompt cache start again.
+ * agentarium / cache-buster: catch an edit that would make the prompt cache start again.
  *
  * The prompt cache keys on the start of each request: CLAUDE.md and the files it imports, settings,
  * MCP servers and the skill, command and agent listings. Edit one of those mid-session and the next
  * request that picks the change up writes the whole conversation to the cache again, at 1.25x the
  * input price instead of a tenth. cold-snap finds these afterwards as "prefix change"; this hook
  * catches them before the edit, prices them from the session's context size and lets you decide.
- * Rules: tokenomics/engine/prefix.ts.
+ * Rules: agentarium/engine/prefix.ts.
  *
  * Pre-tool hook (Claude Code: PreToolUse on Edit|Write|MultiEdit|NotebookEdit). Each file is raised
  * once per session. Copilot bills premium requests, not cache writes, so it has no Copilot hook.
@@ -16,20 +16,20 @@
  *   cachebuster.ts check [--session ID | --transcript FILE] [--json]
  *                                                 replay a session and list every prefix edit, priced
  *
- * Env: TOKENOMICS_CACHEBUSTER        warn (default: tell you once per file) | ask (confirm first) |
+ * Env: AGENTARIUM_CACHEBUSTER        warn (default: tell you once per file) | ask (confirm first) |
  *                                    block (refuse; the agent leaves a note to make the edit later) | off
- *      TOKENOMICS_CACHEBUSTER_MIN_TOKENS  stay quiet below this context size (default 10000)
+ *      AGENTARIUM_CACHEBUSTER_MIN_TOKENS  stay quiet below this context size (default 10000)
  * Always exits 0; a crash never blocks an edit.
  */
 import { findTranscript } from './coach.ts'
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as lessons from '../tokenomics/engine/lessons.ts'
-import { prefixKind, rebuildCost, type PrefixKind } from '../tokenomics/engine/prefix.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { CostEngine, PolicyEngine } from '../tokenomics/services/index.ts'
-import { argValue, errText, first, isMain, logErr, readPayload, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as lessons from '../agentarium/engine/lessons.ts'
+import { prefixKind, rebuildCost, type PrefixKind } from '../agentarium/engine/prefix.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { CostEngine, PolicyEngine } from '../agentarium/services/index.ts'
+import { argValue, errText, first, isMain, logErr, readPayload, type Obj } from '../agentarium/util.ts'
 import { money2, write } from './common.ts'
 
 const TAIL_BYTES = 1_000_000                // the last request's usage is all that is needed
@@ -37,7 +37,7 @@ const LABEL: Record<PrefixKind, string> = {
   instructions: 'the instructions', settings: 'the settings', mcp: 'the MCP server list', skills: 'the skill and command listing',
 }
 
-const minTokens = () => PolicyEngine.threshold('TOKENOMICS_CACHEBUSTER_MIN_TOKENS', 10_000, { min: 0 })
+const minTokens = () => PolicyEngine.threshold('AGENTARIUM_CACHEBUSTER_MIN_TOKENS', 10_000, { min: 0 })
 
 function seen(dbPath: string, sid: string, path: string): boolean {
   try {
@@ -57,7 +57,7 @@ export function message(kind: PrefixKind, name: string, ctx: number, usd: number
 }
 
 function hook(source: string): void {
-  const mode = PolicyEngine.mode('TOKENOMICS_CACHEBUSTER', 'warn', ['warn', 'ask', 'block', 'off'])
+  const mode = PolicyEngine.mode('AGENTARIUM_CACHEBUSTER', 'warn', ['warn', 'ask', 'block', 'off'])
   if (mode === 'off') return
   const dbPath = defaultDbPath()
   try {

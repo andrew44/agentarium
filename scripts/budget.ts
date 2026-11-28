@@ -1,36 +1,36 @@
 #!/usr/bin/env node
 /**
- * tokenomics / budget: daily and per-session spending limits, in your currency (GBP, USD or EUR).
+ * agentarium / budget: daily and per-session spending limits, in your currency (GBP, USD or EUR).
  *
  * Prompt hook (Claude Code: UserPromptSubmit). Shows a notice at 80% of a limit and pauses the
  * next prompt once a limit is reached; send the same prompt again (or start it with "over-budget:")
- * to carry on. Both say where the money usually goes (engine/lessons.ts). Spend is what spendlens
+ * to carry on. Both say where the money usually goes (engine/lessons.ts). Spend is what till
  * recorded, priced like the statusline.
- * Limits are in the display currency: TOKENOMICS_CURRENCY = GBP (default) | USD | EUR.
+ * Limits are in the display currency: AGENTARIUM_CURRENCY = GBP (default) | USD | EUR.
  * Copilot bills premium requests, not tokens, so it has no spend to budget against.
  *
  * Usage (hook command):  budget.ts [source]      source = claude-code (default) | copilot
  *        budget.ts status                         print today's spend and the limits
  *
  * Env (no limit set = budget does nothing):
- *   TOKENOMICS_BUDGET_DAILY    e.g. 20     per calendar day, all sessions together
- *   TOKENOMICS_BUDGET_SESSION  e.g. 5      per session
- *   TOKENOMICS_BUDGET_MONTHLY  e.g. 500    allowance per billing period; today's limit is what's left
+ *   AGENTARIUM_BUDGET_DAILY    e.g. 20     per calendar day, all sessions together
+ *   AGENTARIUM_BUDGET_SESSION  e.g. 5      per session
+ *   AGENTARIUM_BUDGET_MONTHLY  e.g. 500    allowance per billing period; today's limit is what's left
  *                                          of it over the working days left (see engine/allowance.ts:
- *                                          TOKENOMICS_BUDGET_RESET_DAY, _WORKDAYS, _DAYS_OFF)
- *   TOKENOMICS_BUDGET_WARN     80          percent of a limit at which to show a notice
- *   TOKENOMICS_BUDGET_MODE     block (default) | warn (notices only) | off
- *   TOKENOMICS_BUDGET_PROFILE  e.g. frugal: once today's budget passes its warning share, switch to this
+ *                                          AGENTARIUM_BUDGET_RESET_DAY, _WORKDAYS, _DAYS_OFF)
+ *   AGENTARIUM_BUDGET_WARN     80          percent of a limit at which to show a notice
+ *   AGENTARIUM_BUDGET_MODE     block (default) | warn (notices only) | off
+ *   AGENTARIUM_BUDGET_PROFILE  e.g. frugal: once today's budget passes its warning share, switch to this
  *                              profile for the rest of the day, from the next prompt (opt-in; see profile.ts)
  * Always exits 0 on hook runs; a crash never blocks a prompt (errors go to <db>.err).
  */
-import { defaultDbPath, loadSettings } from '../tokenomics/config.ts'
-import * as budget from '../tokenomics/engine/budget.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import * as lessons from '../tokenomics/engine/lessons.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { errText, isMain, logErr, readPayload } from '../tokenomics/util.ts'
+import { defaultDbPath, loadSettings } from '../agentarium/config.ts'
+import * as budget from '../agentarium/engine/budget.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import * as lessons from '../agentarium/engine/lessons.ts'
+import * as store from '../agentarium/engine/store.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { errText, isMain, logErr, readPayload } from '../agentarium/util.ts'
 
 function status(): void {
   const lim = budget.loadLimits()

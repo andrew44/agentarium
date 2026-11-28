@@ -73,7 +73,7 @@ jobs:
           prev="${{ steps.v.outputs.previous }}"
           gh release create "${{ steps.v.outputs.tag }}" \
             --target "$(git rev-parse HEAD)" \
-            --title "tokenomics ${{ steps.v.outputs.tag }}" \
+            --title "agentarium ${{ steps.v.outputs.tag }}" \
             --generate-notes ${prev:+--notes-start-tag "$prev"} \
             install.sh install.ps1
           {

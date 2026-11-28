@@ -1,6 +1,6 @@
 <p align="right"><a href="../README.md">← Back to README</a></p>
 
-# tokenomics docs
+# agentarium docs
 
 ### 🚀 Get going
 
@@ -8,7 +8,7 @@
 |---|---|
 | [**Installation**](installation.md) | Install the whole toolkit, or just the pieces you want. Terminal, desktop app, web and Copilot CLI. |
 | [**Skills, tools and hooks**](skills-tools-and-hooks.md) | Find out what each helper does and when to reach for it. |
-| [**Product strategy**](strategy.md) | See why tokenomics prevents future spend rather than reporting past spend, what that means for pennywise, the band and Copilot, and the roadmap: what is done and what comes next. |
+| [**Product strategy**](strategy.md) | See why agentarium prevents future spend rather than reporting past spend, what that means for pennywise, the band and Copilot, and the roadmap: what is done and what comes next. |
 
 ### 🌱 Start here: the basics
 

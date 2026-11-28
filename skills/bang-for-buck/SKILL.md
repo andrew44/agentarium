@@ -15,7 +15,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" bangforbuck.ts report --json --days 30
 
 - Period: use what the user asked (`--days 7`, `--days 90`, `--days 0` for all time). Currency on request: `--currency USD|EUR|GBP`.
 - One session ("what did this session buy?"): `bangforbuck.ts session --json` (newest in this folder) or `--session <id>`.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name bangforbuck.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name bangforbuck.ts -path "*agentarium*" 2>/dev/null | head -1`.
 - If `empty` is true, the ledger has no sessions yet: it fills in at the end of every turn. Offer to backfill from old transcripts: `bangforbuck.ts ingest ~/.claude/projects` (ask first; it reads every transcript).
 - Record work the heuristics can't see when the user says so ("that session shipped the export feature"): `bangforbuck.ts mark feature "csv export" --session <id>`. Kinds: feature, bug_fix, green_suite, commit, pr, agent_task, or a short word of their own.
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.svg" alt="tokenomics: see where your AI tokens go, and stop paying for the ones you don't need" width="100%">
+  <img src="docs/assets/banner.svg" alt="agentarium: see where your AI tokens go, and stop paying for the ones you don't need" width="100%">
 </p>
 
 <p align="center">
@@ -9,8 +9,8 @@
   <img src="https://img.shields.io/badge/Node.js-22.18%2B-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js 22.18+">
   <a href="#-dependencies"><img src="https://img.shields.io/badge/dependencies-TypeScript_(dev)-3178C6?style=for-the-badge" alt="Dependencies: TypeScript (dev only)"></a>
   <br>
-  <a href="https://github.com/andrew44/tokenomics/releases/latest"><img src="https://img.shields.io/github/v/release/andrew44/tokenomics?label=release" alt="Latest release"></a>
-  <a href="https://github.com/andrew44/tokenomics/actions/workflows/tests.yml"><img src="https://github.com/andrew44/tokenomics/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  <a href="https://github.com/andrew44/agentarium/releases/latest"><img src="https://img.shields.io/github/v/release/andrew44/agentarium?label=release" alt="Latest release"></a>
+  <a href="https://github.com/andrew44/agentarium/actions/workflows/tests.yml"><img src="https://github.com/andrew44/agentarium/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue" alt="Apache 2.0 licence"></a>
 </p>
 
@@ -29,10 +29,10 @@
 
 Every message you send re-sends the **whole conversation**. Long chats, pasted logs, a 2 MB lockfile, the top-tier model for a one-line fix, a coffee break that lets the prompt cache expire: each one quietly multiplies the bill, and you never see it happen.
 
-Most cost tools are receipts: they tell you what you already paid. **tokenomics works on what you're about to pay.** It steps in automatically before the prompt, before the tool call and before the cache goes cold, and it says what each step will save. ([Why prevention, not reporting →](docs/strategy.md))
+Most cost tools are receipts: they tell you what you already paid. **agentarium works on what you're about to pay.** It steps in automatically before the prompt, before the tool call and before the cache goes cold, and it says what each step will save. ([Why prevention, not reporting →](docs/strategy.md))
 
 <p align="center">
-  <img src="docs/assets/statusline.svg" alt="The tokenomics statusline showing model, context fill, tokens, cost and a prompt-cache countdown" width="760">
+  <img src="docs/assets/statusline.svg" alt="The agentarium statusline showing model, context fill, tokens, cost and a prompt-cache countdown" width="760">
 </p>
 
 - 💰 **The right model for every prompt: [pennywise](#-the-flagship-pennywise).** Routes each prompt down to Haiku or up to Opus by what it needs, and routes down harder as your budget runs out, so it lasts.
@@ -52,11 +52,11 @@ Most cost tools are receipts: they tell you what you already paid. **tokenomics 
 *Penny wise, pound foolish.* pennywise is the decision every prompt goes through: **which model should do this?** It scores each prompt and sends it to the tier it needs, down to Haiku for a rename, up to Opus for an architecture question, with nothing to set up.
 
 - **Down to save, up to succeed.** A hello-world never runs on the priciest model; a hard problem never gets stuck on the cheapest.
-- **Only when it pays.** Handing a prompt to a cheaper model isn't free: your model still reads the conversation to pass it on. pennywise prices that hand-off and only routes down when the saving is bigger, then shows what it saved, net, on the statusline, the band and the weekly report. It also reads what the routed model really used from the transcript, shows estimated against measured in `tokenomics router status`, and prices later routes on your own tasks' shape and your session's cache (a hand-off that outlasts a warm cache costs the relay a re-write).
+- **Only when it pays.** Handing a prompt to a cheaper model isn't free: your model still reads the conversation to pass it on. pennywise prices that hand-off and only routes down when the saving is bigger, then shows what it saved, net, on the statusline, the band and the weekly report. It also reads what the routed model really used from the transcript, shows estimated against measured in `agentarium router status`, and prices later routes on your own tasks' shape and your session's cache (a hand-off that outlasts a warm cache costs the relay a re-write).
 - **Spends to your budget.** Once a daily or session budget passes 80%, pennywise routes down harder and stops routing up, so the budget lasts the task instead of running out halfway. Forced models (`opus:`) still win.
-- **Backs off when it got it wrong, and learns.** "That didn't work" after a routed answer sends the next prompt back to your model, and so does the evidence when you don't say it: the routed work ended on a failing test, was reverted, or tripped groundhog. Those misses, and your `keep-model:` overrides, tune its thresholds at the end of every session, within bounds, per project once a repository has enough routes of its own. `tokenomics router eval` scores it on a labelled set of prompts (90% on the right tier today), `--mine` on your own misses (hashes only unless you opt in to the wording), and CI fails if a change to the scorer routes the set worse.
-- **Two ways to run.** As a hook (the default, nothing to set up), or as a per-request routing proxy, which skips the hand-off entirely: `tokenomics router on` starts it in the background and points Claude Code at it (`off` undoes it).
-- **Always your call.** `keep-model:` keeps your model for one prompt; `TOKENOMICS_PENNYWISE=warn` only suggests; `tokenomics profile frugal` or `quality` moves the whole dial.
+- **Backs off when it got it wrong, and learns.** "That didn't work" after a routed answer sends the next prompt back to your model, and so does the evidence when you don't say it: the routed work ended on a failing test, was reverted, or tripped groundhog. Those misses, and your `keep-model:` overrides, tune its thresholds at the end of every session, within bounds, per project once a repository has enough routes of its own. `agentarium router eval` scores it on a labelled set of prompts (90% on the right tier today), `--mine` on your own misses (hashes only unless you opt in to the wording), and CI fails if a change to the scorer routes the set worse.
+- **Two ways to run.** As a hook (the default, nothing to set up), or as a per-request routing proxy, which skips the hand-off entirely: `agentarium router on` starts it in the background and points Claude Code at it (`off` undoes it).
+- **Always your call.** `keep-model:` keeps your model for one prompt; `AGENTARIUM_PENNYWISE=warn` only suggests; `agentarium profile frugal` or `quality` moves the whole dial.
 
 ```text
 pennywise: routing down to Haiku (SIMPLE, score -0.25, saves ~£0.07 after the hand-off) instead of Opus.
@@ -79,21 +79,21 @@ The band (in the desktop app, above the prompt box) doesn't just say what the se
 | **Saving** | The one change that saves most, priced | `→ reply within 01:40` saves ~£0.58 · `→ /clear` saves ~£0.83 |
 | **Saved** | What pennywise saved this session, net of its hand-offs | `£0.41` saved by pennywise |
 
-On **Copilot CLI** (and Copilot in VS Code), which bills premium requests rather than tokens, the statusline's second row shows the monthly allowance instead: requests left, the pace, and the day they run out at that pace (`tokenomics copilot`). On **Copilot Fusion**, which picks a model for each task, the model pill shows where it sent the work (`Copilot Fusion → claude-sonnet-4.6`) and each prompt counts at that model's multiplier.
+On **Copilot CLI** (and Copilot in VS Code), which bills premium requests rather than tokens, the statusline's second row shows the monthly allowance instead: requests left, the pace, and the day they run out at that pace (`agentarium copilot`). On **Copilot Fusion**, which picks a model for each task, the model pill shows where it sent the work (`Copilot Fusion → claude-sonnet-4.6`) and each prompt counts at that model's multiplier.
 
-**The pane** puts the same numbers beside the chat, in three tabs: **Now** (model, context, tokens, spend and the cache countdown), **Ahead** (the outlook above, with a bar for the budget used) and **Advice** (every change worth making now, the most urgent first, e.g. `Compact now`, `Cache is cold`, `Budget running low`). It opens by itself in the Claude desktop and mobile apps until you close it; `/tokenomics-pane` opens it anywhere, the terminal included, and says why if the app isn't drawing it. The pane and the band are Claude Code mods, and Copilot has no mods, so the GitHub Copilot app shows neither: there, `tokenomics copilot --window` keeps the premium requests beside it.
+**The pane** puts the same numbers beside the chat, in three tabs: **Now** (model, context, tokens, spend and the cache countdown), **Ahead** (the outlook above, with a bar for the budget used) and **Advice** (every change worth making now, the most urgent first, e.g. `Compact now`, `Cache is cold`, `Budget running low`). It opens by itself in the Claude desktop and mobile apps until you close it; `/agentarium-pane` opens it anywhere, the terminal included, and says why if the app isn't drawing it. The pane and the band are Claude Code mods, and Copilot has no mods, so the GitHub Copilot app shows neither: there, `agentarium copilot --window` keeps the premium requests beside it.
 
 [More about the band →](docs/reference.md#band) · [the pane →](docs/reference.md#pane)
 
 ---
 
-## 🧠 The tokenomics intelligence engine
+## 🧠 The agentarium intelligence engine
 
-Token counts tell you what AI cost. They don't tell you whether it was worth it. tokenomics works in four stages, on five shared services that run the same way for Claude Code and Copilot:
+Token counts tell you what AI cost. They don't tell you whether it was worth it. agentarium works in four stages, on five shared services that run the same way for Claude Code and Copilot:
 
 | | Stage | What it does | Helpers |
 |---|---|---|---|
-| 👁️ | **1. Observe** | Collect costs, tokens, tool calls, task outcomes and agent behaviour, from every assistant, in one event format. | spendlens · statusline · dashboard |
+| 👁️ | **1. Observe** | Collect costs, tokens, tool calls, task outcomes and agent behaviour, from every assistant, in one event format. | till · statusline · dashboard |
 | 🧠 | **2. Understand** | Find waste, inefficiency, quality problems and spending patterns. | **sherlock** · **audit** (pack-light · waffle · cold-snap · ballast · spring-clean · deadwood · groundhog · parrot · waistline) · split-the-bill · coach · dry-run · rate-my-prompt |
 | ⚙️ | **3. Optimise** | Prevent spend automatically, or recommend the change that saves most. | **pennywise** · the controller · band · bazaar · blinkers · diet · colander · groundhog · budget · hold-up · haggle · doggybag · ballast · parrot · fishingrod · cache-buster · too-many-cooks · kettle · all-you-can-eat |
 | ✅ | **4. Prove** | Measure savings against task success and output quality. | **bang-for-buck** · **taste-test** · crystal-ball · receipt |
@@ -116,37 +116,37 @@ Success is always measured from something that happened (tests green, a commit, 
 
 ### Claude Code: install the plugin (recommended)
 
-tokenomics is a [Claude Code plugin](https://code.claude.com/docs/en/plugins). Inside Claude Code, paste:
+agentarium is a [Claude Code plugin](https://code.claude.com/docs/en/plugins). Inside Claude Code, paste:
 
 ```text
-/plugin install tokenomics --marketplace andrew44/tokenomics
+/plugin install agentarium --marketplace andrew44/agentarium
 ```
 
-<sub>On Claude Code older than v2.1.275, use two lines instead: <code>/plugin marketplace add andrew44/tokenomics</code> then <code>/plugin install tokenomics@tokenomics</code>.</sub>
+<sub>On Claude Code older than v2.1.275, use two lines instead: <code>/plugin marketplace add andrew44/agentarium</code> then <code>/plugin install agentarium@agentarium</code>.</sub>
 
 Choose **Install for you (user scope)** so it works in every project. That's it. 🎉 You get every skill, all the hooks and, from your next session, the live statusline (in the desktop app: the band). Now try:
 
-> 💬 *"coach, review my prompts"*  ·  💬 *"spend report"*  ·  💬 `/tokenomics:dashboard`
+> 💬 *"coach, review my prompts"*  ·  💬 *"spend report"*  ·  💬 `/agentarium:dashboard`
 
-**Stay up to date:** open `/plugin` → **Marketplaces** → **tokenomics** and switch on **auto-update**. (Claude Code only auto-updates its official marketplace unless you do.) Update button greyed out? See [Update isn't showing up](docs/installation.md#update-isnt-showing-up).
+**Stay up to date:** open `/plugin` → **Marketplaces** → **agentarium** and switch on **auto-update**. (Claude Code only auto-updates its official marketplace unless you do.) Update button greyed out? See [Update isn't showing up](docs/installation.md#update-isnt-showing-up).
 
 <details>
 <summary><b>Using the Claude desktop app? No terminal needed</b></summary>
 
-In the **Code** tab (a local session), click **+** next to the prompt box → **Add plugins** → add the marketplace `andrew44/tokenomics` → install **tokenomics**. Desktop and terminal share the same settings, so it works in both. The desktop app has no statusline, so there the same line sits in the **band** above the prompt box.
+In the **Code** tab (a local session), click **+** next to the prompt box → **Add plugins** → add the marketplace `andrew44/agentarium` → install **agentarium**. Desktop and terminal share the same settings, so it works in both. The desktop app has no statusline, so there the same line sits in the **band** above the prompt box.
 </details>
 
 <details>
 <summary><b>Rolling it out to a team?</b></summary>
 
-Commit this to your repo's `.claude/settings.json`. Teammates are offered the marketplace when they trust the folder, then install it once with `/plugin install tokenomics@tokenomics`:
+Commit this to your repo's `.claude/settings.json`. Teammates are offered the marketplace when they trust the folder, then install it once with `/plugin install agentarium@agentarium`:
 
 ```json
 {
   "extraKnownMarketplaces": {
-    "tokenomics": { "source": { "source": "github", "repo": "andrew44/tokenomics" }, "autoUpdate": true }
+    "agentarium": { "source": { "source": "github", "repo": "andrew44/agentarium" }, "autoUpdate": true }
   },
-  "enabledPlugins": { "tokenomics@tokenomics": true }
+  "enabledPlugins": { "agentarium@agentarium": true }
 }
 ```
 </details>
@@ -155,8 +155,8 @@ Commit this to your repo's `.claude/settings.json`. Teammates are offered the ma
 <summary><b>Prefer a shell?</b></summary>
 
 ```bash
-claude plugin install tokenomics --marketplace andrew44/tokenomics     # Claude Code v2.1.292+
-# older: claude plugin marketplace add andrew44/tokenomics && claude plugin install tokenomics@tokenomics
+claude plugin install agentarium --marketplace andrew44/agentarium     # Claude Code v2.1.292+
+# older: claude plugin marketplace add andrew44/agentarium && claude plugin install agentarium@agentarium
 ```
 </details>
 
@@ -164,30 +164,30 @@ The plugin needs **Node.js 22.18+** on your computer (no packages, no build step
 
 ### GitHub Copilot CLI, or no Node.js: the one-line installer
 
-Sets up Copilot CLI and/or Claude Code (it installs the same plugin), gets Node.js if you need it, and adds a `tokenomics` terminal command (`tokenomics dashboard`, `report`, `update`, `uninstall`).
+Sets up Copilot CLI and/or Claude Code (it installs the same plugin), gets Node.js if you need it, and adds a `agentarium` terminal command (`agentarium dashboard`, `report`, `update`, `uninstall`).
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/andrew44/tokenomics/main/install.sh | sh      # macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh | sh      # macOS / Linux
 ```
 
 ```powershell
-irm https://raw.githubusercontent.com/andrew44/tokenomics/main/install.ps1 | iex           # Windows (PowerShell)
+irm https://raw.githubusercontent.com/andrew44/agentarium/main/install.ps1 | iex           # Windows (PowerShell)
 ```
 
 It never replaces a status line you already have, and running it again repairs the install. Read it first if you like: [install.sh](install.sh) · [install.ps1](install.ps1).
 
 ### The GitHub Copilot app
 
-The desktop app is built on Copilot CLI and takes the same plugin: in **Customize**, add the marketplace `andrew44/tokenomics` and install **tokenomics**. Prompts and tool calls are recorded under `copilot`, against the same premium-request allowance. The app has no statusline, so `tokenomics copilot --window` opens a small window to keep beside it: premium requests left this month and the day they run out at this pace. [Details](docs/installation.md#the-github-copilot-app).
+The desktop app is built on Copilot CLI and takes the same plugin: in **Customize**, add the marketplace `andrew44/agentarium` and install **agentarium**. Prompts and tool calls are recorded under `copilot`, against the same premium-request allowance. The app has no statusline, so `agentarium copilot --window` opens a small window to keep beside it: premium requests left this month and the day they run out at this pace. [Details](docs/installation.md#the-github-copilot-app).
 
 ### Copilot in VS Code
 
-After the one-line installer, run `tokenomics vscode` in a project folder. It writes `.github/hooks/tokenomics.json`, which VS Code's agent hooks (a preview feature) run in that workspace: prompts and tool calls are recorded under the `vscode` platform, diet, groundhog and blinkers guard tool calls, and prompts count against the same premium-request allowance as Copilot CLI. `tokenomics vscode --remove` takes it out. `tokenomics vscode --status-bar` puts Copilot's numbers in VS Code's status bar: premium requests left and when they run out, today's prompts in the tooltip. [Details](docs/installation.md#copilot-in-vs-code).
+After the one-line installer, run `agentarium vscode` in a project folder. It writes `.github/hooks/agentarium.json`, which VS Code's agent hooks (a preview feature) run in that workspace: prompts and tool calls are recorded under the `vscode` platform, diet, groundhog and blinkers guard tool calls, and prompts count against the same premium-request allowance as Copilot CLI. `agentarium vscode --remove` takes it out. `agentarium vscode --status-bar` puts Copilot's numbers in VS Code's status bar: premium requests left and when they run out, today's prompts in the tooltip. [Details](docs/installation.md#copilot-in-vs-code).
 
 <details>
 <summary><b>Using claude.ai/code (web)?</b></summary>
 
-Plugins can't be installed on the web. Commit the coach to your repo instead: `npx skills@latest add andrew44/tokenomics --skill coach --copy`
+Plugins can't be installed on the web. Commit the coach to your repo instead: `npx skills@latest add andrew44/agentarium --skill coach --copy`
 </details>
 
 Full details, updating and removing: **[Installation guide](docs/installation.md)**.
@@ -200,11 +200,11 @@ Every piece works on its own. Grab just what you want:
 
 | I only want... | Run this |
 |---|---|
-| 🧑‍🏫 **coach** skill | `npx skills@latest add andrew44/tokenomics --skill coach` |
-| 📊 **spend-report** skill | `npx skills@latest add andrew44/tokenomics --skill spend-report` *(reads spendlens data, so pair it with the plugin)* |
-| 📟 **statusline** only | Install the plugin and switch the hooks off (below), or without the plugin: `curl -fsSL https://raw.githubusercontent.com/andrew44/tokenomics/main/install.sh \| sh -s -- --no-plugin` |
-| 📈 **dashboard** | `/tokenomics:dashboard` with the plugin, or `tokenomics dashboard` after the one-liner |
-| 🛡️ **Some of the hooks** | Install the plugin, then switch off the ones you don't want, e.g. `TOKENOMICS_DIET=off` or `TOKENOMICS_PENNYWISE=block` ([every switch](#-turn-things-on-and-off)) |
+| 🧑‍🏫 **coach** skill | `npx skills@latest add andrew44/agentarium --skill coach` |
+| 📊 **spend-report** skill | `npx skills@latest add andrew44/agentarium --skill spend-report` *(reads till data, so pair it with the plugin)* |
+| 📟 **statusline** only | Install the plugin and switch the hooks off (below), or without the plugin: `curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh \| sh -s -- --no-plugin` |
+| 📈 **dashboard** | `/agentarium:dashboard` with the plugin, or `agentarium dashboard` after the one-liner |
+| 🛡️ **Some of the hooks** | Install the plugin, then switch off the ones you don't want, e.g. `AGENTARIUM_DIET=off` or `AGENTARIUM_PENNYWISE=block` ([every switch](#-turn-things-on-and-off)) |
 
 The `npx skills` commands need [Node.js](https://nodejs.org). See [Installation → pick and choose](docs/installation.md#install-pieces-individually) for every option.
 
@@ -215,67 +215,67 @@ The `npx skills` commands need [Node.js](https://nodejs.org). See [Installation 
 ### One word: profiles
 
 ```bash
-tokenomics profile frugal     # route down harder, never up; pause floods, loops, carried context and needless subagents; warn at 70%
-tokenomics profile balanced   # the defaults
-tokenomics profile quality    # never below Sonnet, Fable for reasoning; guard-rails warn instead of pausing
-tokenomics profile            # what's in effect, and where each value came from
+agentarium profile frugal     # route down harder, never up; pause floods, loops, carried context and needless subagents; warn at 70%
+agentarium profile balanced   # the defaults
+agentarium profile quality    # never below Sonnet, Fable for reasoning; guard-rails warn instead of pausing
+agentarium profile            # what's in effect, and where each value came from
 ```
 
-Your own defaults go in one file, `~/.tokenomics/config.json`: `{"profile": "frugal", "settings": {"budget_daily": 20, "currency": "USD"}}`. An environment variable always wins over the file, and the file over the profile. Profiles can follow the work too: `"projects": {"~/work/payments": "quality"}` picks one per folder, and `"budget_profile": "frugal"` under `"settings"` switches to frugal for the rest of the day once today's budget passes its warning share. [Profiles and the config file →](docs/configuration.md#profiles-and-the-config-file)
+Your own defaults go in one file, `~/.agentarium/config.json`: `{"profile": "frugal", "settings": {"budget_daily": 20, "currency": "USD"}}`. An environment variable always wins over the file, and the file over the profile. Profiles can follow the work too: `"projects": {"~/work/payments": "quality"}` picks one per folder, and `"budget_profile": "frugal"` under `"settings"` switches to frugal for the rest of the day once today's budget passes its warning share. [Profiles and the config file →](docs/configuration.md#profiles-and-the-config-file)
 
 ### The automatic helpers
 
-Every automatic helper has a switch, and every switch is an environment variable: set it in your shell profile, in Claude Code's `settings.json` under `"env"` (e.g. `{"env": {"TOKENOMICS_DIET": "warn"}}`), or in `~/.tokenomics/config.json`. The first value listed is the default. Limits, thresholds and other numbers you can tune are in [Configuration](docs/configuration.md).
+Every automatic helper has a switch, and every switch is an environment variable: set it in your shell profile, in Claude Code's `settings.json` under `"env"` (e.g. `{"env": {"AGENTARIUM_DIET": "warn"}}`), or in `~/.agentarium/config.json`. The first value listed is the default. Limits, thresholds and other numbers you can tune are in [Configuration](docs/configuration.md).
 
 | Helper | Setting | Values |
 |---|---|---|
-| 💰 pennywise | `TOKENOMICS_PENNYWISE` | `route` (hand the prompt to the right model) · `block` (pause and suggest `/model`) · `warn` (notice only) · `proxy` (leave it to `tokenomics router serve`) · `off` |
-| 💰 pennywise, routing up | `TOKENOMICS_PENNYWISE_UP` | `on` · `off` (only ever route down) |
-| 💰 pennywise, spending to the budget | `TOKENOMICS_PENNYWISE_BUDGET` | `on` (route down harder, never up, past 80% of a budget; hook and proxy) · `off` |
-| 💰 pennywise, the hand-off check | `TOKENOMICS_PENNYWISE_OVERHEAD` | `on` (route down only when the saving beats the hand-off) · `off` |
-| 💰 pennywise, learning | `TOKENOMICS_PENNYWISE_LEARN` | `on` (use what `tokenomics router learn` found; it runs at each session end) · `off` |
-| 💰 pennywise, your eval set | `TOKENOMICS_PENNYWISE_EVAL` | `hash` (keep each miss as a labelled case: hash and score) · `text` (the wording too) · `off` |
-| 🎛️ the controller | `TOKENOMICS_CONTROLLER_SKIP` | none · a list of prompt-time helpers to leave out, e.g. `parrot,blinkers` |
-| 🎛️ the controller, timing | `TOKENOMICS_CONTROLLER_TIMING` | `on` (time each prompt-time helper; `tokenomics doctor` flags one that slows every prompt) · `off` |
-| 🐙 Copilot allowance | `TOKENOMICS_COPILOT_ALLOWANCE` | not set · your monthly premium requests (e.g. `300`); `TOKENOMICS_COPILOT_MULTIPLIERS` per model (e.g. `claude-haiku-4.5=0.33,gpt-4.1=0`), `TOKENOMICS_COPILOT_MULTIPLIER` for the rest |
-| 🐙 Copilot allowance guard | `TOKENOMICS_PREMIUM` | `block` (pause the prompt once the allowance is used up, as soon as Copilot honours prompt-hook output; until then it only records) · `warn` · `off` |
-| 💳 budget | `TOKENOMICS_BUDGET_MODE` | `block` (pause at 100%) · `warn` (notices only) · `off`. Does nothing until you set `TOKENOMICS_BUDGET_DAILY`, `TOKENOMICS_BUDGET_SESSION` or `TOKENOMICS_BUDGET_MONTHLY` (an allowance spread over the working days left). |
-| ✋ hold-up | `TOKENOMICS_HOLDUP` | `block` (pause a prompt of 10,000 tokens or more once; send it again to go ahead) · `warn` · `off`. `TOKENOMICS_HOLDUP_MIN_TOKENS` sets the size; `TOKENOMICS_HOLDUP_BROAD` (`block` · `warn` · `off`, as `TOKENOMICS_HOLDUP` unless set) covers a prompt that is too broad. |
-| 🥗 diet | `TOKENOMICS_DIET` | `block` · `warn` · `off` |
-| 🥗 diet, learning | `TOKENOMICS_DIET_LEARN` | `on` (record how much each program prints, by name only, and ask for a filter when one keeps flooding the context) · `off` |
-| 🍝 colander | `TOKENOMICS_COLANDER` | `on` · `off`. `TOKENOMICS_COLANDER_COMMANDS` adds your own programs (e.g. `ci.sh,just`); `# colander-off` on a command shows all of it |
-| 🥡 doggybag | `TOKENOMICS_DOGGYBAG` | `on` · `off` (no packing, no watching) |
-| 🥡 doggybag, loading the note | `TOKENOMICS_DOGGYBAG_INJECT` | `1` (a new session or `/clear` loads it) · `0` (only says it's there) |
-| 🥡 doggybag, the first cold prompt | `TOKENOMICS_DOGGYBAG_COLD` | `warn` · `block` (pause once) · `off` |
-| 🦫 groundhog | `TOKENOMICS_GROUNDHOG` | `block` · `interrupt` (end the turn) · `warn` · `off` |
-| 🐴 blinkers | `TOKENOMICS_BLINKERS` | `ask` (confirm out-of-scope edits) · `block` · `warn` · `off` |
-| 🤝 haggle | `TOKENOMICS_HAGGLE` | `quote` (quote and warn; enforce only prices you set) · `strict` (enforce every quote) · `off` |
-| ⚓ ballast | `TOKENOMICS_BALLAST` | `warn` · `block` (pause once) · `off` |
-| 🦜 parrot | `TOKENOMICS_PARROT` | `warn` · `off` |
-| 💥 cache-buster | `TOKENOMICS_CACHEBUSTER` | `warn` · `ask` (confirm the edit) · `block` (the agent leaves it as a note) · `off` |
-| 🧑‍🍳 too-many-cooks | `TOKENOMICS_TOOMANYCOOKS` | `warn` · `ask` · `block` (the agent does the work itself) · `off` |
-| 🫖 kettle | `TOKENOMICS_KETTLE` | `on` (terminal notification) · `desktop` (a system notification too, macOS and Linux) · `off` |
-| 🎣 fishingrod | `TOKENOMICS_FISHINGROD` | `on` (the why and the how the first 3 times a notice comes up, then a pointer) · `always` · `off` |
-| 💷 bang-for-buck | `TOKENOMICS_BANGFORBUCK` | `on` (write the value ledger each turn) · `off` |
-| 🕵️ sherlock | `TOKENOMICS_SHERLOCK` | `on` (log each session's waste at the end) · `off` |
-| 📏 waistline | `TOKENOMICS_WAISTLINE` | `on` (daily cost-creep notice) · `off` |
-| 🔍 spendlens, event log | `TOKENOMICS_TELEMETRY` | `on` · `off` (costs are still recorded) |
-| 🔍 spendlens, prompt excerpts | `TOKENOMICS_STORE_PROMPT` | off · `1` (keep the first 200 characters of each prompt) |
-| 🔍 spendlens, AI classifier | `TOKENOMICS_LLM` | off · `1` (an AI model labels OPEX/CAPEX; sends redacted prompt text) |
+| 💰 pennywise | `AGENTARIUM_PENNYWISE` | `route` (hand the prompt to the right model) · `block` (pause and suggest `/model`) · `warn` (notice only) · `proxy` (leave it to `agentarium router serve`) · `off` |
+| 💰 pennywise, routing up | `AGENTARIUM_PENNYWISE_UP` | `on` · `off` (only ever route down) |
+| 💰 pennywise, spending to the budget | `AGENTARIUM_PENNYWISE_BUDGET` | `on` (route down harder, never up, past 80% of a budget; hook and proxy) · `off` |
+| 💰 pennywise, the hand-off check | `AGENTARIUM_PENNYWISE_OVERHEAD` | `on` (route down only when the saving beats the hand-off) · `off` |
+| 💰 pennywise, learning | `AGENTARIUM_PENNYWISE_LEARN` | `on` (use what `agentarium router learn` found; it runs at each session end) · `off` |
+| 💰 pennywise, your eval set | `AGENTARIUM_PENNYWISE_EVAL` | `hash` (keep each miss as a labelled case: hash and score) · `text` (the wording too) · `off` |
+| 🎛️ the controller | `AGENTARIUM_CONTROLLER_SKIP` | none · a list of prompt-time helpers to leave out, e.g. `parrot,blinkers` |
+| 🎛️ the controller, timing | `AGENTARIUM_CONTROLLER_TIMING` | `on` (time each prompt-time helper; `agentarium doctor` flags one that slows every prompt) · `off` |
+| 🐙 Copilot allowance | `AGENTARIUM_COPILOT_ALLOWANCE` | not set · your monthly premium requests (e.g. `300`); `AGENTARIUM_COPILOT_MULTIPLIERS` per model (e.g. `claude-haiku-4.5=0.33,gpt-4.1=0`), `AGENTARIUM_COPILOT_MULTIPLIER` for the rest |
+| 🐙 Copilot allowance guard | `AGENTARIUM_PREMIUM` | `block` (pause the prompt once the allowance is used up, as soon as Copilot honours prompt-hook output; until then it only records) · `warn` · `off` |
+| 💳 budget | `AGENTARIUM_BUDGET_MODE` | `block` (pause at 100%) · `warn` (notices only) · `off`. Does nothing until you set `AGENTARIUM_BUDGET_DAILY`, `AGENTARIUM_BUDGET_SESSION` or `AGENTARIUM_BUDGET_MONTHLY` (an allowance spread over the working days left). |
+| ✋ hold-up | `AGENTARIUM_HOLDUP` | `block` (pause a prompt of 10,000 tokens or more once; send it again to go ahead) · `warn` · `off`. `AGENTARIUM_HOLDUP_MIN_TOKENS` sets the size; `AGENTARIUM_HOLDUP_BROAD` (`block` · `warn` · `off`, as `AGENTARIUM_HOLDUP` unless set) covers a prompt that is too broad. |
+| 🥗 diet | `AGENTARIUM_DIET` | `block` · `warn` · `off` |
+| 🥗 diet, learning | `AGENTARIUM_DIET_LEARN` | `on` (record how much each program prints, by name only, and ask for a filter when one keeps flooding the context) · `off` |
+| 🍝 colander | `AGENTARIUM_COLANDER` | `on` · `off`. `AGENTARIUM_COLANDER_COMMANDS` adds your own programs (e.g. `ci.sh,just`); `# colander-off` on a command shows all of it |
+| 🥡 doggybag | `AGENTARIUM_DOGGYBAG` | `on` · `off` (no packing, no watching) |
+| 🥡 doggybag, loading the note | `AGENTARIUM_DOGGYBAG_INJECT` | `1` (a new session or `/clear` loads it) · `0` (only says it's there) |
+| 🥡 doggybag, the first cold prompt | `AGENTARIUM_DOGGYBAG_COLD` | `warn` · `block` (pause once) · `off` |
+| 🦫 groundhog | `AGENTARIUM_GROUNDHOG` | `block` · `interrupt` (end the turn) · `warn` · `off` |
+| 🐴 blinkers | `AGENTARIUM_BLINKERS` | `ask` (confirm out-of-scope edits) · `block` · `warn` · `off` |
+| 🤝 haggle | `AGENTARIUM_HAGGLE` | `quote` (quote and warn; enforce only prices you set) · `strict` (enforce every quote) · `off` |
+| ⚓ ballast | `AGENTARIUM_BALLAST` | `warn` · `block` (pause once) · `off` |
+| 🦜 parrot | `AGENTARIUM_PARROT` | `warn` · `off` |
+| 💥 cache-buster | `AGENTARIUM_CACHEBUSTER` | `warn` · `ask` (confirm the edit) · `block` (the agent leaves it as a note) · `off` |
+| 🧑‍🍳 too-many-cooks | `AGENTARIUM_TOOMANYCOOKS` | `warn` · `ask` · `block` (the agent does the work itself) · `off` |
+| 🫖 kettle | `AGENTARIUM_KETTLE` | `on` (terminal notification) · `desktop` (a system notification too, macOS and Linux) · `off` |
+| 🎣 fishingrod | `AGENTARIUM_FISHINGROD` | `on` (the why and the how the first 3 times a notice comes up, then a pointer) · `always` · `off` |
+| 💷 bang-for-buck | `AGENTARIUM_BANGFORBUCK` | `on` (write the value ledger each turn) · `off` |
+| 🕵️ sherlock | `AGENTARIUM_SHERLOCK` | `on` (log each session's waste at the end) · `off` |
+| 📏 waistline | `AGENTARIUM_WAISTLINE` | `on` (daily cost-creep notice) · `off` |
+| 🧮 till, event log | `AGENTARIUM_TELEMETRY` | `on` · `off` (costs are still recorded) |
+| 🧮 till, prompt excerpts | `AGENTARIUM_STORE_PROMPT` | off · `1` (keep the first 200 characters of each prompt) |
+| 🧮 till, AI classifier | `AGENTARIUM_LLM` | off · `1` (an AI model labels OPEX/CAPEX; sends redacted prompt text) |
 
 ### The statusline and the band
 
 | What | Setting | Command | Values |
 |---|---|---|---|
-| Install the terminal statusline | `TOKENOMICS_STATUSLINE` | `tokenomics statusline --install` / `--uninstall` | `auto` (install when none is set) · `ask` (a one-time tip) · `off` |
-| The band in the desktop app, and Copilot's status bar item and window | `TOKENOMICS_BAND` | `tokenomics statusline --band-on` / `--band-off` | `on` · `off` |
-| The forecast row under the terminal statusline | `TOKENOMICS_OUTLOOK` | `tokenomics statusline --outlook-on` / `--outlook-off` | `on` · `off` |
-| Colours | `TOKENOMICS_THEME` | `--theme light` | `system` · `light` · `dark` |
-| Currency | `TOKENOMICS_CURRENCY` | `--set-currency USD` | `GBP` · `USD` · `EUR` |
-| Plain characters | `TOKENOMICS_ASCII` | `--ascii` | off · `1` |
+| Install the terminal statusline | `AGENTARIUM_STATUSLINE` | `agentarium statusline --install` / `--uninstall` | `auto` (install when none is set) · `ask` (a one-time tip) · `off` |
+| The band in the desktop app, and Copilot's status bar item and window | `AGENTARIUM_BAND` | `agentarium statusline --band-on` / `--band-off` | `on` · `off` |
+| The forecast row under the terminal statusline | `AGENTARIUM_OUTLOOK` | `agentarium statusline --outlook-on` / `--outlook-off` | `on` · `off` |
+| Colours | `AGENTARIUM_THEME` | `--theme light` | `system` · `light` · `dark` |
+| Currency | `AGENTARIUM_CURRENCY` | `--set-currency USD` | `GBP` · `USD` · `EUR` |
+| Plain characters | `AGENTARIUM_ASCII` | `--ascii` | off · `1` |
 | No colour | `NO_COLOR` | `--no-color` | off · `1` |
 
-The environment variable wins over the saved choice (`~/.tokenomics/statusline.json`). `/tokenomics:statusline` does all of these for you.
+The environment variable wins over the saved choice (`~/.agentarium/statusline.json`). `/agentarium:statusline` does all of these for you.
 
 ### For one prompt
 
@@ -297,7 +297,7 @@ pennywise picks the model; the controller runs it with budget, haggle and the gu
 
 | | Helper | What it does | Kind | Claude Code | Copilot CLI |
 |---|---|---|:---:|:---:|:---:|
-| 💰 | **[pennywise](docs/reference.md#pennywise)** ⭐ | The flagship. Model router: scores every prompt and sends it to the model that suits it (Haiku for a hello-world, Opus for architecture), only when the saving beats the hand-off, harder down as a budget runs out, back up when an answer didn't land, and it learns from both. A hook, or a background proxy (`tokenomics router on`). | hook + tool | ✅ | ❌ |
+| 💰 | **[pennywise](docs/reference.md#pennywise)** ⭐ | The flagship. Model router: scores every prompt and sends it to the model that suits it (Haiku for a hello-world, Opus for architecture), only when the saving beats the hand-off, harder down as a budget runs out, back up when an answer didn't land, and it learns from both. A hook, or a background proxy (`agentarium router on`). | hook + tool | ✅ | ❌ |
 | 💳 | **[budget](docs/reference.md#budget)** | Daily and per-session limits in your currency. Warns at 80%, pauses at 100%. On Copilot, **premium** is its counterpart: the monthly premium-request allowance. | hook | ✅ | ❌ |
 | ✋ | **[hold-up](docs/reference.md#hold-up)** | *Should that be a file?* Pauses a prompt that pastes in a huge log, data dump, diff, source file or document (10,000 tokens and up) before it joins the conversation, says what carrying it costs at every later step and what to do instead: point at the file and let the agent grep it. Also pauses a short prompt that is blatantly too broad ("refactor the whole codebase", "fix all the bugs") with no file, function or error named. Send it again to go ahead. In VS Code too, without the money. | hook | ✅ | ❌ |
 | 🤝 | **[haggle](docs/reference.md#haggle)** | *Is this task worth £2?* Quotes a task before it starts (input, output and tool costs), warns when it runs over, and with `haggle £2:` stops the agent at the agreed price until you approve more. | skill + hook | ✅ | ❌ |
@@ -308,7 +308,7 @@ pennywise picks the model; the controller runs it with budget, haggle and the gu
 | ⚓ | **[ballast](docs/reference.md#ballast)** | *Am I dragging the last task into this one?* Notices when you start a new task in a heavy conversation and says what the old context costs per step, with `/clear` or `/compact` as the way out. | hook + skill | ✅ | ❌ |
 | 🥡 | **[doggybag](docs/reference.md#doggybag)** | Packs a free "where we got to" note into `.doggybag/` in your project just before the cache goes cold; `/clear` picks it straight back up. It packs one before compaction too, and loads it back after, for the file names and decisions a summary drops. | hook | ✅ | ✅ |
 | 🦜 | **[parrot](docs/reference.md#parrot)** | *What do I keep telling it?* Spots the rules, corrections and prompts you repeat session after session (hashes only) and turns each into a CLAUDE.md line or a slash command. | hook + skill | ✅ | ❌ |
-| 🎣 | **[fishingrod](docs/reference.md#fishingrod)** | *Why is that expensive, and what do I do instead?* The first 3 times each notice above comes up, it also says why it costs what it does and what to type next time, then shrinks to a pointer. `tokenomics fishingrod` lists every lesson. | tool | ✅ | ❌ |
+| 🎣 | **[fishingrod](docs/reference.md#fishingrod)** | *Why is that expensive, and what do I do instead?* The first 3 times each notice above comes up, it also says why it costs what it does and what to type next time, then shrinks to a pointer. `agentarium fishingrod` lists every lesson. | tool | ✅ | ❌ |
 | 💥 | **[cache-buster](docs/reference.md#cache-buster)** | *Will this edit make the cache start again?* Before an edit to CLAUDE.md (or a file it imports), settings, the MCP server list or a skill mid-session, prices the cache rebuild it causes and lets you decide. `ask` confirms first. | hook + skill | ✅ | ❌ |
 | 🧑‍🍳 | **[too-many-cooks](docs/reference.md#too-many-cooks)** | *Is this subagent worth sending?* Catches a subagent briefed on work one is already doing, one sent for a single lookup or too many in one turn, priced at what your subagents really cost (measured when each one stops). | hook + skill | ✅ | ❌ |
 | 🫖 | **[kettle](docs/reference.md#kettle)** | *How long have I got?* When the assistant stops to wait for you, a terminal notification says how long the cache stays warm and what's at risk: `3:20 to reply before the cache goes cold (about £0.23 at risk)`. | hook | ✅ | ❌ |
@@ -319,8 +319,8 @@ Live, on screen, between turns.
 
 | | Helper | What it does | Kind | Claude Code | Copilot CLI |
 |---|---|---|:---:|:---:|:---:|
-| 📟 | **[statusline](docs/reference.md#statusline)**, **[band](docs/reference.md#band)** and **[pane](docs/reference.md#pane)** | Context fill, tokens, cost and a cache countdown, live: the statusline at the bottom of your assistant in a terminal, the band above the prompt box in the desktop app. For Copilot, premium requests left show in VS Code's status bar (`tokenomics vscode --status-bar`) or a small window beside the Copilot app (`tokenomics copilot --window`). Both add the outlook (in the terminal, a second row): a forecast of the next steps, budget left, cache risk and the saving to make. The pane shows it all beside the chat in tabs, with the advice in full. On automatically; `/tokenomics:statusline` to manage the first two, `/tokenomics-pane` to open the pane. | tool | ✅ | ✅ |
-| 📈 | **[dashboard](docs/reference.md#dashboard)** | A local web view of where your tokens and money went, split by OPEX/CAPEX, project and day, and **what tokenomics did**: every prompt pennywise routed and every flood, loop and cache rebuild a guard stopped, with the saving. | tool | ✅ | ✅ |
+| 📟 | **[statusline](docs/reference.md#statusline)**, **[band](docs/reference.md#band)** and **[pane](docs/reference.md#pane)** | Context fill, tokens, cost and a cache countdown, live: the statusline at the bottom of your assistant in a terminal, the band above the prompt box in the desktop app. For Copilot, premium requests left show in VS Code's status bar (`agentarium vscode --status-bar`) or a small window beside the Copilot app (`agentarium copilot --window`). Both add the outlook (in the terminal, a second row): a forecast of the next steps, budget left, cache risk and the saving to make. The pane shows it all beside the chat in tabs, with the advice in full. On automatically; `/agentarium:statusline` to manage the first two, `/agentarium-pane` to open the pane. | tool | ✅ | ✅ |
+| 📈 | **[dashboard](docs/reference.md#dashboard)** | A local web view of where your tokens and money went, split by OPEX/CAPEX, project and day, and **what agentarium did**: every prompt pennywise routed and every flood, loop and cache rebuild a guard stopped, with the saving. | tool | ✅ | ✅ |
 | 📊 | **[spend-report](docs/reference.md#spend-report)** | "Spend report" gets you the week's spend, OPEX vs CAPEX, costliest sessions, and three ways to spend less. | skill | ✅ | ❌ |
 | 🧑‍🏫 | **[coach](docs/reference.md#coach)** | Reads your conversation and tells you where tokens were wasted, with the fixes and a rewrite of your weakest prompt. | skill | ✅ | ❌ |
 | 🔮 | **[crystal-ball](docs/reference.md#crystal-ball)** | *What will this cost?* Simulates a team's monthly AI spend across every model and provider before you adopt an agentic workflow. | skill + tool | ✅ | ✅ |
@@ -331,7 +331,7 @@ Live, on screen, between turns.
 
 ### ✅ Prove and audit: did it work, and where is it still leaking?
 
-The three proof features, then **`tokenomics audit`**, which runs every leak check at once and puts the biggest money first. Each check is also its own command. Since v4.0 the helper names take hyphens (`tokenomics bang-for-buck`); the old one-word names still work as commands.
+The three proof features, then **`agentarium audit`**, which runs every leak check at once and puts the biggest money first. Each check is also its own command. Since v4.0 the helper names take hyphens (`agentarium bang-for-buck`); the old one-word names still work as commands.
 
 | | Helper | What it does | Kind | Claude Code | Copilot CLI |
 |---|---|---|:---:|:---:|:---:|
@@ -347,7 +347,7 @@ The three proof features, then **`tokenomics audit`**, which runs every leak che
 | 🧹 | **[spring-clean](docs/reference.md#spring-clean)** | Audits CLAUDE.md, AGENTS.md and friends for duplicated, outdated, bloated and contradictory instructions, with the saving from cleaning them up. | skill + tool | ✅ | ✅ |
 | 🪵 | **[deadwood](docs/reference.md#deadwood)** | *What did we pay for that produced nothing?* A monthly report of spend on failed, discarded and abandoned work, repeated debugging and unused files. | skill + tool | ✅ | counted |
 | 📏 | **[waistline](docs/reference.md#waistline)** | *Am I getting worse value than last month?* Cost-regression checks on equivalent work: context creep, new expensive tools, model changes. Fails CI on cost creep. | skill + hook + CI | ✅ | ❌ |
-| 🔍 | **[spendlens](docs/reference.md#spendlens)** | Silently labels each session **OPEX** (running things) or **CAPEX** (building things) and logs tokens and cost. | hook | ✅ | ✅ |
+| 🧮 | **[till](docs/reference.md#till)** | Silently labels each session **OPEX** (running things) or **CAPEX** (building things) and logs tokens and cost. | hook | ✅ | ✅ |
 
 > **Skills** run when you ask. **Hooks** run automatically. **Tools** you run yourself. Not sure which you need? → [Skills, tools and hooks](docs/skills-tools-and-hooks.md)
 
@@ -373,14 +373,14 @@ You don't have to say it. If the routed work ended on a failing test, was revert
 pennywise: the last answer came from Haiku and the last check it ran failed, so Opus takes this one itself.
 ```
 
-Want true per-request routing, like an auto-router, with no hand-off at all? `tokenomics router on`. The proxy runs in the background, Claude Code is pointed at it, and every turn goes upstream on the right model, cache-aware, with fallback. `tokenomics router status` shows what it has saved; `tokenomics router off` undoes it.
+Want true per-request routing, like an auto-router, with no hand-off at all? `agentarium router on`. The proxy runs in the background, Claude Code is pointed at it, and every turn goes upstream on the right model, cache-aware, with fallback. `agentarium router status` shows what it has saved; `agentarium router off` undoes it.
 
 ### diet stops the context flood
 
 The AI goes to read a lockfile whole. diet steps in, and the AI retries with a `grep` by itself:
 
 ```text
-tokenomics diet: package-lock.json is a generated file of about 180,000 tokens; reading it whole
+agentarium diet: package-lock.json is a generated file of about 180,000 tokens; reading it whole
 is rarely useful. Search it instead (e.g. grep for the package or symbol you need), or read a
 small range with offset/limit.
 ```
@@ -407,11 +407,11 @@ TAP version 13
 # duration_ms 42047.55024
 
 [colander: showed 13 of 2,818 lines (about 52 of 19,520 tokens), leaving out 451 lines of passing tests and 2,354 of
-progress and runner output. The full output is in ~/.tokenomics/colander/npm-20261125-225243-b42f05.log: grep it or
+progress and runner output. The full output is in ~/.agentarium/colander/npm-20261125-225243-b42f05.log: grep it or
 read part of it rather than running the command again.]
 ```
 
-Warnings, deprecations, skipped tests and anything that failed stay in. The same goes for builds, linters and installs: `cargo build` keeps its warnings and drops the `Compiling` lines, and `npm ci` keeps the vulnerability count and shows the first three of forty deprecation warnings, then a count. A command that fails reaches the model whole. `npm test 2>&1 | tokenomics colander strain` shows what the model would get from any output.
+Warnings, deprecations, skipped tests and anything that failed stay in. The same goes for builds, linters and installs: `cargo build` keeps its warnings and drops the `Compiling` lines, and `npm ci` keeps the vulnerability count and shows the first three of forty deprecation warnings, then a count. A command that fails reaches the model whole. `npm test 2>&1 | agentarium colander strain` shows what the model would get from any output.
 
 ### doggybag saves you from the cold-cache tax
 
@@ -541,7 +541,7 @@ Next time: When a task is done, /clear before the next one (doggybag keeps a not
 it still matters, /compact and say what to keep. For example: /compact keep only the decisions about the API shape
 ```
 
-After the third time it's one line: `(Why, and what to do next time: tokenomics fishingrod new-task)`.
+After the third time it's one line: `(Why, and what to do next time: agentarium fishingrod new-task)`.
 
 ### cold-snap names what broke the cache
 
@@ -561,13 +561,13 @@ all-you-can-eat:   Max 20x costs £160, but your work came to about £58 a month
                 Max 5x at £80 would still cost more than you use: about £80 a month back.
 ```
 
-### The dashboard shows where it all went, and what tokenomics saved
+### The dashboard shows where it all went, and what agentarium saved
 
 Spend in your currency, split OPEX / CAPEX by day and project, and a line for each helper that stepped in: what it stopped, what it flagged and what that saved. Only spend a helper actually stopped and could price counts as saved (pennywise's routes net of the hand-off, cache rebuilds cache-buster refused); notices show what was at stake.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dashboard-dark.png">
-  <img src="docs/assets/dashboard-light.png" alt="The tokenomics dashboard: OPEX vs CAPEX split of spend, spend and savings, and what each helper did, priced">
+  <img src="docs/assets/dashboard-light.png" alt="The agentarium dashboard: OPEX vs CAPEX split of spend, spend and savings, and what each helper did, priced">
 </picture>
 
 <p align="center"><sub>Shown with <code>--demo</code> data. Yours fills in as you work.</sub></p>
@@ -581,8 +581,8 @@ flowchart LR
     You(["You + your AI assistant"]) -->|every prompt| G["🎛️ controller: 💰 pennywise · 💳 budget · ✋ hold-up · 🤝 haggle · ⚓ ballast · 🥡 doggybag · 🦜 parrot<br/><i>one decision: which model, worth it, should that paste be a file, carrying old work?</i>"]
     You -->|every tool call| D["🥗 diet<br/><i>is this too big?</i>"]
     You -->|every test run, build, install| CO["🍝 colander<br/><i>what's worth reading?</i>"]
-    You -->|every turn| S["🔍 spendlens · 🥡 doggybag<br/><i>record it, pack it up</i>"]
-    S --> DB[("~/.tokenomics/<br/>spendlens.db")]
+    You -->|every turn| S["🧮 till · 🥡 doggybag<br/><i>record it, pack it up</i>"]
+    S --> DB[("~/.agentarium/<br/>till.db")]
     DB --> R["📊 spend-report"]
     DB --> W["📈 dashboard"]
     You -.->|live| B["📟 statusline / band"]
@@ -598,15 +598,15 @@ flowchart LR
     DB --> X["🧾 split-the-bill · 🪵 deadwood · 🏪 bazaar · 🔮 crystal-ball<br/><i>who spent it, what was wasted,<br/>where it's cheaper, what's next</i>"]
 ```
 
-**OPEX or CAPEX?** spendlens answers the question finance teams keep asking: *how much of our AI spend goes on building things, and how much on keeping them running?* It scores the words in your prompts, the tools the AI used and the skills it ran. [How it decides →](docs/reference.md#how-it-decides)
+**OPEX or CAPEX?** till answers the question finance teams keep asking: *how much of our AI spend goes on building things, and how much on keeping them running?* It scores the words in your prompts, the tools the AI used and the skills it ran. [How it decides →](docs/reference.md#how-it-decides)
 
 ---
 
 ## 🔒 Private by default
 
-- **Local only.** Everything is written to one SQLite file at `~/.tokenomics/spendlens.db`. The dashboard listens on `127.0.0.1` only.
-- **No prompt text stored** unless you opt in (`TOKENOMICS_STORE_PROMPT=1`).
-- **Strained output kept for a day, for the agent only.** colander saves the full output of a command it strained to `~/.tokenomics/colander/` (readable only by you, the newest 30, deleted after 24 hours) so the agent can grep it. The database gets the program's name and token counts, never the command or its output.
+- **Local only.** Everything is written to one SQLite file at `~/.agentarium/till.db`. The dashboard listens on `127.0.0.1` only.
+- **No prompt text stored** unless you opt in (`AGENTARIUM_STORE_PROMPT=1`).
+- **Strained output kept for a day, for the agent only.** colander saves the full output of a command it strained to `~/.agentarium/colander/` (readable only by you, the newest 30, deleted after 24 hours) so the agent can grep it. The database gets the program's name and token counts, never the command or its output.
 - **Nothing leaves your machine** unless you switch on the optional [AI classifier](docs/reference.md#optional-let-an-ai-model-decide), which redacts first and works with local models.
 - **Never in the way.** Hooks fail silently to a log file. Every guard-rail has a one-step override and a `warn` / `off` switch.
 - **No runtime dependencies.** Node.js built-ins only (SQLite included). Nothing to `npm install` to use it, nothing to audit but this repo. TypeScript is the one dependency, for development only ([Dependencies](#-dependencies)).
@@ -615,7 +615,7 @@ flowchart LR
 
 ## 📦 Dependencies
 
-tokenomics is written in **TypeScript**. Node.js runs the `.ts` files directly (Node 22.18+ strips the types itself), so there is no build step and nothing is compiled or bundled.
+agentarium is written in **TypeScript**. Node.js runs the `.ts` files directly (Node 22.18+ strips the types itself), so there is no build step and nothing is compiled or bundled.
 
 | | Dependency | Version | What it's for |
 |---|---|---|---|
@@ -623,7 +623,7 @@ tokenomics is written in **TypeScript**. Node.js runs the `.ts` files directly (
 | Development | [**TypeScript**](https://www.typescriptlang.org) (`typescript`) | ^5.9 | Type-checks the code: `npm run typecheck`. |
 | Development | `@types/node` | ^22.18 | Node.js type definitions for the type-check. |
 
-Nothing is installed from npm to *use* tokenomics: the plugin, the hooks and the installers only need Node.js. The dev dependencies in [`package.json`](package.json) are for working on it.
+Nothing is installed from npm to *use* agentarium: the plugin, the hooks and the installers only need Node.js. The dev dependencies in [`package.json`](package.json) are for working on it.
 
 ---
 
@@ -661,7 +661,7 @@ Using an AI assistant on this repo? The house rules (UK English, no Oxford comma
 
 ## ☕ Support
 
-If tokenomics saves you more than the price of a coffee, consider buying me one:
+If agentarium saves you more than the price of a coffee, consider buying me one:
 
 <p align="center">
   <a href="https://buymeacoffee.com/andrewgoadm">
@@ -673,14 +673,14 @@ If tokenomics saves you more than the price of a coffee, consider buying me one:
 
 ## Disclaimer
 
-**The prices, token counts and costs shown by tokenomics are a rough indication of what your current session has cost, not a bill. They may be inaccurate, incomplete or out of date. The authors and contributors accept no liability for any loss or cost arising from prices or costs that turn out to be wrong, or from decisions made using them. You are responsible for checking your actual usage and charges in the Claude app (or your provider's billing page) and should not rely solely on this tool. tokenomics is provided "as is", without warranty of any kind; see sections 7 (Disclaimer of Warranty) and 8 (Limitation of Liability) of the [Apache License 2.0](LICENSE).**
+**The prices, token counts and costs shown by agentarium are a rough indication of what your current session has cost, not a bill. They may be inaccurate, incomplete or out of date. The authors and contributors accept no liability for any loss or cost arising from prices or costs that turn out to be wrong, or from decisions made using them. You are responsible for checking your actual usage and charges in the Claude app (or your provider's billing page) and should not rely solely on this tool. agentarium is provided "as is", without warranty of any kind; see sections 7 (Disclaimer of Warranty) and 8 (Limitation of Liability) of the [Apache License 2.0](LICENSE).**
 
 ## 🏁 Quick start
 
 Convinced? In Claude Code:
 
 ```text
-/plugin install tokenomics --marketplace andrew44/tokenomics
+/plugin install agentarium --marketplace andrew44/agentarium
 ```
 
 Then say *"coach, review my prompts"*. On Copilot CLI or without Node.js, use the [one-line installer](#github-copilot-cli-or-no-nodejs-the-one-line-installer).

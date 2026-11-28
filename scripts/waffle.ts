@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * tokenomics / waffle: are you paying for words you don't read?
+ * agentarium / waffle: are you paying for words you don't read?
  *
  * Output tokens cost five times input tokens, and none of them are cached. waffle splits a session's
  * output into the reply you read, what the agent wrote into tools (edits, new files, commands) and
- * thinking, then finds the avoidable part (rules: tokenomics/engine/verbosity.ts):
+ * thinking, then finds the avoidable part (rules: agentarium/engine/verbosity.ts):
  *
- *   long replies    final replies longer than TOKENOMICS_WAFFLE_LONG tokens (default 500, ~375 words)
+ *   long replies    final replies longer than AGENTARIUM_WAFFLE_LONG tokens (default 500, ~375 words)
  *   recaps          replies that end a task by restating it ("## Summary", "Here's what I changed")
  *   full rewrites   Write used to replace an existing file whole, where an Edit would send only the
  *                   lines that changed
@@ -19,15 +19,15 @@
  *   add --currency USD to either. Read-only.
  */
 import { findTranscript } from './coach.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { analyse, DEFAULT_LONG, merge, type Verbosity } from '../tokenomics/engine/verbosity.ts'
-import { CostEngine, PolicyEngine } from '../tokenomics/services/index.ts'
-import { argValue, isMain, type Obj } from '../tokenomics/util.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { analyse, DEFAULT_LONG, merge, type Verbosity } from '../agentarium/engine/verbosity.ts'
+import { CostEngine, PolicyEngine } from '../agentarium/services/index.ts'
+import { argValue, isMain, type Obj } from '../agentarium/util.ts'
 import { numArg, recentTranscripts, useCurrency, write } from './common.ts'
 
 const LABELS: Record<string, string> = { long_reply: 'Long replies', recap: 'Recaps', full_rewrite: 'Whole-file rewrites' }
 const n = (v: number) => Math.round(v).toLocaleString('en-GB')
-const longLimit = () => PolicyEngine.threshold('TOKENOMICS_WAFFLE_LONG', DEFAULT_LONG, { min: 50 })
+const longLimit = () => PolicyEngine.threshold('AGENTARIUM_WAFFLE_LONG', DEFAULT_LONG, { min: 50 })
 
 function summarise(v: Verbosity, scope: Obj): Obj {
   const byKind: Record<string, { count: number, tokens: number, usd: number }> = {}

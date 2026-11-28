@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / pack-light: what do you carry into every request, and do you ever use it?
+ * agentarium / pack-light: what do you carry into every request, and do you ever use it?
  *
  * Before you type a word, every request already holds the system prompt, every connected MCP server's
  * tool definitions, a line for every installed skill, and your instruction files. That fixed load is
@@ -27,10 +27,10 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join, resolve, sep } from 'node:path'
 
-import * as trace from '../tokenomics/engine/trace.ts'
-import { ratesFor } from '../tokenomics/engine/pricing.ts'
-import { CostEngine } from '../tokenomics/services/index.ts'
-import { argValue, frontmatterDescription, isMain, isObj, type Obj } from '../tokenomics/util.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { ratesFor } from '../agentarium/engine/pricing.ts'
+import { CostEngine } from '../agentarium/services/index.ts'
+import { argValue, frontmatterDescription, isMain, isObj, type Obj } from '../agentarium/util.ts'
 import { numArg, recentTranscripts, useCurrency, write } from './common.ts'
 
 const round6 = (v: number) => Math.round(v * 1e6) / 1e6

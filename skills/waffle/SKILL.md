@@ -15,7 +15,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" waffle.ts --days 7 --json     # every 
 ```
 
 - `--session <id>` or `--transcript <file>` for one session. Read-only.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name waffle.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name waffle.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 

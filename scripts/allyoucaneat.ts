@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * tokenomics / all-you-can-eat: are you on the right plan?
+ * agentarium / all-you-can-eat: are you on the right plan?
  *
  * The same Claude Code work can be paid for per token (an API key) or by subscription (Pro, Max).
- * spendlens prices every session at API rates whichever you use, so your ledger already holds the
+ * till prices every session at API rates whichever you use, so your ledger already holds the
  * pay-as-you-go price of your actual work. all-you-can-eat sets that against each plan:
  *
  *   on pay-as-you-go   which subscriptions cost less than your typical month (candidates, since every
@@ -15,21 +15,21 @@
  *
  *   allyoucaneat.ts [--plan api|pro|max5|max20] [--months 3] [--json] [--currency USD]
  *
- * Plans and prices: data/plans.json, overridden or added to by id in ~/.tokenomics/plans.json.
- * Your plan: --plan, or TOKENOMICS_PLAN. Claude Code only (Copilot bills premium requests). Read-only.
+ * Plans and prices: data/plans.json, overridden or added to by id in ~/.agentarium/plans.json.
+ * Your plan: --plan, or AGENTARIUM_PLAN. Claude Code only (Copilot bills premium requests). Read-only.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import { CostEngine } from '../tokenomics/services/index.ts'
-import { argValue, isMain, isObj, parseTs, today, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import { CostEngine } from '../agentarium/services/index.ts'
+import { argValue, isMain, isObj, parseTs, today, type Obj } from '../agentarium/util.ts'
 import { numArg, round2, useCurrency, write } from './common.ts'
 
 export const PLANS_FILE = join(import.meta.dirname, '..', 'data', 'plans.json')
-const userFile = () => join(process.env.TOKENOMICS_HOME || join(homedir(), '.tokenomics'), 'plans.json')
+const userFile = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'plans.json')
 const MIN_DAYS_TO_PROJECT = 7
 
 export type Plan = { id: string, name: string, kind: 'metered' | 'subscription', usd_per_month: number }
@@ -43,7 +43,7 @@ function readJson(p: string): Obj {
   }
 }
 
-/** Shipped plans, then ~/.tokenomics/plans.json (same id replaces, `"disabled": true` removes). */
+/** Shipped plans, then ~/.agentarium/plans.json (same id replaces, `"disabled": true` removes). */
 export function plans(extra?: Obj): Plan[] {
   const rows = new Map<string, Obj>()
   for (const src of [readJson(PLANS_FILE), extra ?? readJson(userFile())]) {
@@ -84,7 +84,7 @@ export function peakWindow(events: { t: number, usd: number }[], seconds: number
 export function build(args: string[], dbPath = defaultDbPath(), day = today()): Obj {
   const months = Math.max(1, Math.min(24, Math.trunc(numArg(args, '--months', 3))))
   const list = plans()
-  const planArg = (argValue(args, '--plan') ?? process.env.TOKENOMICS_PLAN ?? '').trim().toLowerCase()
+  const planArg = (argValue(args, '--plan') ?? process.env.AGENTARIUM_PLAN ?? '').trim().toLowerCase()
   const current = list.find((p) => p.id === planArg) ?? null
   const thisMonth = monthOf(day)
   const since = `${shiftMonth(thisMonth, -months)}-01`
@@ -165,16 +165,16 @@ export function build(args: string[], dbPath = defaultDbPath(), day = today()): 
         : `Pay-as-you-go would have cost about ${fmt(typical)}: ${fmt(current.usd_per_month - typical)} a month back, if your heavy days fit.`)
     }
   }
-  if (!current) lines.push('That assumes you pay per token. On a subscription? Say which (--plan pro, max5 or max20, or TOKENOMICS_PLAN) to see whether it pays for itself.')
+  if (!current) lines.push('That assumes you pay per token. On a subscription? Say which (--plan pro, max5 or max20, or AGENTARIUM_PLAN) to see whether it pays for itself.')
   return { ...out, verdict, advice: lines }
 }
 
 export function markdown(r: Obj): string {
   const { fmt } = CostEngine.display()
   const L = ['# all-you-can-eat: are you on the right plan?', '']
-  if (r.unknown_plan) L.push(`_Unknown plan "${r.unknown_plan}": use one of ${r.plans.map((p: Plan) => p.id).join(', ')} (or add it to ~/.tokenomics/plans.json)._`, '')
+  if (r.unknown_plan) L.push(`_Unknown plan "${r.unknown_plan}": use one of ${r.plans.map((p: Plan) => p.id).join(', ')} (or add it to ~/.agentarium/plans.json)._`, '')
   if (r.empty) {
-    L.push('Nothing recorded yet. spendlens prices each Claude Code session as you work; come back after a week or two.')
+    L.push('Nothing recorded yet. till prices each Claude Code session as you work; come back after a week or two.')
     return L.join('\n')
   }
   L.push('| Month | Spend at API prices |', '|---|---:|')
@@ -193,7 +193,7 @@ export function markdown(r: Obj): string {
   L.push('')
   for (const a of r.advice) L.push(`- ${a}`)
   L.push('', '_Spend is priced at API rates whatever you pay with. Subscriptions have usage limits; check current prices and limits on claude.com/pricing, ' +
-    'and set your plan with --plan or TOKENOMICS_PLAN._')
+    'and set your plan with --plan or AGENTARIUM_PLAN._')
   return L.join('\n')
 }
 

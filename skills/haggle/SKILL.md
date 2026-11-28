@@ -14,7 +14,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" haggle.ts quote "<the task, in the use
 ```
 
 - `--price` is the amount the user named, in their currency (omit if none). Pass `--model <id>` if they'll run it on a specific model, and `--context <tokens>` when continuing a long session (the statusline shows the context size).
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name haggle.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name haggle.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 
@@ -25,5 +25,5 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" haggle.ts quote "<the task, in the use
 
 ## 3. Contracts
 
-- Substantial prompts get an automatic quote (a notice, never a stop) unless `TOKENOMICS_HAGGLE=off`. `TOKENOMICS_HAGGLE=strict` enforces every quote's cap.
+- Substantial prompts get an automatic quote (a notice, never a stop) unless `AGENTARIUM_HAGGLE=off`. `AGENTARIUM_HAGGLE=strict` enforces every quote's cap.
 - History, quoted vs actual: `haggle.ts status`. Use it to say how accurate quotes have been.

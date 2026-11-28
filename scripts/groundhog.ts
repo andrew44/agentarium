@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * tokenomics / groundhog: stop the agent living the same few minutes over and over. Catches it
+ * agentarium / groundhog: stop the agent living the same few minutes over and over. Catches it
  * going round in circles before the loop gets expensive: the same call with the same input, a
  * command that keeps failing, an edit made and undone, tokens climbing with nothing getting done.
- * Rules: tokenomics/engine/loops.ts.
+ * Rules: agentarium/engine/loops.ts.
  *
  * Pre-tool hook (Claude Code: PreToolUse on every tool; Copilot: preToolUse, identical calls only).
  * The first time a loop is caught, the call is refused with a reason that tells the model to step
@@ -18,19 +18,19 @@
  *   groundhog.ts check [--session ID | --transcript FILE] [--json]
  *                                                replay a session and list every loop it got into
  *
- * Env: TOKENOMICS_GROUNDHOG (mode above), TOKENOMICS_GROUNDHOG_REPEAT (identical calls allowed, 3),
- *      TOKENOMICS_GROUNDHOG_FAILS (failures of one command in a row, 3).
+ * Env: AGENTARIUM_GROUNDHOG (mode above), AGENTARIUM_GROUNDHOG_REPEAT (identical calls allowed, 3),
+ *      AGENTARIUM_GROUNDHOG_FAILS (failures of one command in a row, 3).
  * Bypass for one command: append `# groundhog-ok`. Always exits 0; a crash never blocks a call.
  */
 import { findTranscript } from './coach.ts'
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as events from '../tokenomics/engine/events.ts'
-import { DEFAULTS, detect, type Loop, type Options } from '../tokenomics/engine/loops.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { getAdapter, premiumBilled } from '../tokenomics/platform/registry.ts'
-import { argValue, asDict, errText, first, isMain, isObj, logErr, readPayload, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as events from '../agentarium/engine/events.ts'
+import { DEFAULTS, detect, type Loop, type Options } from '../agentarium/engine/loops.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { getAdapter, premiumBilled } from '../agentarium/platform/registry.ts'
+import { argValue, asDict, errText, first, isMain, isObj, logErr, readPayload, type Obj } from '../agentarium/util.ts'
 
 const TAIL_BYTES = 3 * 1024 * 1024        // loops are recent: the last 3 MB of a transcript is plenty
 
@@ -39,7 +39,7 @@ function options(): Options {
     const v = Number.parseInt(process.env[name] ?? '', 10)
     return Number.isFinite(v) && v >= 2 ? v : d
   }
-  return { ...DEFAULTS, repeat: n('TOKENOMICS_GROUNDHOG_REPEAT', DEFAULTS.repeat), fails: n('TOKENOMICS_GROUNDHOG_FAILS', DEFAULTS.fails) }
+  return { ...DEFAULTS, repeat: n('AGENTARIUM_GROUNDHOG_REPEAT', DEFAULTS.repeat), fails: n('AGENTARIUM_GROUNDHOG_FAILS', DEFAULTS.fails) }
 }
 
 function history(dbPath: string, sid: string, key: string): Record<string, number> {
@@ -70,7 +70,7 @@ function copilotLoop(dbPath: string, sid: string, name: string, args: Obj, o: Op
 }
 
 function hook(source: string): void {
-  const mode = (process.env.TOKENOMICS_GROUNDHOG ?? 'block').trim().toLowerCase()
+  const mode = (process.env.AGENTARIUM_GROUNDHOG ?? 'block').trim().toLowerCase()
   if (mode === 'off') return
   const dbPath = defaultDbPath()
   try {

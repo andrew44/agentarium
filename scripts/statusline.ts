@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / statusline: a live status line for Claude Code and GitHub Copilot CLI.
+ * agentarium / statusline: a live status line for Claude Code and GitHub Copilot CLI.
  *
  * Shows, on one line:
  *   * model
@@ -10,7 +10,7 @@
  *   * prompt-cache expiry countdown (MM:ss) with a pie clock that empties as the cache goes cold
  * and under it, on a second row, the outlook (the band's forecast row): what the next steps will cost,
  * the budget left, what a cold cache would cost, and the one change that saves most (see `outlook`
- * below). The apps' band gets the same from --json. TOKENOMICS_OUTLOOK=off (or --outlook-off) keeps
+ * below). The apps' band gets the same from --json. AGENTARIUM_OUTLOOK=off (or --outlook-off) keeps
  * the terminal to the one line.
  *
  * Three places show it:
@@ -23,7 +23,7 @@
  *     (a status bar item) and a small window (scripts/dashboard.ts --copilot) show the
  *     premium-request forecast from --copilot --json.
  * A single self-contained file (Node.js built-ins only): --install copies it to
- * ~/.tokenomics/statusline.mts. Never throws: on any problem it prints a minimal line and exits 0.
+ * ~/.agentarium/statusline.mts. Never throws: on any problem it prints a minimal line and exits 0.
  *
  * Usage
  *   statusline.ts                     render once from the stdin JSON (what the CLIs do)
@@ -33,7 +33,7 @@
  *   statusline.ts --status            say where the statusline is installed, and if the band is on
  *   statusline.ts --sync              SessionStart hook (plugin): refresh the installed copy after a
  *                                     plugin update; install it if no status line is set
- *                                     (TOKENOMICS_STATUSLINE=ask only suggests it once, =off stays quiet)
+ *                                     (AGENTARIUM_STATUSLINE=ask only suggests it once, =off stays quiet)
  *   statusline.ts --band-on / --band-off   show or hide the band in the apps (saved in the config)
  *   statusline.ts --outlook-on / --outlook-off   show or hide the forecast row in the terminal
  *   statusline.ts --json              the line's numbers as JSON, from the stdin JSON (for the band)
@@ -48,14 +48,14 @@
  *   statusline.ts --set-currency GBP|USD|EUR   save the display currency
  *   Flags: --theme light|dark|system   --currency GBP|USD|EUR   --ascii   --no-color
  *
- * Config: ~/.tokenomics/statusline.json (or $TOKENOMICS_HOME/statusline.json), all optional:
+ * Config: ~/.agentarium/statusline.json (or $AGENTARIUM_HOME/statusline.json), all optional:
  *   {"theme": "system", "currency": "GBP", "usd_gbp": 0.76, "usd_eur": 0.86, "cache_ttl": null,
  *    "width": 12, "warn": 75, "crit": 90, "band": true}
  *   (statusbar.json, its name before v1.4, is still read and is renamed at the next session start.)
- * Env overrides: TOKENOMICS_THEME, TOKENOMICS_CURRENCY, TOKENOMICS_USD_GBP, TOKENOMICS_USD_EUR,
- *   TOKENOMICS_CACHE_TTL (seconds), TOKENOMICS_STATUSLINE (auto|ask|off), TOKENOMICS_BAND (on|off),
- *   TOKENOMICS_ASCII=1, TOKENOMICS_TIMER_ICONS="full,half,empty" (replaces the pie clock), NO_COLOR.
- *   (TOKENOMICS_STATUSBAR, the old name of TOKENOMICS_STATUSLINE, still works.)
+ * Env overrides: AGENTARIUM_THEME, AGENTARIUM_CURRENCY, AGENTARIUM_USD_GBP, AGENTARIUM_USD_EUR,
+ *   AGENTARIUM_CACHE_TTL (seconds), AGENTARIUM_STATUSLINE (auto|ask|off), AGENTARIUM_BAND (on|off),
+ *   AGENTARIUM_ASCII=1, AGENTARIUM_TIMER_ICONS="full,half,empty" (replaces the pie clock), NO_COLOR.
+ *   (AGENTARIUM_STATUSBAR, the old name of AGENTARIUM_STATUSLINE, still works.)
  */
 import { spawnSync } from 'node:child_process'
 import {
@@ -70,7 +70,7 @@ type Obj = Record<string, any>
 type RGB = [number, number, number]
 
 const HOME = homedir()
-const CFG_DIR = process.env.TOKENOMICS_HOME || join(HOME, '.tokenomics')
+const CFG_DIR = process.env.AGENTARIUM_HOME || join(HOME, '.agentarium')
 const CFG_FILE = join(CFG_DIR, 'statusline.json')
 const STATE_FILE = join(CFG_DIR, 'statusline-state.json')
 // Before v1.4 this was the "statusbar"; before v2.0 it was a Python script (statusline.py). Those
@@ -83,15 +83,15 @@ const HERE = dirname(SELF)
 
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v)
 
-// This file runs on its own (copied to ~/.tokenomics/statusline.mts), so it can't import
-// tokenomics/profile.ts. The settings it reads (budgets, currency, outlook, Copilot allowance) are
-// filled in here the same way: env first, then ~/.tokenomics/config.json "settings". The profile
+// This file runs on its own (copied to ~/.agentarium/statusline.mts), so it can't import
+// agentarium/profile.ts. The settings it reads (budgets, currency, outlook, Copilot allowance) are
+// filled in here the same way: env first, then ~/.agentarium/config.json "settings". The profile
 // presets don't touch any of them.
 ;(() => {
   try {
     const c = JSON.parse(readFileSync(join(CFG_DIR, 'config.json'), 'utf8'))
     for (const [k, v] of Object.entries(isObj(c?.settings) ? c.settings : {})) {
-      const name = /^TOKENOMICS_[A-Z0-9_]+$/.test(k) ? k : /^[a-z][a-z0-9_]*$/.test(k) ? `TOKENOMICS_${k.toUpperCase()}` : null
+      const name = /^AGENTARIUM_[A-Z0-9_]+$/.test(k) ? k : /^[a-z][a-z0-9_]*$/.test(k) ? `AGENTARIUM_${k.toUpperCase()}` : null
       if (name && (process.env[name] ?? '') === '' && v !== null && typeof v !== 'object') process.env[name] = String(v)
     }
   } catch {
@@ -133,11 +133,11 @@ export function cfgFile(): string {
 
 export const DEFAULT_CFG: Obj = { theme: 'system', cache_ttl: null, width: 12, warn: 75, crit: 90 }
 
-// ---- currency: keep identical to tokenomics/engine/currency.ts (tests/features.test.ts checks) ---
+// ---- currency: keep identical to agentarium/engine/currency.ts (tests/features.test.ts checks) ---
 // BEGIN CURRENCY
-// Display currency: USD, EUR or GBP (default). Chosen by TOKENOMICS_CURRENCY, then "currency" in
+// Display currency: USD, EUR or GBP (default). Chosen by AGENTARIUM_CURRENCY, then "currency" in
 // statusline.json; "$", "€", "£", "usd", "euro", "pounds" ... are accepted too. Prices are in USD
-// and converted at the rate in TOKENOMICS_USD_EUR / TOKENOMICS_USD_GBP, then "usd_eur" /
+// and converted at the rate in AGENTARIUM_USD_EUR / AGENTARIUM_USD_GBP, then "usd_eur" /
 // "usd_gbp" in statusline.json, then the defaults below (`statusline.ts --update-rate` saves
 // today's rates).
 export const CURRENCIES: Record<string, [symbol: string, key: string | null, rate: number]> = {
@@ -159,10 +159,10 @@ export function currencyCode(value: unknown): string | null {
 /** -> [code, symbol, units of that currency per US dollar]. */
 export function currency(cfg: Record<string, any> | null | undefined): [string, string, number] {
   const c = cfg ?? {}
-  const code = currencyCode(process.env.TOKENOMICS_CURRENCY) ?? currencyCode(c.currency) ?? DEFAULT_CURRENCY
+  const code = currencyCode(process.env.AGENTARIUM_CURRENCY) ?? currencyCode(c.currency) ?? DEFAULT_CURRENCY
   let [symbol, key, rate] = CURRENCIES[code]
   if (key) {
-    for (const v of [process.env['TOKENOMICS_' + key.toUpperCase()], c[key]]) {
+    for (const v of [process.env['AGENTARIUM_' + key.toUpperCase()], c[key]]) {
       if (v !== undefined && v !== null && v !== '' && Number(v) > 0) {
         rate = Number(v)
         break
@@ -217,8 +217,8 @@ export function loadCfg(): Obj {
     // no config: the defaults
   }
   const env = process.env
-  if (env.TOKENOMICS_THEME) cfg.theme = env.TOKENOMICS_THEME.toLowerCase()
-  if (env.TOKENOMICS_CACHE_TTL && /^\s*[+-]?\d+\s*$/.test(env.TOKENOMICS_CACHE_TTL)) cfg.cache_ttl = Number.parseInt(env.TOKENOMICS_CACHE_TTL, 10)
+  if (env.AGENTARIUM_THEME) cfg.theme = env.AGENTARIUM_THEME.toLowerCase()
+  if (env.AGENTARIUM_CACHE_TTL && /^\s*[+-]?\d+\s*$/.test(env.AGENTARIUM_CACHE_TTL)) cfg.cache_ttl = Number.parseInt(env.AGENTARIUM_CACHE_TTL, 10)
   return cfg
 }
 
@@ -728,7 +728,7 @@ export function gather(payload: Obj, cfg: Obj, state: Obj): Info {
 //   forecast   the next FORECAST_STEPS requests, with the context growing as it has so far
 //   at_risk    what a cold cache adds to the next request: the whole context written again
 //              instead of read (12-20x the warm price)
-//   budget     what is left of the tightest of the daily and session limits (TOKENOMICS_BUDGET_*,
+//   budget     what is left of the tightest of the daily and session limits (AGENTARIUM_BUDGET_*,
 //              the same ones the budget hook enforces) and the price agreed with haggle for the
 //              task in hand (its cap), and about how many steps that buys
 //   tip        the single change that saves most over the forecast, priced: keep the cache warm,
@@ -756,14 +756,14 @@ function budgetNum(name: string): number | null {
   return Number.isFinite(v) && v > 0 ? v : null
 }
 
-// The monthly allowance's calendar: a copy of tokenomics/engine/allowance.ts (this file is installed
+// The monthly allowance's calendar: a copy of agentarium/engine/allowance.ts (this file is installed
 // on its own). tests/features.test.ts holds the two together.
 const ALLOWANCE_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 const ymdOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 export type Calendar = { resetDay: number, workdays: Set<number>, daysOff: [string, string][] }
 
 export function allowanceCalendar(): Calendar {
-  const wd = (process.env.TOKENOMICS_BUDGET_WORKDAYS ?? '').trim().toLowerCase()
+  const wd = (process.env.AGENTARIUM_BUDGET_WORKDAYS ?? '').trim().toLowerCase()
   let workdays = new Set<number>()
   if (wd === 'all' || wd === 'every' || wd === 'daily') workdays = new Set([0, 1, 2, 3, 4, 5, 6])
   else for (const part of wd.split(',').map((p) => p.trim()).filter(Boolean)) {
@@ -774,11 +774,11 @@ export function allowanceCalendar(): Calendar {
   }
   if (!workdays.size) workdays = new Set([1, 2, 3, 4, 5])
   const daysOff: [string, string][] = []
-  for (const part of (process.env.TOKENOMICS_BUDGET_DAYS_OFF ?? '').split(',').map((p) => p.trim()).filter(Boolean)) {
+  for (const part of (process.env.AGENTARIUM_BUDGET_DAYS_OFF ?? '').split(',').map((p) => p.trim()).filter(Boolean)) {
     const [a, b = a] = part.split('..').map((x) => x.trim())
     if (/^\d{4}-\d{2}-\d{2}$/.test(a) && /^\d{4}-\d{2}-\d{2}$/.test(b)) daysOff.push(a <= b ? [a, b] : [b, a])
   }
-  const r = Math.trunc(Number((process.env.TOKENOMICS_BUDGET_RESET_DAY ?? '').trim() || 1))
+  const r = Math.trunc(Number((process.env.AGENTARIUM_BUDGET_RESET_DAY ?? '').trim() || 1))
   return { resetDay: Number.isFinite(r) ? Math.min(31, Math.max(1, r)) : 1, workdays, daysOff }
 }
 
@@ -800,9 +800,9 @@ export function workingDaysLeft(d: Date, cal: Calendar): number {
   return n
 }
 
-/** USD spent on days in [from, to) from spendlens's database (read-only); null if it can't be read. */
+/** USD spent on days in [from, to) from till's database (read-only); null if it can't be read. */
 export function rangeCostUsd(from: string, to: string): number | null {
-  const path = process.env.TOKENOMICS_DB || join(HOME, '.tokenomics', 'spendlens.db')
+  const path = process.env.AGENTARIUM_DB || join(HOME, '.agentarium', 'till.db')
   if (!isFile(path)) return null
   const emit = process.emitWarning
   try {
@@ -822,9 +822,9 @@ export function rangeCostUsd(from: string, to: string): number | null {
   }
 }
 
-/** USD spent today across sessions, from spendlens's database (read-only); null if it can't be read. */
+/** USD spent today across sessions, from till's database (read-only); null if it can't be read. */
 export function dayCostUsd(): number | null {
-  const path = process.env.TOKENOMICS_DB || join(HOME, '.tokenomics', 'spendlens.db')
+  const path = process.env.AGENTARIUM_DB || join(HOME, '.agentarium', 'till.db')
   if (!isFile(path)) return null
   const emit = process.emitWarning
   try {
@@ -846,9 +846,9 @@ export function dayCostUsd(): number | null {
   }
 }
 
-/** Run `fn` on spendlens's database, read-only and quiet; `fallback` when there's nothing to read. */
+/** Run `fn` on till's database, read-only and quiet; `fallback` when there's nothing to read. */
 function readDb<T>(fn: (db: import('node:sqlite').DatabaseSync) => T, fallback: T): T {
-  const path = process.env.TOKENOMICS_DB || join(HOME, '.tokenomics', 'spendlens.db')
+  const path = process.env.AGENTARIUM_DB || join(HOME, '.agentarium', 'till.db')
   if (!isFile(path)) return fallback
   const emit = process.emitWarning
   try {
@@ -870,7 +870,7 @@ function readDb<T>(fn: (db: import('node:sqlite').DatabaseSync) => T, fallback: 
 const hasColumn = (db: import('node:sqlite').DatabaseSync, table: string, col: string) =>
   (db.prepare(`PRAGMA table_info(${table})`).all() as Obj[]).some((r) => r.name === col)
 
-/** USD pennywise saved in a session (net of hand-offs; routes up not counted), from spendlens's
+/** USD pennywise saved in a session (net of hand-offs; routes up not counted), from till's
  *  database (read-only); 0 when there's nothing to read. */
 export function pennywiseSavedUsd(sid: string | undefined): number {
   if (!sid) return 0
@@ -903,13 +903,13 @@ export function budgetLeft(sessionSpent: number, rate: number, stepCost: number,
   const perStep = (left: number) => (stepCost > 0 ? Math.max(0, Math.floor(left / stepCost)) : null)
   if (task) options.push({ kind: 'task', limit: task.limit * rate, spent: task.spent * rate, left: (task.limit - task.spent) * rate,
     steps_left: perStep((task.limit - task.spent) * rate) })
-  const mode = (process.env.TOKENOMICS_BUDGET_MODE ?? 'block').trim().toLowerCase()
+  const mode = (process.env.AGENTARIUM_BUDGET_MODE ?? 'block').trim().toLowerCase()
   if (mode === 'off') return options[0] ?? null
-  const session = budgetNum('TOKENOMICS_BUDGET_SESSION')
+  const session = budgetNum('AGENTARIUM_BUDGET_SESSION')
   if (session) options.push({ kind: 'session', limit: session, spent: sessionSpent, left: session - sessionSpent,
     steps_left: perStep(session - sessionSpent) })
-  let daily = budgetNum('TOKENOMICS_BUDGET_DAILY')
-  const monthly = budgetNum('TOKENOMICS_BUDGET_MONTHLY')
+  let daily = budgetNum('AGENTARIUM_BUDGET_DAILY')
+  const monthly = budgetNum('AGENTARIUM_BUDGET_MONTHLY')
   if (monthly) {
     // today's share of what's left of the allowance over the working days left (engine/allowance.ts)
     const cal = allowanceCalendar()
@@ -919,7 +919,7 @@ export function budgetLeft(sessionSpent: number, rate: number, stepCost: number,
   }
   if (daily !== null) {
     const usd = daySpentUsd === undefined ? dayCostUsd() : daySpentUsd
-    // spendlens records at each turn's end; this session's spend is at least what it shows now
+    // till records at each turn's end; this session's spend is at least what it shows now
     const spent = Math.max((usd ?? 0) * rate, sessionSpent)
     options.push({ kind: 'daily', limit: daily, spent, left: daily - spent, steps_left: perStep(daily - spent) })
   }
@@ -999,10 +999,10 @@ function tierRank(model: string): number | null {
 
 // ----------------------------------------------------------------------------- Copilot ---
 // Copilot bills premium requests against a monthly allowance, not tokens. Hooks can't see the
-// model, so spendlens records each prompt with the multiplier of the model Copilot's session state
-// names (TOKENOMICS_COPILOT_MULTIPLIERS; see tokenomics/engine/premium.ts), and a prompt with none counts as
-// TOKENOMICS_COPILOT_MULTIPLIER requests (default 1;
-// set it to your model's multiplier). With TOKENOMICS_COPILOT_ALLOWANCE set (e.g. 300 on Pro,
+// model, so till records each prompt with the multiplier of the model Copilot's session state
+// names (AGENTARIUM_COPILOT_MULTIPLIERS; see agentarium/engine/premium.ts), and a prompt with none counts as
+// AGENTARIUM_COPILOT_MULTIPLIER requests (default 1;
+// set it to your model's multiplier). With AGENTARIUM_COPILOT_ALLOWANCE set (e.g. 300 on Pro,
 // 1500 on Pro+), the Copilot statusline gets the band's idea of "what's left, and what's coming":
 // requests left this month, the pace, the day it runs out at that pace, and what the next prompts use.
 // The month is the calendar month (GitHub resets on the 1st, UTC).
@@ -1011,9 +1011,9 @@ export type Premium = { used: number, allowance: number, left: number, pct: numb
   projected: number, runs_out: string | null, next: number, steps: number, over: boolean }
 
 export function copilotAllowance(): { monthly: number, multiplier: number } | null {
-  const monthly = budgetNum('TOKENOMICS_COPILOT_ALLOWANCE')
+  const monthly = budgetNum('AGENTARIUM_COPILOT_ALLOWANCE')
   if (!monthly) return null
-  return { monthly, multiplier: budgetNum('TOKENOMICS_COPILOT_MULTIPLIER') ?? 1 }
+  return { monthly, multiplier: budgetNum('AGENTARIUM_COPILOT_MULTIPLIER') ?? 1 }
 }
 
 /** Copilot this calendar month: prompts, the premium requests they used (each at the multiplier
@@ -1124,7 +1124,7 @@ export function copilotStatus(d = new Date()): CopilotStatus {
   if (!a) {
     return { show: true, platform: 'copilot', level: 'green', short: day, text: `${day} · ${month} this month`,
       today, month_prompts: month, premium: null,
-      hint: 'Set TOKENOMICS_COPILOT_ALLOWANCE (e.g. 300) to see the premium requests left and when they run out.' }
+      hint: 'Set AGENTARIUM_COPILOT_ALLOWANCE (e.g. 300) to see the premium requests left and when they run out.' }
   }
   const p = premiumOutlook(month, a, d, FORECAST_STEPS, u)
   const level = p.over ? 'red' : p.pct >= 80 || p.runs_out !== null ? 'yellow' : 'green'
@@ -1196,16 +1196,16 @@ export function gauge(style: Style, pct: number, width: number, warn: number, cr
 
 const PIE = ['●', '◕', '◑', '◔', '○']          // full ... empty
 
-/** The cache icons: full, half, empty (TOKENOMICS_TIMER_ICONS overrides them). */
+/** The cache icons: full, half, empty (AGENTARIUM_TIMER_ICONS overrides them). */
 export function timerIcons(): string[] {
-  const custom = process.env.TOKENOMICS_TIMER_ICONS
+  const custom = process.env.AGENTARIUM_TIMER_ICONS
   if (custom && custom.split(',').length === 3) return custom.split(',')
   return [PIE[0], PIE[2], PIE[4]]
 }
 
 /** The cache icon for `frac` of the TTL left: a five-step pie clock, or the custom three. */
 export function timerIcon(frac: number): string {
-  const custom = process.env.TOKENOMICS_TIMER_ICONS
+  const custom = process.env.AGENTARIUM_TIMER_ICONS
   if (custom && custom.split(',').length === 3) {
     const [full, half, empty] = custom.split(',')
     return frac <= 0 ? empty : frac > 0.75 ? full : frac > 0.25 ? half : empty
@@ -1234,7 +1234,7 @@ export function render(info: Info, style: Style, cfg: Obj, isStatic = false): st
   const parts: string[] = []
 
   // model: a pill in colour; a mark before the name without
-  const name = info.model || 'tokenomics'
+  const name = info.model || 'agentarium'
   if (a) parts.push(style.paint(info.model ? `* ${info.model.replaceAll('→', '->')}` : '*', 'accent', true))
   else if (style.color) parts.push(style.pill(name))
   else parts.push(`✦ ${name}`)
@@ -1307,9 +1307,9 @@ export function renderOutlook(o: Outlook | null, info: Info, style: Style): stri
   return parts.join(sep)
 }
 
-/** The outlook row on the terminal statusline: on unless TOKENOMICS_OUTLOOK=off or `outlook: false`. */
+/** The outlook row on the terminal statusline: on unless AGENTARIUM_OUTLOOK=off or `outlook: false`. */
 export function outlookWanted(cfg: Obj): boolean {
-  const env = (process.env.TOKENOMICS_OUTLOOK ?? '').trim().toLowerCase()
+  const env = (process.env.AGENTARIUM_OUTLOOK ?? '').trim().toLowerCase()
   if (['off', '0', 'false', 'no'].includes(env)) return false
   if (['on', '1', 'true', 'yes'].includes(env)) return true
   return cfg.outlook !== false
@@ -1323,7 +1323,7 @@ function makeStyle(cfg: Obj, state: Obj, args: string[]): Style {
   if (t !== null) theme = t.toLowerCase()
   if (theme !== 'light' && theme !== 'dark') theme = systemTheme(state)
   const color = !args.includes('--no-color') && !process.env.NO_COLOR
-  const asciiOnly = args.includes('--ascii') || process.env.TOKENOMICS_ASCII === '1'
+  const asciiOnly = args.includes('--ascii') || process.env.AGENTARIUM_ASCII === '1'
   return new Style(theme, color, asciiOnly)
 }
 
@@ -1423,11 +1423,11 @@ function bandDrawn(sessionId: string): void {
   }
 }
 
-/** The band is on unless TOKENOMICS_BAND=off or "band": false in the config (--band-off).
+/** The band is on unless AGENTARIUM_BAND=off or "band": false in the config (--band-off).
  *  It doesn't depend on the CLI statusline: a terminal can have its own status line set and the
  *  desktop app still gets the band. */
 export function bandWanted(cfg?: Obj): boolean {
-  const env = (process.env.TOKENOMICS_BAND ?? '').trim().toLowerCase()
+  const env = (process.env.AGENTARIUM_BAND ?? '').trim().toLowerCase()
   if (['off', '0', 'false', 'no'].includes(env)) return false
   if (['on', '1', 'true', 'yes'].includes(env)) return true
   return (cfg ?? loadCfg()).band !== false
@@ -1440,7 +1440,7 @@ export function bandWanted(cfg?: Obj): boolean {
 function asJson(args: string[]): number {
   try {
     if (!bandWanted()) {
-      process.stdout.write(JSON.stringify({ show: false }))   // --band-off / TOKENOMICS_BAND=off
+      process.stdout.write(JSON.stringify({ show: false }))   // --band-off / AGENTARIUM_BAND=off
       return 0
     }
     const sid = flag(args, '--band')
@@ -1496,7 +1496,7 @@ function message(): number {
     if (payload.session_id in bandSessions()) return 0     // the band already shows it
     const cfg = loadCfg()
     const state = loadState()
-    const style = new Style('dark', false, process.env.TOKENOMICS_ASCII === '1')
+    const style = new Style('dark', false, process.env.AGENTARIUM_ASCII === '1')
     const info = gather(payload, cfg, state)
     const line = render(info, style, cfg, true) + tipText(outlook(info, cfg), info.symbol ?? '£')
     saveState(state)
@@ -1531,8 +1531,8 @@ async function updateRate(): Promise<number> {
     usdGbp = num(rates.GBP)
     usdEur = num(rates.EUR)
   } catch (e) {
-    process.stdout.write(`Could not fetch the rates (${e instanceof Error ? e.message : e}). Set them by hand: TOKENOMICS_USD_GBP=0.76, ` +
-      `TOKENOMICS_USD_EUR=0.86, or "usd_gbp" / "usd_eur" in ${CFG_FILE}\n`)
+    process.stdout.write(`Could not fetch the rates (${e instanceof Error ? e.message : e}). Set them by hand: AGENTARIUM_USD_GBP=0.76, ` +
+      `AGENTARIUM_USD_EUR=0.86, or "usd_gbp" / "usd_eur" in ${CFG_FILE}\n`)
     return 1
   }
   saveCfg({ usd_gbp: usdGbp, usd_eur: usdEur })
@@ -1577,7 +1577,7 @@ function readSettings(path: string): Obj {
 }
 
 function writeSettings(path: string, data: Obj): void {
-  if (existsSync(path)) copyFileSync(path, join(dirname(path), basename(path) + '.tokenomics.bak'))
+  if (existsSync(path)) copyFileSync(path, join(dirname(path), basename(path) + '.agentarium.bak'))
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, JSON.stringify(data, null, 2) + '\n', 'utf8')
 }
@@ -1633,9 +1633,9 @@ function isOld(command: string | null): boolean {
   return isOurs(command) && !command!.includes(COPY_NAME)
 }
 
-/** TOKENOMICS_STATUSLINE (or its old name TOKENOMICS_STATUSBAR): auto, ask or off. */
+/** AGENTARIUM_STATUSLINE (or its old name AGENTARIUM_STATUSBAR): auto, ask or off. */
 function statuslineMode(): string {
-  for (const name of ['TOKENOMICS_STATUSLINE', 'TOKENOMICS_STATUSBAR']) {
+  for (const name of ['AGENTARIUM_STATUSLINE', 'AGENTARIUM_STATUSBAR']) {
     const v = (process.env[name] ?? '').trim().toLowerCase()
     if (v) return v
   }
@@ -1704,7 +1704,7 @@ export function install(target: string, opts: { remove?: boolean, keepExisting?:
       }
     }
     writeSettings(path, data)
-    out(`${opts.remove ? 'Removed from' : 'Installed in'} ${path} (backup: settings.json.tokenomics.bak)`)
+    out(`${opts.remove ? 'Removed from' : 'Installed in'} ${path} (backup: settings.json.agentarium.bak)`)
   }
   if (!opts.remove) {
     if (!['claude', 'copilot'].some((t) => isOld(statusLine(t)))) {   // older copies, if nothing points at them now
@@ -1729,7 +1729,7 @@ function status(): number {
     else if (cmd) lines.push(`${t} statusline: another status line is set in ${where}: ${cmd}`)
     else lines.push(`${t} statusline: not installed`)
   }
-  lines.push('claude band (desktop app): ' + (bandWanted() ? 'on' : 'off') + (process.env.TOKENOMICS_BAND ? ' (TOKENOMICS_BAND)' : ''))
+  lines.push('claude band (desktop app): ' + (bandWanted() ? 'on' : 'off') + (process.env.AGENTARIUM_BAND ? ' (AGENTARIUM_BAND)' : ''))
   process.stdout.write(lines.join('\n') + '\n')
   return 0
 }
@@ -1764,9 +1764,9 @@ function outOfDate(): boolean {
 
 /** SessionStart hook. Quiet and fast; never fails the session.
  *
- *  * Installed already: refresh ~/.tokenomics/statusline.mts and the price list from the plugin, so
+ *  * Installed already: refresh ~/.agentarium/statusline.mts and the price list from the plugin, so
  *    the statusline updates whenever the plugin does.
- *  * No status line at all: install it (TOKENOMICS_STATUSLINE=ask only says once how to; =off
+ *  * No status line at all: install it (AGENTARIUM_STATUSLINE=ask only says once how to; =off
  *    does nothing).
  *  * Someone else's status line: leave it alone. */
 function sync(): number {
@@ -1785,13 +1785,13 @@ function sync(): number {
       install('claude', { out: quiet })
       const where = inApp() ? 'it shows at the bottom of Claude Code in a terminal; here, in the band above the prompt box'
         : 'restart Claude Code to see it'
-      msg = `tokenomics: statusline installed; ${where}. Tip: to get tokenomics updates automatically, ` +
-        'open /plugin > Marketplaces > tokenomics and turn on auto-update.'
+      msg = `agentarium: statusline installed; ${where}. Tip: to get agentarium updates automatically, ` +
+        'open /plugin > Marketplaces > agentarium and turn on auto-update.'
     } else {
       if (existsSync(HINT_FILE)) return 0
       mkdirSync(CFG_DIR, { recursive: true })
       writeFileSync(HINT_FILE, new Date().toISOString(), 'utf8')
-      msg = 'tokenomics: want the live cost and cache statusline? Run /tokenomics:statusline. This tip shows once.'
+      msg = 'agentarium: want the live cost and cache statusline? Run /agentarium:statusline. This tip shows once.'
     }
     process.stdout.write(JSON.stringify({ systemMessage: msg }))
   } catch {
@@ -1824,7 +1824,7 @@ async function main(args: string[]): Promise<number> {
   if (args.includes('--update-rate')) return updateRate()
   if (args.includes('--set-currency')) return setCurrency(flag(args, '--set-currency'))
   const cur = currencyCode(flag(args, '--currency'))
-  if (cur) process.env.TOKENOMICS_CURRENCY = cur              // this run only; beats env and config
+  if (cur) process.env.AGENTARIUM_CURRENCY = cur              // this run only; beats env and config
   if (args.includes('--demo')) return demo(args)
   if (args.includes('--watch')) {
     watch(args)
@@ -1852,7 +1852,7 @@ async function main(args: string[]): Promise<number> {
     saveState(state)
     process.stdout.write(line)
   } catch {
-    process.stdout.write('tokenomics')
+    process.stdout.write('agentarium')
   }
   return 0
 }

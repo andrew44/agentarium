@@ -80,11 +80,11 @@ describe('hook config', () => {
     const cp = JSON.parse(readFileSync(join(ROOT, 'copilot-hooks.json'), 'utf8'))
     const cmds: string[] = Object.values(cc.hooks).flatMap((arms: any) => arms.flatMap((g: any) => g.hooks.map((h: any) => h.command)))
     cmds.push(...Object.values(cp.hooks).flatMap((arms: any) => arms.map((h: any) => h.bash)))
-    const lens = cmds.filter((c) => c.includes('spendlens.ts'))
+    const lens = cmds.filter((c) => c.includes('till.ts'))
     assert.ok(lens.length)
     for (const c of lens) {
       const parts = c.replaceAll('"', '').split(/\s+/)
-      const i = parts.findIndex((x) => x.endsWith('spendlens.ts'))
+      const i = parts.findIndex((x) => x.endsWith('till.ts'))
       assert.ok(modes.has(parts[i + 1]), c)
     }
     assert.ok(lens.some((c) => c.includes(' tool copilot')), 'copilot postToolUse not wired')

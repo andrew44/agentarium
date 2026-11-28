@@ -21,7 +21,7 @@ A branch or PR against the task it was for:
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" blinkers.ts diff --task "fix the login redirect loop" --base main --json
 ```
 
-If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name blinkers.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name blinkers.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 
@@ -31,4 +31,4 @@ If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name blinkers.ts -
 
 ## 3. The hook (explain if asked)
 
-The blinkers hook notes what each prompt asks for (only the files, names and kinds of work it mentions) and checks every edit before it happens. On the first out-of-scope edit to a file it asks: Claude Code shows a confirm prompt; Copilot refuses the call and the agent must ask in chat. Each file is asked about once per session. Settings: `TOKENOMICS_BLINKERS=ask` (default), `block`, `warn` or `off`; `TOKENOMICS_BLINKERS_FILES` (most files a task may change before it asks). Saying "blinkers off" in a prompt switches it off for the session.
+The blinkers hook notes what each prompt asks for (only the files, names and kinds of work it mentions) and checks every edit before it happens. On the first out-of-scope edit to a file it asks: Claude Code shows a confirm prompt; Copilot refuses the call and the agent must ask in chat. Each file is asked about once per session. Settings: `AGENTARIUM_BLINKERS=ask` (default), `block`, `warn` or `off`; `AGENTARIUM_BLINKERS_FILES` (most files a task may change before it asks). Saying "blinkers off" in a prompt switches it off for the session.

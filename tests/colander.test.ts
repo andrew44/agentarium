@@ -7,11 +7,11 @@ import { describe, test } from 'node:test'
 import { ROOT, runScript, useTemp, writeTranscript, type TempEnv } from './helpers.ts'
 
 import * as hook from '../scripts/colander.ts'
-import * as colander from '../tokenomics/engine/colander.ts'
-import { Db } from '../tokenomics/engine/db.ts'
-import { ratesFor } from '../tokenomics/engine/pricing.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { PolicyEngine } from '../tokenomics/services/index.ts'
+import * as colander from '../agentarium/engine/colander.ts'
+import { Db } from '../agentarium/engine/db.ts'
+import { ratesFor } from '../agentarium/engine/pricing.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { PolicyEngine } from '../agentarium/services/index.ts'
 
 const rep = (n: number, f: (i: number) => string) => Array.from({ length: n }, (_, i) => f(i)).join('\n')
 
@@ -230,13 +230,13 @@ describe('colander: the hook', () => {
     assert.equal(run(t, 'claude-code', claude('npm test | tail -50', big)), null)                            // already filtered
     assert.equal(run(t, 'claude-code', claude(`npm test ${colander.BYPASS}`, big)), null)                    // bypass
     assert.equal(run(t, 'claude-code', claude('npm test', big, { tool_input: { command: 'npm test', run_in_background: true } })), null)
-    assert.equal(run(t, 'claude-code', claude('npm test', big), { TOKENOMICS_COLANDER: 'off' }), null)
+    assert.equal(run(t, 'claude-code', claude('npm test', big), { AGENTARIUM_COLANDER: 'off' }), null)
     assert.equal(run(t, 'claude-code', { ...claude('npm test', big), tool_response: 'Exit code 1\n' + big }), null)   // failed
     assert.equal(run(t, 'claude-code', { session_id: 's1', tool_name: 'Read', tool_input: { file_path: '/a' },
       tool_response: { file: { content: big } } }), null)
     assert.equal(run(t, 'vscode', { ...claude('npm test', big), hook_event_name: 'PostToolUse' }), null)    // can't replace
     assert.deepEqual(events(t), [])
-    assert.ok(!existsSync(hook.logDir()) || !readdirSync(join(t.home, '.tokenomics')).includes('colander'))
+    assert.ok(!existsSync(hook.logDir()) || !readdirSync(join(t.home, '.agentarium')).includes('colander'))
   })
 
   test('Copilot CLI: modifiedResult, counted in tokens and never in money', (c) => {
@@ -249,15 +249,15 @@ describe('colander: the hook', () => {
     assert.deepEqual([e.program, e.source, e.saved_usd], ['pytest', 'copilot', null])
   })
 
-  test('TOKENOMICS_COLANDER_COMMANDS adds programs, and old logs are cleared out', (c) => {
+  test('AGENTARIUM_COLANDER_COMMANDS adds programs, and old logs are cleared out', (c) => {
     const t = useTemp(c)
-    const dir = join(t.home, '.tokenomics', 'colander')
+    const dir = join(t.home, '.agentarium', 'colander')
     mkdirSync(dir, { recursive: true })
     const old = join(dir, 'npm-old.log')
     writeFileSync(old, 'x')
     utimesSync(old, new Date(Date.now() - 2 * 86_400_000), new Date(Date.now() - 2 * 86_400_000))
     assert.equal(run(t, 'claude-code', claude('./scripts/ci.sh', tap(300))), null)
-    assert.ok(run(t, 'claude-code', claude('./scripts/ci.sh', tap(300)), { TOKENOMICS_COLANDER_COMMANDS: 'ci.sh, just' }))
+    assert.ok(run(t, 'claude-code', claude('./scripts/ci.sh', tap(300)), { AGENTARIUM_COLANDER_COMMANDS: 'ci.sh, just' }))
     assert.ok(!existsSync(old))
     assert.equal(readdirSync(dir).length, 1)
   })

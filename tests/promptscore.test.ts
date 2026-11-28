@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test } from 'node:test'
 
-import { rate } from '../tokenomics/engine/promptscore.ts'
+import { rate } from '../agentarium/engine/promptscore.ts'
 import { lastPrompt } from '../scripts/ratemyprompt.ts'
 import { ROOT, runScript, useTemp, user, writeTranscript } from './helpers.ts'
 

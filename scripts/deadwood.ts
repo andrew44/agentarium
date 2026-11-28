@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / deadwood: what did we spend on work that produced nothing? Not AI spend: wasted AI spend.
+ * agentarium / deadwood: what did we spend on work that produced nothing? Not AI spend: wasted AI spend.
  *
  * Every session in the ledger gets a status from observable signals (OutcomeEngine), never from token
  * counts: succeeded, failed, discarded, abandoned, unverified or no change. Dead work is:
@@ -28,14 +28,14 @@ import { existsSync } from 'node:fs'
 import { basename } from 'node:path'
 
 import { findTranscript } from './coach.ts'
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as ledger from '../tokenomics/engine/ledger.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { CostEngine, InsightsEngine, OutcomeEngine } from '../tokenomics/services/index.ts'
-import { eventSessions } from '../tokenomics/services/value.ts'
-import { argValue, isMain, today, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as ledger from '../agentarium/engine/ledger.ts'
+import * as store from '../agentarium/engine/store.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { CostEngine, InsightsEngine, OutcomeEngine } from '../agentarium/services/index.ts'
+import { eventSessions } from '../agentarium/services/value.ts'
+import { argValue, isMain, today, type Obj } from '../agentarium/util.ts'
 import { pctChange, period, previous, round2, useCurrency, write } from './common.ts'
 
 const round6 = (v: number) => Math.round(v * 1e6) / 1e6

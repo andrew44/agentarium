@@ -13,13 +13,13 @@ import * as audit from '../scripts/audit.ts'
 import * as controller from '../scripts/controller.ts'
 import * as pennywise from '../scripts/pennywise.ts'
 import * as statusline from '../scripts/statusline.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as profile from '../tokenomics/profile.ts'
+import * as store from '../agentarium/engine/store.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as profile from '../agentarium/profile.ts'
 import * as premium from '../scripts/premium.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { Capability, NATIVE, support } from '../tokenomics/platform/capabilities.ts'
-import * as premiumEngine from '../tokenomics/engine/premium.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { Capability, NATIVE, support } from '../agentarium/platform/capabilities.ts'
+import * as premiumEngine from '../agentarium/engine/premium.ts'
 
 type Ctx = Parameters<typeof useTemp>[0]
 
@@ -27,9 +27,9 @@ type Ctx = Parameters<typeof useTemp>[0]
 const sandbox = (c: Ctx, extra: Record<string, string | undefined> = {}) => {
   const t = useTemp(c)
   const dbPath = join(t.home, 'db.sqlite')
-  const vars = { TOKENOMICS_PENNYWISE: 'route', ANTHROPIC_BASE_URL: '', TOKENOMICS_DB: dbPath, TOKENOMICS_HOME: join(t.home, '.tk'),
-    TOKENOMICS_CURRENCY: 'USD', TOKENOMICS_BUDGET_DAILY: undefined, TOKENOMICS_BUDGET_SESSION: undefined, TOKENOMICS_PENNYWISE_OVERHEAD: undefined,
-    TOKENOMICS_PENNYWISE_LEARN: undefined, TOKENOMICS_ROUTER_TIERS: undefined, ...extra }
+  const vars = { AGENTARIUM_PENNYWISE: 'route', ANTHROPIC_BASE_URL: '', AGENTARIUM_DB: dbPath, AGENTARIUM_HOME: join(t.home, '.tk'),
+    AGENTARIUM_CURRENCY: 'USD', AGENTARIUM_BUDGET_DAILY: undefined, AGENTARIUM_BUDGET_SESSION: undefined, AGENTARIUM_PENNYWISE_OVERHEAD: undefined,
+    AGENTARIUM_PENNYWISE_LEARN: undefined, AGENTARIUM_ROUTER_TIERS: undefined, ...extra }
   return { t, dbPath, run: <T>(fn: () => T | Promise<T>) => withEnv(vars, fn) }
 }
 const events = (dbPath: string) => withDb(dbPath, (db) => db.all('SELECT action, saved_usd, tier, score FROM pennywise_events ORDER BY id'))
@@ -62,10 +62,10 @@ describe('pennywise: savings net of the hand-off', () => {
 
   test('a route the hand-off would eat is skipped (unless the gate is off)', async (c) => {
     const complex = 'refactor the auth module across all services and migrate the database schema'
-    const s = sandbox(c, { TOKENOMICS_ROUTER_TIERS: 'COMPLEX=opus,REASONING=fable' })
+    const s = sandbox(c, { AGENTARIUM_ROUTER_TIERS: 'COMPLEX=opus,REASONING=fable' })
     assert.equal(await s.run(() => pennywise.handle({ session_id: 's', model: 'claude-fable-5-2', prompt: complex })), null)
     assert.equal(events(s.dbPath)[0].action, 'skipped-overhead')
-    const off = sandbox(c, { TOKENOMICS_ROUTER_TIERS: 'COMPLEX=opus,REASONING=fable', TOKENOMICS_PENNYWISE_OVERHEAD: 'off' })
+    const off = sandbox(c, { AGENTARIUM_ROUTER_TIERS: 'COMPLEX=opus,REASONING=fable', AGENTARIUM_PENNYWISE_OVERHEAD: 'off' })
     const out = await off.run(() => pennywise.handle({ session_id: 's', model: 'claude-fable-5-2', prompt: complex }))
     assert.ok(out!.hookSpecificOutput.additionalContext.includes('model: "opus"'))
   })
@@ -130,7 +130,7 @@ describe('pennywise: measured, not just estimated', () => {
       assert.deepEqual(r.work, { steps: 10, input: 60_000, output: 4000, secs: pennywise.WORK.secs, n: 6 })
       assert.deepEqual(pennywise.work(), { steps: 10, input: 60_000, output: 4000, secs: pennywise.WORK.secs })
       assert.ok(pennywise.estimateHandoff('claude-opus-5-5', 'claude-haiku-5-5', 50_000).saving > before.saving)
-      await withEnv({ TOKENOMICS_PENNYWISE_LEARN: 'off' }, () => assert.deepEqual(pennywise.work(), pennywise.WORK))
+      await withEnv({ AGENTARIUM_PENNYWISE_LEARN: 'off' }, () => assert.deepEqual(pennywise.work(), pennywise.WORK))
     })
   })
 })
@@ -139,7 +139,7 @@ describe('pennywise: cache-aware hand-offs', () => {
   const turn = (ts: string, cc: object = {}) => JSON.stringify({ type: 'assistant', timestamp: ts,
     message: { id: 'm', model: 'claude-opus-5-5', usage: { input_tokens: 5, cache_read_input_tokens: 90_000, cache_creation: cc } } }) + '\n'
 
-  test('the cache state: warm, cold, the 1-hour cache and TOKENOMICS_CACHE_TTL', async (c) => {
+  test('the cache state: warm, cold, the 1-hour cache and AGENTARIUM_CACHE_TTL', async (c) => {
     const t = useTemp(c)
     const tp = join(t.home, 't.jsonl')
     writeFileSync(tp, turn(new Date(Date.now() - 10 * 60_000).toISOString()))
@@ -148,7 +148,7 @@ describe('pennywise: cache-aware hand-offs', () => {
     assert.deepEqual(pennywise.cacheState(lt), { cold: true, ttl: 300 })
     writeFileSync(tp, turn(new Date(Date.now() - 10 * 60_000).toISOString(), { ephemeral_1h_input_tokens: 4000 }))
     assert.deepEqual(pennywise.cacheState(pennywise.lastTurn(tp)), { cold: false, ttl: 3600 })
-    await withEnv({ TOKENOMICS_CACHE_TTL: '60' }, () => assert.equal(pennywise.cacheState(pennywise.lastTurn(tp)).cold, true))
+    await withEnv({ AGENTARIUM_CACHE_TTL: '60' }, () => assert.equal(pennywise.cacheState(pennywise.lastTurn(tp)).cold, true))
     assert.equal(pennywise.cacheState({ ts: null, ttl: 300 }).cold, true)
   })
 
@@ -239,7 +239,7 @@ describe('pennywise: escalating on evidence, not only words', () => {
       await routed(s, tp)
       const since = Date.now() / 1000 - 1
       assert.equal(pennywise.missEvidence(tp, 's', since, s.dbPath), null)
-      const ev = await import('../tokenomics/engine/events.ts')
+      const ev = await import('../agentarium/engine/events.ts')
       ev.log(s.dbPath, 'groundhog_events', { session_id: 's', source: 'claude-code', tool: 'Bash', rule: 'failing_command', loop_key: 'k', action: 'denied', detail: null })
       assert.equal(pennywise.missEvidence(tp, 's', since, s.dbPath), 'groundhog caught it going round in circles (failing command)')
       assert.equal(pennywise.missEvidence(tp, 'other', since, s.dbPath), null)
@@ -307,7 +307,7 @@ describe('pennywise: escalation and learning', () => {
       assert.ok(r.offsets.MEDIUM < 0)
       assert.ok(existsSync(pennywise.learnedPath()))
       assert.ok(pennywise.loadConfig().thresholds.MEDIUM < base)
-      await withEnv({ TOKENOMICS_PENNYWISE_LEARN: 'off' }, () => assert.equal(pennywise.loadConfig().thresholds.MEDIUM, base))
+      await withEnv({ AGENTARIUM_PENNYWISE_LEARN: 'off' }, () => assert.equal(pennywise.loadConfig().thresholds.MEDIUM, base))
     })
   })
 
@@ -375,7 +375,7 @@ describe('pennywise: a growing evaluation set', () => {
   }
 
   test('an escalation is kept as a labelled case: hash and score only, unless you opt in to the text', async (c) => {
-    const s = sandbox(c, { TOKENOMICS_PENNYWISE_EVAL: undefined })
+    const s = sandbox(c, { AGENTARIUM_PENNYWISE_EVAL: undefined })
     await s.run(async () => {
       const out = (await miss(s))!
       assert.ok(out.systemMessage.includes('router eval --mine'), out.systemMessage)
@@ -389,14 +389,14 @@ describe('pennywise: a growing evaluation set', () => {
       assert.equal(r.total, 2)
       assert.equal(r.under, 2)
     })
-    const t = sandbox(c, { TOKENOMICS_PENNYWISE_EVAL: 'text' })
+    const t = sandbox(c, { AGENTARIUM_PENNYWISE_EVAL: 'text' })
     await t.run(async () => {
       await miss(t)
       assert.equal(mine()[0].prompt, 'create a hello world console app')
       const r = pennywise.evaluate(undefined, pennywise.myEvalPath())
       assert.deepEqual(r.misses.map((m) => [m.want, m.got]), [['MEDIUM', 'SIMPLE']])
     })
-    const off = sandbox(c, { TOKENOMICS_PENNYWISE_EVAL: 'off' })
+    const off = sandbox(c, { AGENTARIUM_PENNYWISE_EVAL: 'off' })
     await off.run(async () => {
       await miss(off)
       assert.ok(!existsSync(pennywise.myEvalPath()))
@@ -404,8 +404,8 @@ describe('pennywise: a growing evaluation set', () => {
   })
 
   test('eval --check fails on a regression, --mine reads your set, --export shares the cases with text', async (c) => {
-    const s = sandbox(c, { TOKENOMICS_PENNYWISE_EVAL: 'text' })
-    const env = { ...process.env, TOKENOMICS_HOME: join(s.t.home, '.tk') }
+    const s = sandbox(c, { AGENTARIUM_PENNYWISE_EVAL: 'text' })
+    const env = { ...process.env, AGENTARIUM_HOME: join(s.t.home, '.tk') }
     const run = (...a: string[]) => runScript('pennywise.ts', ['eval', ...a], { env })
     assert.equal(run('--check').status, 0)
     const bad = run('--check', '--min-accuracy', '0.99')
@@ -452,7 +452,7 @@ describe('pennywise proxy: savings, escalation, on/off', () => {
 
   test('ensure leaves other base URLs alone', async () => {
     await withEnv({ ANTHROPIC_BASE_URL: 'https://example.invalid', ANTHROPIC_MODEL: undefined }, () => pennywise.ensure())
-    await withEnv({ ANTHROPIC_BASE_URL: 'http://127.0.0.1:1', ANTHROPIC_MODEL: 'claude-opus-5-5', TOKENOMICS_ROUTER_PORT: undefined },
+    await withEnv({ ANTHROPIC_BASE_URL: 'http://127.0.0.1:1', ANTHROPIC_MODEL: 'claude-opus-5-5', AGENTARIUM_ROUTER_PORT: undefined },
       () => pennywise.ensure())   // a different local proxy: not ours, so nothing is started
   })
 })
@@ -462,7 +462,7 @@ describe('controller: one decision per prompt', () => {
     const hooks = JSON.parse(readFileSync(join(ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks
     assert.equal(hooks.UserPromptSubmit.length, 1)
     assert.ok(hooks.UserPromptSubmit[0].hooks[0].command.includes('controller.ts prompt claude-code'))
-    assert.deepEqual(controller.STEPS.map((s) => s.name), ['spendlens', 'budget', 'holdup', 'pennywise', 'haggle', 'ballast', 'doggybag', 'blinkers', 'parrot'])
+    assert.deepEqual(controller.STEPS.map((s) => s.name), ['till', 'budget', 'holdup', 'pennywise', 'haggle', 'ballast', 'doggybag', 'blinkers', 'parrot'])
     for (const s of controller.STEPS) assert.ok(existsSync(join(SCRIPTS, `${s.name}.ts`)), s.name)
   })
 
@@ -482,11 +482,11 @@ describe('controller: one decision per prompt', () => {
     assert.ok(d.output!.systemMessage.includes('pennywise: routing down to Haiku'))
     assert.ok(d.output!.hookSpecificOutput.additionalContext.includes('model: "haiku"'))
     assert.equal(d.ran.length, 9)
-    assert.ok(withDb(s.dbPath, (db) => db.get("SELECT 1 AS x FROM sessions WHERE session_id='s'")))   // spendlens recorded it
+    assert.ok(withDb(s.dbPath, (db) => db.get("SELECT 1 AS x FROM sessions WHERE session_id='s'")))   // till recorded it
   })
 
   test('a budget at its limit pauses the prompt before pennywise runs', async (c) => {
-    const s = sandbox(c, { TOKENOMICS_BUDGET_SESSION: '1', TOKENOMICS_BUDGET_MODE: undefined })
+    const s = sandbox(c, { AGENTARIUM_BUDGET_SESSION: '1', AGENTARIUM_BUDGET_MODE: undefined })
     const db = store.connect(s.dbPath)
     try {
       db.run("INSERT INTO sessions(session_id) VALUES('s')")
@@ -498,7 +498,7 @@ describe('controller: one decision per prompt', () => {
     const d = await s.run(() => controller.decide(raw))
     assert.equal(d.output!.decision, 'block')
     assert.equal(d.decidedBy, 'budget')
-    assert.deepEqual(d.ran, ['spendlens', 'budget'])
+    assert.deepEqual(d.ran, ['till', 'budget'])
   })
 
   test('the hook command: quiet on bad input, skips what it is told to', async (c) => {
@@ -510,9 +510,9 @@ describe('controller: one decision per prompt', () => {
   })
 })
 
-describe('controller latency in tokenomics doctor', () => {
+describe('controller latency in agentarium doctor', () => {
   test('each prompt times its steps, and doctor flags the slow one', async (c) => {
-    const s = sandbox(c, { TOKENOMICS_CONTROLLER_TIMING: undefined, TOKENOMICS_CONTROLLER_SLOW_MS: undefined })
+    const s = sandbox(c, { AGENTARIUM_CONTROLLER_TIMING: undefined, AGENTARIUM_CONTROLLER_SLOW_MS: undefined })
     await s.run(async () => {
       const raw = JSON.stringify({ session_id: 'lat', cwd: s.t.home, prompt: 'hello' })
       const d = await controller.decide(raw)
@@ -537,14 +537,14 @@ describe('controller latency in tokenomics doctor', () => {
       assert.equal(lat.find((r) => r.step === 'budget')!.slow, false)
       const lines = controller.latencyLines(lat).join('\n')
       assert.ok(lines.includes('~500 ms a prompt'), lines)
-      assert.ok(lines.includes('parrot') && lines.includes('TOKENOMICS_CONTROLLER_SKIP=parrot'), lines)
+      assert.ok(lines.includes('parrot') && lines.includes('AGENTARIUM_CONTROLLER_SKIP=parrot'), lines)
       assert.ok(lines.indexOf('parrot') < lines.indexOf('budget'))                    // slowest first
-      await withEnv({ TOKENOMICS_CONTROLLER_SLOW_MS: '500' }, () => assert.equal(controller.latency(s.dbPath).find((r) => r.step === 'parrot')!.slow, false))
+      await withEnv({ AGENTARIUM_CONTROLLER_SLOW_MS: '500' }, () => assert.equal(controller.latency(s.dbPath).find((r) => r.step === 'parrot')!.slow, false))
     })
   })
 
-  test('TOKENOMICS_CONTROLLER_TIMING=off records nothing; doctor says so', async (c) => {
-    const s = sandbox(c, { TOKENOMICS_CONTROLLER_TIMING: 'off' })
+  test('AGENTARIUM_CONTROLLER_TIMING=off records nothing; doctor says so', async (c) => {
+    const s = sandbox(c, { AGENTARIUM_CONTROLLER_TIMING: 'off' })
     await s.run(async () => {
       await controller.decide(JSON.stringify({ session_id: 'x', prompt: 'hello' }))
       assert.deepEqual(controller.latency(s.dbPath), [])
@@ -561,17 +561,17 @@ describe('the controller on Copilot', () => {
     const cp = JSON.parse(readFileSync(join(ROOT, 'copilot-hooks.json'), 'utf8')).hooks.userPromptSubmitted
     assert.equal(cp.length, 1)
     assert.ok(cp[0].bash.endsWith('controller.ts prompt copilot') && cp[0].powershell.includes('controller.ts prompt copilot'))
-    assert.deepEqual(controller.stepsFor('copilot').map((s) => s.name), ['spendlens', 'premium', 'doggybag', 'blinkers'])
+    assert.deepEqual(controller.stepsFor('copilot').map((s) => s.name), ['till', 'premium', 'doggybag', 'blinkers'])
     assert.equal(controller.stepsFor('claude-code'), controller.STEPS)
     const s = sandbox(c)
     const d = await s.run(() => controller.decide(prompt('cp1', 'add a retry to the uploader'), 'copilot'))
-    assert.deepEqual(d.ran, ['spendlens', 'premium', 'doggybag', 'blinkers'])
+    assert.deepEqual(d.ran, ['till', 'premium', 'doggybag', 'blinkers'])
     assert.equal(d.output, null)
     assert.equal(prompts(s.dbPath), 1)
   })
 
   test('the allowance used up: recorded once while Copilot ignores the output, paused once it honours it', async (c) => {
-    const s = sandbox(c, { TOKENOMICS_COPILOT_ALLOWANCE: '2', TOKENOMICS_COPILOT_MULTIPLIER: '1', TOKENOMICS_PREMIUM: undefined })
+    const s = sandbox(c, { AGENTARIUM_COPILOT_ALLOWANCE: '2', AGENTARIUM_COPILOT_MULTIPLIER: '1', AGENTARIUM_PREMIUM: undefined })
     const cp = getAdapter('copilot')
     assert.equal(cp.supports(Capability.PROMPT_DECISION), false)
     assert.equal(getAdapter('claude-code').supports(Capability.PROMPT_DECISION), true)
@@ -594,14 +594,14 @@ describe('the controller on Copilot', () => {
       assert.equal(premium.decide({ sessionId: 'cp3', prompt: 'next' }, honours, s.dbPath), null)
       assert.deepEqual(actions(), ['would-pause', 'paused', 'overridden'])
       assert.equal(premium.decide(payload, getAdapter('claude-code'), s.dbPath), null)     // Claude Code bills tokens
-      await withEnv({ TOKENOMICS_PREMIUM: 'off' }, () => assert.equal(premium.decide({ sessionId: 'cp4', prompt: 'x' }, honours, s.dbPath), null))
+      await withEnv({ AGENTARIUM_PREMIUM: 'off' }, () => assert.equal(premium.decide({ sessionId: 'cp4', prompt: 'x' }, honours, s.dbPath), null))
     })
   })
 })
 
 describe('Copilot: each prompt at its own model\'s multiplier', () => {
   test('the per-model map: exact, then the longest key the model contains, then the default', () =>
-    withEnv({ TOKENOMICS_COPILOT_MULTIPLIERS: 'claude-opus=10, claude-opus-4.8=27,gpt-4.1=0,bad,x=y', TOKENOMICS_COPILOT_MULTIPLIER: '2' }, () => {
+    withEnv({ AGENTARIUM_COPILOT_MULTIPLIERS: 'claude-opus=10, claude-opus-4.8=27,gpt-4.1=0,bad,x=y', AGENTARIUM_COPILOT_MULTIPLIER: '2' }, () => {
       assert.deepEqual(premiumEngine.multiplierFor('gpt-4.1'), { multiplier: 0, known: true })
       assert.deepEqual(premiumEngine.multiplierFor('Claude-Opus-4.8'), { multiplier: 27, known: true })
       assert.deepEqual(premiumEngine.multiplierFor('claude-opus-4.1'), { multiplier: 10, known: true })
@@ -614,7 +614,7 @@ describe('Copilot: each prompt at its own model\'s multiplier', () => {
     const t = useTemp(c)
     const home = join(t.home, 'copilot')
     const cp = getAdapter('copilot')
-    await withEnv({ TOKENOMICS_COPILOT_HOME: home }, () => {
+    await withEnv({ AGENTARIUM_COPILOT_HOME: home }, () => {
       assert.equal(cp.sessionModel({ sessionId: 's1' }), null)
       mkdirSync(join(home, 'session-state', 's1'), { recursive: true })
       writeFileSync(join(home, 'config.json'), JSON.stringify({ model: 'gpt-5' }))
@@ -632,11 +632,11 @@ describe('Copilot: each prompt at its own model\'s multiplier', () => {
     })
   })
 
-  test('spendlens records each prompt at its multiplier; the outlook adds them up', async (c) => {
+  test('till records each prompt at its multiplier; the outlook adds them up', async (c) => {
     const t = useTemp(c)
     const home = join(t.home, 'copilot')
-    const s = sandbox(c, { TOKENOMICS_COPILOT_HOME: home, TOKENOMICS_COPILOT_MULTIPLIERS: 'claude-haiku-4.5=0.33,claude-opus=10',
-      TOKENOMICS_COPILOT_MULTIPLIER: '1', TOKENOMICS_COPILOT_ALLOWANCE: '300' })
+    const s = sandbox(c, { AGENTARIUM_COPILOT_HOME: home, AGENTARIUM_COPILOT_MULTIPLIERS: 'claude-haiku-4.5=0.33,claude-opus=10',
+      AGENTARIUM_COPILOT_MULTIPLIER: '1', AGENTARIUM_COPILOT_ALLOWANCE: '300' })
     const state = join(home, 'session-state', 'cpm')
     mkdirSync(state, { recursive: true })
     const use = (model: string) => writeFileSync(join(state, 'events.jsonl'), JSON.stringify({ type: 'session.model_change', data: { newModel: model } }) + '\n')
@@ -664,7 +664,7 @@ describe('Copilot: each prompt at its own model\'s multiplier', () => {
     const state = join(home, 'session-state', 'fu')
     const write = (evs: object[]) => writeFileSync(join(state, 'events.jsonl'), evs.map((e) => JSON.stringify(e)).join('\n') + '\n')
     mkdirSync(state, { recursive: true })
-    await withEnv({ TOKENOMICS_COPILOT_HOME: home }, () => {
+    await withEnv({ AGENTARIUM_COPILOT_HOME: home }, () => {
       write([{ type: 'session.start', data: { selectedModel: 'copilot-fusion-high' } }])
       assert.deepEqual(cp.sessionRoute({ sessionId: 'fu' }), { model: 'copilot-fusion-high', router: 'copilot-fusion-high' })   // nothing routed yet
       write([
@@ -688,7 +688,7 @@ describe('Copilot: each prompt at its own model\'s multiplier', () => {
       assert.deepEqual(getAdapter('claude-code').sessionRoute({ model: 'x' }), { model: null, router: null })
     })
 
-    const s = sandbox(c, { TOKENOMICS_COPILOT_HOME: home, TOKENOMICS_COPILOT_MULTIPLIERS: 'claude-sonnet=1,gpt-5=0', TOKENOMICS_COPILOT_MULTIPLIER: '3' })
+    const s = sandbox(c, { AGENTARIUM_COPILOT_HOME: home, AGENTARIUM_COPILOT_MULTIPLIERS: 'claude-sonnet=1,gpt-5=0', AGENTARIUM_COPILOT_MULTIPLIER: '3' })
     await s.run(async () => {
       write([{ type: 'session.start', data: { selectedModel: 'copilot-fusion' } }, { type: 'assistant.usage', data: { model: 'gpt-5' } }])
       writeFileSync(join(home, 'config.json'), '{}')
@@ -712,9 +712,9 @@ describe('Copilot: each prompt at its own model\'s multiplier', () => {
       db.exec("CREATE TABLE telemetry_events(id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, v INTEGER, type TEXT, platform TEXT, session_id TEXT, project TEXT, developer TEXT, billing_model TEXT, tool TEXT, tool_kind TEXT, command_kind TEXT, path TEXT, ok INTEGER, prompt_chars INTEGER)")
       db.run("INSERT INTO telemetry_events(ts,type,platform) VALUES(?,'prompt','copilot')", new Date().toISOString())
     })
-    return withEnv({ TOKENOMICS_DB: path }, async () => {
+    return withEnv({ AGENTARIUM_DB: path }, async () => {
       assert.deepEqual(statusline.copilotUsage(new Date(), 4), { prompts: 1, requests: 4, last: null })
-      const telemetry = await import('../tokenomics/services/telemetry.ts')
+      const telemetry = await import('../agentarium/services/telemetry.ts')
       withDb(path, (db) => telemetry.ensure(db))
       assert.ok(withDb(path, (db) => db.columns('telemetry_events').has('premium')))
       assert.deepEqual(statusline.copilotUsage(new Date(), 4), { prompts: 1, requests: 4, last: null })
@@ -726,21 +726,21 @@ describe('profiles and the config file', () => {
   test('env beats config.json beats the profile', (c) => {
     const t = useTemp(c)
     const f = join(t.home, 'config.json')
-    writeFileSync(f, JSON.stringify({ profile: 'frugal', settings: { budget_daily: 20, TOKENOMICS_DIET: 'warn', bad: { x: 1 } } }))
-    const r = profile.resolve({ TOKENOMICS_BALLAST: 'off' }, f)
+    writeFileSync(f, JSON.stringify({ profile: 'frugal', settings: { budget_daily: 20, AGENTARIUM_DIET: 'warn', bad: { x: 1 } } }))
+    const r = profile.resolve({ AGENTARIUM_BALLAST: 'off' }, f)
     assert.equal(r.profile, 'frugal')
-    assert.deepEqual(r.values.TOKENOMICS_BUDGET_DAILY, { value: '20', from: 'config' })
-    assert.deepEqual(r.values.TOKENOMICS_DIET, { value: 'warn', from: 'config' })          // config over the profile's "block"
-    assert.deepEqual(r.values.TOKENOMICS_BALLAST, { value: 'off', from: 'env' })           // env over the profile's "block"
-    assert.deepEqual(r.values.TOKENOMICS_PENNYWISE_UP, { value: 'off', from: 'profile' })
+    assert.deepEqual(r.values.AGENTARIUM_BUDGET_DAILY, { value: '20', from: 'config' })
+    assert.deepEqual(r.values.AGENTARIUM_DIET, { value: 'warn', from: 'config' })          // config over the profile's "block"
+    assert.deepEqual(r.values.AGENTARIUM_BALLAST, { value: 'off', from: 'env' })           // env over the profile's "block"
+    assert.deepEqual(r.values.AGENTARIUM_PENNYWISE_UP, { value: 'off', from: 'profile' })
     assert.ok(r.errors.some((e) => e.includes('settings.bad')))
-    const env: NodeJS.ProcessEnv = { TOKENOMICS_PROFILE: 'quality' }
+    const env: NodeJS.ProcessEnv = { AGENTARIUM_PROFILE: 'quality' }
     profile.applyProfile(env)
-    assert.equal(env.TOKENOMICS_PENNYWISE_BUDGET, 'off')
-    assert.ok(profile.resolve({ TOKENOMICS_PROFILE: 'stingy' }, f).errors.some((e) => e.includes('unknown profile')))
+    assert.equal(env.AGENTARIUM_PENNYWISE_BUDGET, 'off')
+    assert.ok(profile.resolve({ AGENTARIUM_PROFILE: 'stingy' }, f).errors.some((e) => e.includes('unknown profile')))
   })
 
-  test('per project: the longest folder prefix wins, a bare name matches TOKENOMICS_PROJECT', (c) => {
+  test('per project: the longest folder prefix wins, a bare name matches AGENTARIUM_PROJECT', (c) => {
     const t = useTemp(c)
     const f = join(t.home, 'config.json')
     const api = join(t.home, 'work', 'api')
@@ -751,10 +751,10 @@ describe('profiles and the config file', () => {
     assert.equal(at(join(t.home, 'work', 'web')).profile, 'frugal')
     assert.equal(at(join(t.home, 'work-other')).profile, 'balanced')            // a prefix of the name is not the folder
     assert.equal(at(join(t.home, 'elsewhere')).from, 'config')
-    assert.equal(at(join(t.home, 'x'), { TOKENOMICS_PROJECT: 'shop' }).profile, 'frugal')
-    assert.equal(at(join(api, 'src'), { TOKENOMICS_PROFILE: 'frugal' }).from, 'env')
+    assert.equal(at(join(t.home, 'x'), { AGENTARIUM_PROJECT: 'shop' }).profile, 'frugal')
+    assert.equal(at(join(api, 'src'), { AGENTARIUM_PROFILE: 'frugal' }).from, 'env')
     assert.equal(profile.projectProfile({ '~/work/api': 'quality' }, join(homedir(), 'work', 'api', 'x'))?.profile, 'quality')
-    assert.equal(at(join(api, 'src')).values.TOKENOMICS_ROUTER_TIERS.value, profile.PROFILES.quality.TOKENOMICS_ROUTER_TIERS)
+    assert.equal(at(join(api, 'src')).values.AGENTARIUM_ROUTER_TIERS.value, profile.PROFILES.quality.AGENTARIUM_ROUTER_TIERS)
   })
 
   test('per phase: opted in, today past the warning share switches to the budget profile for the day', async (c) => {
@@ -768,33 +768,33 @@ describe('profiles and the config file', () => {
     const s = store.connect(db)
     s.run("INSERT INTO cost_events(session_id,ts,day,usd) VALUES('a','t',?,9)", new Date().toLocaleDateString('sv'))
     s.close()
-    const base = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('TOKENOMICS_')))
-    const env = { ...base, TOKENOMICS_DB: db, TOKENOMICS_HOME: t.home, TOKENOMICS_BUDGET_DAILY: '10', TOKENOMICS_CURRENCY: 'USD',
-      TOKENOMICS_BUDGET_PROFILE: 'frugal' }
+    const base = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('AGENTARIUM_')))
+    const env = { ...base, AGENTARIUM_DB: db, AGENTARIUM_HOME: t.home, AGENTARIUM_BUDGET_DAILY: '10', AGENTARIUM_CURRENCY: 'USD',
+      AGENTARIUM_BUDGET_PROFILE: 'frugal' }
     runScript('budget.ts', ['claude-code'], { input: JSON.stringify({ session_id: 'a', prompt: 'hi' }), env })
     assert.ok(profile.inBudgetPhase(phase))
     const r = profile.resolve({}, f, t.home, phase)
     assert.deepEqual([r.profile, r.from], ['frugal', 'phase'])
-    assert.equal(profile.resolve({ TOKENOMICS_PROFILE: 'quality' }, f, t.home, phase).profile, 'quality')   // the env still wins
+    assert.equal(profile.resolve({ AGENTARIUM_PROFILE: 'quality' }, f, t.home, phase).profile, 'quality')   // the env still wins
     writeFileSync(phase, JSON.stringify({ day: '2001-01-01', pct: 90 }))
     assert.equal(profile.resolve({}, f, t.home, phase).profile, 'quality')        // yesterday's mark is spent
     // not opted in: nothing is marked
     const t2 = useTemp(c)
     runScript('budget.ts', ['claude-code'], { input: JSON.stringify({ session_id: 'a', prompt: 'hi' }),
-      env: { ...base, TOKENOMICS_DB: db, TOKENOMICS_HOME: t2.home, TOKENOMICS_BUDGET_DAILY: '10', TOKENOMICS_CURRENCY: 'USD' } })
+      env: { ...base, AGENTARIUM_DB: db, AGENTARIUM_HOME: t2.home, AGENTARIUM_BUDGET_DAILY: '10', AGENTARIUM_CURRENCY: 'USD' } })
     assert.ok(!existsSync(join(t2.home, 'budget_phase.json')))
   })
 
   test('names', () => {
-    assert.equal(profile.envName('budget_daily'), 'TOKENOMICS_BUDGET_DAILY')
-    assert.equal(profile.envName('TOKENOMICS_DIET'), 'TOKENOMICS_DIET')
+    assert.equal(profile.envName('budget_daily'), 'AGENTARIUM_BUDGET_DAILY')
+    assert.equal(profile.envName('AGENTARIUM_DIET'), 'AGENTARIUM_DIET')
     assert.equal(profile.envName('PATH'), null)
   })
 
   test('the frugal profile routes routine work to Haiku', async () => {
-    const env: NodeJS.ProcessEnv = { TOKENOMICS_PROFILE: 'frugal' }
+    const env: NodeJS.ProcessEnv = { AGENTARIUM_PROFILE: 'frugal' }
     profile.applyProfile(env)
-    await withEnv({ TOKENOMICS_ROUTER_TIERS: env.TOKENOMICS_ROUTER_TIERS, TOKENOMICS_PENNYWISE_LEARN: 'off' },
+    await withEnv({ AGENTARIUM_ROUTER_TIERS: env.AGENTARIUM_ROUTER_TIERS, AGENTARIUM_PENNYWISE_LEARN: 'off' },
       () => assert.equal(pennywise.score('add a /health endpoint to the flask api').model, 'haiku'))
   })
 })
@@ -839,8 +839,8 @@ describe('Copilot: premium requests, forecast like a budget', () => {
   })
 
   test('no allowance set, no forecast', async () => {
-    await withEnv({ TOKENOMICS_COPILOT_ALLOWANCE: undefined }, () => assert.equal(statusline.copilotAllowance(), null))
-    await withEnv({ TOKENOMICS_COPILOT_ALLOWANCE: '300', TOKENOMICS_COPILOT_MULTIPLIER: undefined },
+    await withEnv({ AGENTARIUM_COPILOT_ALLOWANCE: undefined }, () => assert.equal(statusline.copilotAllowance(), null))
+    await withEnv({ AGENTARIUM_COPILOT_ALLOWANCE: '300', AGENTARIUM_COPILOT_MULTIPLIER: undefined },
       () => assert.deepEqual(statusline.copilotAllowance(), { monthly: 300, multiplier: 1 }))
   })
 })
@@ -851,7 +851,7 @@ describe('the band and statusline show what pennywise saved', () => {
     raw: { modelId: 'claude-opus-5-5', ctx: 40_000, window: 200_000, requests: 10, output: 6_000, rate: 0.76 } }
 
   test('saved, in the display currency, on the row and in the JSON', async () => {
-    await withEnv({ TOKENOMICS_BUDGET_DAILY: undefined, TOKENOMICS_BUDGET_SESSION: undefined }, () => {
+    await withEnv({ AGENTARIUM_BUDGET_DAILY: undefined, AGENTARIUM_BUDGET_SESSION: undefined }, () => {
       const o = statusline.outlook(info, cfg, { savedUsd: 1 })!
       assert.ok(Math.abs(o.saved - 0.76) < 1e-9)
       assert.equal(statusline.outlookJson(o, '£')!.saved, '£0.76')
@@ -865,13 +865,13 @@ describe("haggle's agreed price is a budget the outlook counts down", () => {
   const cfg = { ...statusline.DEFAULT_CFG, currency: 'GBP', usd_gbp: 0.76 }
   const info: statusline.Info = { model: 'Opus 5.5', total: 4e6, cost: 1.46, symbol: '£', estimated: false, pct: 20, ttl: 300, remaining: 250,
     sid: 'task-s', raw: { modelId: 'claude-opus-5-5', ctx: 40_000, window: 200_000, requests: 10, output: 6_000, rate: 0.76 } }
-  const none = { TOKENOMICS_BUDGET_DAILY: undefined, TOKENOMICS_BUDGET_SESSION: undefined, TOKENOMICS_BUDGET_MONTHLY: undefined }
+  const none = { AGENTARIUM_BUDGET_DAILY: undefined, AGENTARIUM_BUDGET_SESSION: undefined, AGENTARIUM_BUDGET_MONTHLY: undefined }
 
   test('the open contract, read from the database', async (c) => {
     const s = sandbox(c)
     await s.run(async () => {
       assert.equal(statusline.taskContractUsd('task-s'), null)
-      const contract = await import('../tokenomics/engine/contract.ts')
+      const contract = await import('../agentarium/engine/contract.ts')
       withDb(s.dbPath, (db) => {
         contract.start(db, 'task-s', { tier: 'COMPLEX', turns: 10, low: 0.5, mid: 1, high: 2, breakdown: { input: 0, tools: 0, output: 0 },
           calibration: 1, samples: 0 }, 1, 2.5, true, null, 0)
@@ -900,12 +900,12 @@ describe("haggle's agreed price is a budget the outlook counts down", () => {
       assert.ok(statusline.tipText(o, '£').includes('£0.80 of £2.00 left this task'))
       if (o.budget!.steps_left! < o.steps) assert.ok(o.tip!.why.includes("task's agreed budget"), o.tip!.why)
     })
-    await withEnv({ ...none, TOKENOMICS_BUDGET_SESSION: '1.50' }, () => {
+    await withEnv({ ...none, AGENTARIUM_BUDGET_SESSION: '1.50' }, () => {
       // the session has £0.04 left, the task more: the session's budget is the tighter
       const o = statusline.outlook(info, cfg, { task: { limit: 10, spent: 0 }, savedUsd: 0 })!
       assert.equal(o.budget!.kind, 'session')
     })
-    await withEnv({ ...none, TOKENOMICS_BUDGET_MODE: 'off' }, () => {
+    await withEnv({ ...none, AGENTARIUM_BUDGET_MODE: 'off' }, () => {
       assert.equal(statusline.outlook(info, cfg, { task: { limit: 2, spent: 1 }, savedUsd: 0 })!.budget!.kind, 'task')
     })
   })

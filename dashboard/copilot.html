@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>tokenomics · Copilot</title>
+<title>agentarium · Copilot</title>
 <!-- A small window for apps with no status line (the GitHub Copilot app): Copilot's premium requests,
      from /api/copilot (statusline.ts copilotStatus), refreshed every 5 seconds. No fonts or scripts
      from outside: it opens with nothing but the local server. -->
@@ -44,14 +44,14 @@ const $ = (id) => document.getElementById(id)
 const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 function draw(b) {
   if (!b || (b.show !== false && !b.today)) {
-    $('text').textContent = `tokenomics couldn't read the numbers${b && b.error ? `: ${b.error}` : ''}.`
+    $('text').textContent = `agentarium couldn't read the numbers${b && b.error ? `: ${b.error}` : ''}.`
     return
   }
   if (b.show === false) {
     $('n').textContent = 'hidden'
     $('of').textContent = ''
     $('out').textContent = ''
-    $('text').textContent = 'tokenomics statusline --band-on brings it back.'
+    $('text').textContent = 'agentarium statusline --band-on brings it back.'
     $('barwrap').hidden = true
     return
   }
@@ -74,13 +74,13 @@ function draw(b) {
     : `${b.month_prompts} this month · ${today}`
   $('hint').hidden = !b.hint
   $('hint').textContent = b.hint || ''
-  document.title = `${b.short} · tokenomics`
+  document.title = `${b.short} · agentarium`
 }
 async function tick() {
   try {
     draw(await (await fetch('/api/copilot', { cache: 'no-store' })).json())
   } catch {
-    $('text').textContent = 'Lost the local server: run tokenomics copilot --window again.'
+    $('text').textContent = 'Lost the local server: run agentarium copilot --window again.'
   }
 }
 tick()

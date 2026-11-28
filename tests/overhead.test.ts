@@ -8,9 +8,9 @@ import { ROOT, runScript, useTemp, withEnv } from './helpers.ts'
 
 import * as ballast from '../scripts/ballast.ts'
 import * as waffle from '../scripts/waffle.ts'
-import { carry, topicShift, words } from '../tokenomics/engine/ballast.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { analyse } from '../tokenomics/engine/verbosity.ts'
+import { carry, topicShift, words } from '../agentarium/engine/ballast.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { analyse } from '../agentarium/engine/verbosity.ts'
 
 const SONNET = 'claude-sonnet-5-5'
 
@@ -105,7 +105,7 @@ describe('ballast: the hook', () => {
   test('decide: threshold, slash commands, cold cache, once per band', async () => {
     const t = auth().trace()
     const other = 'write a postgres migration adding invoice currency columns'
-    await withEnv({ TOKENOMICS_BALLAST_MIN_TOKENS: '60000' }, () => {
+    await withEnv({ AGENTARIUM_BALLAST_MIN_TOKENS: '60000' }, () => {
       assert.equal(ballast.decide('/compact keep the auth notes', t, [], now), null)
       assert.equal(ballast.decide(other, t, [], now + 3600), null)              // cache cold: doggybag's job
       const d = ballast.decide(other, t, [], now)!
@@ -115,7 +115,7 @@ describe('ballast: the hook', () => {
       assert.equal(h.rule, 'heavy')
       assert.equal(ballast.decide('the auth redirect still loops after login', t, [{ rule: 'heavy', band: 1 }], now), null)
     })
-    await withEnv({ TOKENOMICS_BALLAST_MIN_TOKENS: '200000' }, () => assert.equal(ballast.decide(other, t, [], now), null))
+    await withEnv({ AGENTARIUM_BALLAST_MIN_TOKENS: '200000' }, () => assert.equal(ballast.decide(other, t, [], now), null))
   })
 
   test('warns once through the hook, logs it, and block pauses the prompt', (c) => {
@@ -129,9 +129,9 @@ describe('ballast: the hook', () => {
     assert.match(JSON.parse(first.stdout).systemMessage, /^ballast: this looks like a new task/)
     assert.equal(runScript('ballast.ts', ['claude-code'], { input: payload, env: t.env() }).stdout, '')
     assert.deepEqual(t.rows('SELECT rule, action FROM ballast_events').map((r) => [r.rule, r.action]), [['new_task', 'warn']])
-    const blocked = runScript('ballast.ts', ['claude-code'], { input: payload.replace('"s1"', '"s2"'), env: t.env({ TOKENOMICS_BALLAST: 'block' }) })
+    const blocked = runScript('ballast.ts', ['claude-code'], { input: payload.replace('"s1"', '"s2"'), env: t.env({ AGENTARIUM_BALLAST: 'block' }) })
     assert.equal(JSON.parse(blocked.stdout).decision, 'block')
-    assert.equal(runScript('ballast.ts', ['claude-code'], { input: payload, env: t.env({ TOKENOMICS_BALLAST: 'off' }) }).stdout, '')
+    assert.equal(runScript('ballast.ts', ['claude-code'], { input: payload, env: t.env({ AGENTARIUM_BALLAST: 'off' }) }).stdout, '')
     assert.equal(runScript('ballast.ts', ['claude-code'], { input: 'not json', env: t.env() }).status, 0)
   })
 })

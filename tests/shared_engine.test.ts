@@ -4,12 +4,12 @@ import { describe, test } from 'node:test'
 
 import { assistant, useTemp, user, writeTranscript, type TempEnv } from './helpers.ts'
 
-import * as cc from '../tokenomics/adapters/claude_code.ts'
-import * as cp from '../tokenomics/adapters/copilot.ts'
-import { settings } from '../tokenomics/config.ts'
-import * as classifier from '../tokenomics/engine/classifier.ts'
-import * as session from '../tokenomics/engine/session.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
+import * as cc from '../agentarium/adapters/claude_code.ts'
+import * as cp from '../agentarium/adapters/copilot.ts'
+import { settings } from '../agentarium/config.ts'
+import * as classifier from '../agentarium/engine/classifier.ts'
+import * as session from '../agentarium/engine/session.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
 
 async function claude(t: TempEnv, sid: string, prompts: string[], tools: [string, object][]) {
   const s = settings({ dbPath: t.db })

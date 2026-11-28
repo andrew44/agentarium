@@ -1,32 +1,32 @@
 #!/bin/sh
-# tokenomics installer for macOS and Linux.
+# agentarium installer for macOS and Linux.
 #
-#   curl -fsSL https://raw.githubusercontent.com/andrew44/tokenomics/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh | sh
 #
-# Downloads tokenomics to ~/.tokenomics/app (no git needed), then sets up whichever assistants it
-# finds: the Claude Code / Copilot CLI plugin (skills + hooks), the statusline, and a `tokenomics`
+# Downloads agentarium to ~/.agentarium/app (no git needed), then sets up whichever assistants it
+# finds: the Claude Code / Copilot CLI plugin (skills + hooks), the statusline, and a `agentarium`
 # command. It never replaces a status line you already have. Safe to run again to repair.
 #
-# tokenomics is TypeScript run directly by Node.js 22.18 or newer (no build step, no npm install).
-# No Node.js, or an older one? It downloads a private copy into ~/.tokenomics/runtime (no admin
+# agentarium is TypeScript run directly by Node.js 22.18 or newer (no build step, no npm install).
+# No Node.js, or an older one? It downloads a private copy into ~/.agentarium/runtime (no admin
 # rights, no pop-ups, nothing else on your system changes).
 #
 # Options (after `sh -s --`): --no-plugin  --no-statusline
-# Environment: TOKENOMICS_REPO (default andrew44/tokenomics), TOKENOMICS_REF (default main),
-#              TOKENOMICS_HOME (default ~/.tokenomics),
-#              TOKENOMICS_NODE (a node to use, or "standalone" to always use a private copy)
+# Environment: AGENTARIUM_REPO (default andrew44/agentarium), AGENTARIUM_REF (default main),
+#              AGENTARIUM_HOME (default ~/.agentarium),
+#              AGENTARIUM_NODE (a node to use, or "standalone" to always use a private copy)
 
 # Everything is inside main() so a half-downloaded script never runs.
 main() {
     set -eu
-    repo="${TOKENOMICS_REPO:-andrew44/tokenomics}"
-    ref="${TOKENOMICS_REF:-main}"
-    home="${TOKENOMICS_HOME:-$HOME/.tokenomics}"
+    repo="${AGENTARIUM_REPO:-andrew44/agentarium}"
+    ref="${AGENTARIUM_REF:-main}"
+    home="${AGENTARIUM_HOME:-$HOME/.agentarium}"
     app="$home/app"
     private="$home/runtime/node/bin/node"
 
     say() { printf '%s\n' "$*"; }
-    fail() { printf '\ntokenomics: %s\n' "$*" >&2; exit 1; }
+    fail() { printf '\nagentarium: %s\n' "$*" >&2; exit 1; }
 
     fetch() {   # fetch URL FILE
         if command -v curl >/dev/null 2>&1; then
@@ -34,7 +34,7 @@ main() {
         elif command -v wget >/dev/null 2>&1; then
             wget -q "$1" -O "$2"
         else
-            fail "curl or wget is needed to download tokenomics."
+            fail "curl or wget is needed to download agentarium."
         fi
     }
 
@@ -54,7 +54,7 @@ main() {
             Linux-aarch64|Linux-arm64) plat=linux-arm64;  sum=95c264150aceb7f3437a29fd6984924f5f8d1511ea3cbd6c508b83f6c555dae2 ;;
             *) return 1 ;;
         esac
-        say "Downloading a private Node.js for tokenomics (one time, about 50 MB)..."
+        say "Downloading a private Node.js for agentarium (one time, about 50 MB)..."
         fetch "https://nodejs.org/dist/$version/node-$version-$plat.tar.gz" "$tmp/node.tar.gz" || return 1
         if command -v sha256sum >/dev/null 2>&1; then
             got="$(sha256sum "$tmp/node.tar.gz" | cut -d' ' -f1)"
@@ -69,15 +69,15 @@ main() {
         [ -x "$private" ] && usable "$private"
     }
 
-    tmp="$(mktemp -d 2>/dev/null || mktemp -d -t tokenomics)"
+    tmp="$(mktemp -d 2>/dev/null || mktemp -d -t agentarium)"
     trap 'rm -rf "$tmp"' EXIT INT TERM
     mkdir -p "$home"
 
     # 1. Node.js 22.18+ (built-in modules only; nothing gets npm-installed)
     node=""
-    want="${TOKENOMICS_NODE:-}"
+    want="${AGENTARIUM_NODE:-}"
     if [ -n "$want" ] && [ "$want" != standalone ]; then
-        usable "$want" || fail "TOKENOMICS_NODE=$want isn't a working Node.js 22.18+."
+        usable "$want" || fail "AGENTARIUM_NODE=$want isn't a working Node.js 22.18+."
         node="$(command -v "$want")"
     elif [ -z "$want" ]; then
         if [ -x "$private" ] && usable "$private"; then
@@ -94,24 +94,24 @@ main() {
                 Darwin) hint="install it from https://nodejs.org (or: brew install node)" ;;
                 *)      hint="install it from https://nodejs.org or with your package manager" ;;
             esac
-            fail "tokenomics needs Node.js 22.18 or newer and couldn't download it. Please $hint, then run this installer again."
+            fail "agentarium needs Node.js 22.18 or newer and couldn't download it. Please $hint, then run this installer again."
         fi
     fi
 
-    # 2. Download tokenomics (a tarball, so git isn't needed)
+    # 2. Download agentarium (a tarball, so git isn't needed)
     url="https://github.com/$repo/archive/$ref.tar.gz"
-    say "Downloading tokenomics ($repo@$ref)..."
+    say "Downloading agentarium ($repo@$ref)..."
     fetch "$url" "$tmp/src.tar.gz" || fail "download failed: $url  (check your internet connection and try again)"
     mkdir -p "$tmp/src"
     tar -xzf "$tmp/src.tar.gz" -C "$tmp/src" || fail "couldn't unpack the download."
     src="$(find "$tmp/src" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
-    [ -f "$src/scripts/cli.ts" ] || fail "the download doesn't look like tokenomics."
+    [ -f "$src/scripts/cli.ts" ] || fail "the download doesn't look like agentarium."
     rm -rf "$app.new"
     mv "$src" "$app.new"
     rm -rf "$app"
     mv "$app.new" "$app"
 
-    # 3. Set everything up (plugin, statusline, `tokenomics` command)
+    # 3. Set everything up (plugin, statusline, `agentarium` command)
     say ""
     "$node" --disable-warning=ExperimentalWarning "$app/scripts/cli.ts" setup "$@" </dev/null
 }

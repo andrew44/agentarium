@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / crystal-ball: what will this cost? A financial planning tool for AI adoption: simulate
+ * agentarium / crystal-ball: what will this cost? A financial planning tool for AI adoption: simulate
  * a team's monthly AI spend before rolling out an agentic workflow, across every model and provider.
  *
  *   crystalball.ts [--devs 10] [--tasks 20] [--input 50000] [--output 5000] [--cache 0.7] [--days 21]
@@ -18,14 +18,14 @@
  *   --tier fast|balanced|frontier       only offerings of that tier;  --provider anthropic|bedrock|...
  *   --json  --currency USD|EUR|GBP
  *
- * Prices: CostEngine (data/model-prices.json, data/providers.json, ~/.tokenomics/providers.json).
+ * Prices: CostEngine (data/model-prices.json, data/providers.json, ~/.agentarium/providers.json).
  * Copilot bills seats and premium requests rather than tokens, so it isn't priced here.
  */
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as ledger from '../tokenomics/engine/ledger.ts'
-import { CostEngine } from '../tokenomics/services/index.ts'
-import { argValue, isMain, today, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as ledger from '../agentarium/engine/ledger.ts'
+import { CostEngine } from '../agentarium/services/index.ts'
+import { argValue, isMain, today, type Obj } from '../agentarium/util.ts'
 import { numArg, round2, useCurrency, write } from './common.ts'
 import { existsSync } from 'node:fs'
 
@@ -145,7 +145,7 @@ export function markdown(r: Obj): string {
   for (const o of r.offerings) {
     L.push(`| ${o.id}${o.indicative ? ' *' : ''} | ${o.tier} | ${fmt(o.per_task_usd)} | ${fmt(o.per_developer_month_usd)} | **${fmt(o.month_usd)}** | ${fmt(o.year_usd)} |`)
   }
-  if (r.offerings.some((o: Obj) => o.indicative)) L.push('', '\\* indicative list price: check it against your provider and contract (`~/.tokenomics/providers.json`).')
+  if (r.offerings.some((o: Obj) => o.indicative)) L.push('', '\\* indicative list price: check it against your provider and contract (`~/.agentarium/providers.json`).')
   if (r.sensitivity) {
     const x = r.sensitivity
     L.push('', `## What moves the bill (${r.reference})`, '',

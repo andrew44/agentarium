@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * tokenomics / parrot: stop telling the AI the same thing every session.
+ * agentarium / parrot: stop telling the AI the same thing every session.
  *
  * A rule you type in a prompt ("always use pnpm", "don't add comments") lasts one session. Typed again
  * in the next session and the one after, it is a line of CLAUDE.md you haven't written yet; a whole
  * prompt you keep pasting is a slash command; and a correction you keep making is work paid for twice.
- * Rules: tokenomics/engine/parrot.ts.
+ * Rules: agentarium/engine/parrot.ts.
  *
  * Prompt hook (Claude Code: UserPromptSubmit). Records a hash of each rule, correction and whole
- * prompt (never the text) against this project. When one reaches TOKENOMICS_PARROT_MIN different
+ * prompt (never the text) against this project. When one reaches AGENTARIUM_PARROT_MIN different
  * sessions (default 3) it says so once, with the fix (a CLAUDE.md line or a slash command) and why
  * it works (engine/lessons.ts). Prompts starting with "/" are never checked.
  *
@@ -18,23 +18,23 @@
  *                     corrections and what the corrected work cost; --here: this folder only
  *   add --currency USD. The report is read-only.
  *
- * Env: TOKENOMICS_PARROT = warn (default: a notice) | off, TOKENOMICS_PARROT_MIN (default 3).
+ * Env: AGENTARIUM_PARROT = warn (default: a notice) | off, AGENTARIUM_PARROT_MIN (default 3).
  * Always exits 0 as a hook; a crash never blocks a prompt.
  */
 import { resolve } from 'node:path'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import { TABLES } from '../tokenomics/engine/events.ts'
-import * as lessons from '../tokenomics/engine/lessons.ts'
-import { commandName, corrections, instructionsText, normalise, phrases, repeats, type Phrase } from '../tokenomics/engine/parrot.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { CostEngine, PolicyEngine } from '../tokenomics/services/index.ts'
-import { argValue, errText, first, isMain, logErr, now, readPayload, sha1, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import { TABLES } from '../agentarium/engine/events.ts'
+import * as lessons from '../agentarium/engine/lessons.ts'
+import { commandName, corrections, instructionsText, normalise, phrases, repeats, type Phrase } from '../agentarium/engine/parrot.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { CostEngine, PolicyEngine } from '../agentarium/services/index.ts'
+import { argValue, errText, first, isMain, logErr, now, readPayload, sha1, type Obj } from '../agentarium/util.ts'
 import { numArg, recentTranscripts, useCurrency, write } from './common.ts'
 
-const minSessions = () => PolicyEngine.threshold('TOKENOMICS_PARROT_MIN', 3, { min: 2, max: 50 })
+const minSessions = () => PolicyEngine.threshold('AGENTARIUM_PARROT_MIN', 3, { min: 2, max: 50 })
 const projectKey = (cwd: string | null) => sha1(resolve(cwd || '.')).slice(0, 12)
 
 /** Record this prompt's phrases; return the ones that just reached `min` sessions and haven't been mentioned. Exported for tests. */
@@ -74,14 +74,14 @@ export function message(due: Phrase[], min: number, cwd: string | null): string 
   }
   const already = instructionsText(cwd).includes(normalise(p.text))
   const what = p.kind === 'correction' ? 'had to correct the AI with' : 'told the AI'
-  const more = due.length > 1 ? ` (and ${due.length - 1} more you keep repeating: \`tokenomics parrot report --here\`)` : ''
+  const more = due.length > 1 ? ` (and ${due.length - 1} more you keep repeating: \`agentarium parrot report --here\`)` : ''
   return already
     ? `parrot: you've ${what} "${quote}" in ${min} sessions, though it's already in your instruction file. Check the file loads (/memory) and that the line is short and near the top.${more}`
     : `parrot: you've ${what} "${quote}" in ${min} sessions in this project. One line in CLAUDE.md says it to every session, so you don't have to: ask me to add it.${more}`
 }
 
 function hook(source: string): void {
-  if (PolicyEngine.mode('TOKENOMICS_PARROT', 'warn', ['warn', 'off']) === 'off') return
+  if (PolicyEngine.mode('AGENTARIUM_PARROT', 'warn', ['warn', 'off']) === 'off') return
   const dbPath = defaultDbPath()
   try {
     const payload = readPayload()

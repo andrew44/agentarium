@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / spring-clean: a context hygiene audit. Instruction files are sent with every
+ * agentarium / spring-clean: a context hygiene audit. Instruction files are sent with every
  * request of every session, so a stale line costs money for months. spring-clean treats context
  * as something to maintain, not a pile that only grows, and finds:
  *
@@ -16,18 +16,18 @@
  *
  *   springclean.ts [--dir PATH] [--json] [--currency USD]
  *
- * Env: TOKENOMICS_SPRINGCLEAN_MAX  tokens one instruction file should stay under (default 1500)
+ * Env: AGENTARIUM_SPRINGCLEAN_MAX  tokens one instruction file should stay under (default 1500)
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as ledger from '../tokenomics/engine/ledger.ts'
-import { ratesFor } from '../tokenomics/engine/pricing.ts'
-import { argValue, isMain, today, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as ledger from '../agentarium/engine/ledger.ts'
+import { ratesFor } from '../agentarium/engine/pricing.ts'
+import { argValue, isMain, today, type Obj } from '../agentarium/util.ts'
 
 const tokens = (s: string) => Math.ceil(s.length / 4)
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'vendor', '.venv', 'venv', 'target', '.next', 'coverage'])
@@ -352,9 +352,9 @@ export function main(args: string[]): number {
       process.stderr.write(`unknown currency ${JSON.stringify(cur)}: use GBP, USD or EUR\n`)
       return 2
     }
-    process.env.TOKENOMICS_CURRENCY = c
+    process.env.AGENTARIUM_CURRENCY = c
   }
-  const max = Number(process.env.TOKENOMICS_SPRINGCLEAN_MAX ?? 1500)
+  const max = Number(process.env.AGENTARIUM_SPRINGCLEAN_MAX ?? 1500)
   const r = build(resolve(argValue(args, '--dir') ?? process.cwd()), argValue(args, '--db') ?? defaultDbPath(),
     Number.isFinite(max) && max > 0 ? max : 1500)
   process.stdout.write((args.includes('--json') ? JSON.stringify(r, null, 2) : markdown(r)) + '\n')

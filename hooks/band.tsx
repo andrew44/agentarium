@@ -1,4 +1,4 @@
-// The band: the tokenomics statusline in Claude Code's apps, which don't draw the CLI's
+// The band: the agentarium statusline in Claude Code's apps, which don't draw the CLI's
 // `statusLine` setting (a mod: see https://code.claude.com/docs/en/plugins/mods/interface).
 //   * Claude desktop app (and mobile): a row in the band above the prompt box (AbovePrompt).
 //   * VS Code, which has no band: the plugin's status line above the prompt box ($.ui.status).
@@ -11,7 +11,7 @@
 // the cache countdown each second and re-reads the numbers when the transcript grows mid-turn.
 // If statusline.ts can't run (no shell or Node.js 22.18+ the app can start), the band shows the
 // engine's own figures instead and says why once in the transcript (the details: claude --debug).
-// Off with `tokenomics statusline --band-off` or TOKENOMICS_BAND=off (statusline.ts decides).
+// Off with `agentarium statusline --band-off` or AGENTARIUM_BAND=off (statusline.ts decides).
 // This is the plugin's one hooks module, so it also registers the pane (hooks/pane.tsx).
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
@@ -22,7 +22,7 @@ import type { Level } from './lens'
 import { registerPane, startPane } from './pane'
 
 // The numbers from statusline.ts --json: written here, read by the band and the pane (pane.tsx).
-const line = atom({ plugin: 'tokenomics', key: 'line' } as const, null)
+const line = atom({ plugin: 'agentarium', key: 'line' } as const, null)
 
 const REFRESH_MS = 3000          // mid-turn: at most one statusline.ts run per 3s
 
@@ -131,10 +131,10 @@ async function refresh($: EngineInterface) {
     await update($, line, () => data)
   } catch (err) {
     // never get in the way: draw the engine's own figures, and say once why
-    $.ui.log(`tokenomics band: ${String(err)}`, { to: 'debug' })
+    $.ui.log(`agentarium band: ${String(err)}`, { to: 'debug' })
     if (!told && (await appSurfaces($).catch(() => [])).length) {
       told = true
-      $.ui.log(`tokenomics: the band is showing Claude Code's own figures (no cache timer, cost in $): ` +
+      $.ui.log(`agentarium: the band is showing Claude Code's own figures (no cache timer, cost in $): ` +
         `${err instanceof Error ? err.message : String(err)}`)
     }
     if (usage) {
@@ -180,7 +180,7 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     const started = await next(e)
-    void startPane($, e.surface).catch(err => $.ui.log(`tokenomics pane: ${String(err)}`, { to: 'debug' }))
+    void startPane($, e.surface).catch(err => $.ui.log(`agentarium pane: ${String(err)}`, { to: 'debug' }))
     void refresh($)
     $.clock.every(1000, () => tick($))            // stops on a reload; the new module starts its own
     return started

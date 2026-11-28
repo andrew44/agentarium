@@ -14,7 +14,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" sherlock.ts --json
 ```
 
 - Newest session in this folder by default; `--session <id>` or `--transcript <file.jsonl>` for another. To find the costliest recent session, use the `spend-report` skill's `top_sessions`, or `bangforbuck.ts report --json` → `biggest_no_result`.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name sherlock.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name sherlock.ts -path "*agentarium*" 2>/dev/null | head -1`.
 - No transcript (e.g. Copilot): say so; sherlock needs a Claude Code transcript.
 - Also worth running for loops: `groundhog.ts check --json` on the same session.
 

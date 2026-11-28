@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / receipt: what the AI work on this branch cost, as one line for a commit or a pull request.
+ * agentarium / receipt: what the AI work on this branch cost, as one line for a commit or a pull request.
  *
  * Claude Code tags every transcript line with the git branch it was on, so receipt adds up exactly the
  * requests made on this branch in this repository, subagents included, across every session:
@@ -8,11 +8,11 @@
  *   AI-Cost: £1.42 (3 sessions, 38 requests, 71% cache reads, pennywise routed 12 prompts and saved £0.40)
  *
  * Numbers only: no prompt, file or command text goes into the line. Claude Code only (Copilot bills
- * premium requests, which tokenomics never turns into money).
+ * premium requests, which agentarium never turns into money).
  *
  *   receipt.ts [--branch NAME] [--days 90] [--json]   this branch (default: the one checked out here)
  *   receipt.ts --trailer                              just the line, for git:
- *     git commit --trailer "$(tokenomics receipt --trailer)"
+ *     git commit --trailer "$(agentarium receipt --trailer)"
  *   receipt.ts --markdown                             a short table for a pull request description
  *   add --currency USD to any of them; --projects DIR reads transcripts from another folder.
  * Read-only. --json gives money in US dollars, to two decimal places.
@@ -21,11 +21,11 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync } from 'node:fs'
 import { join, resolve, sep } from 'node:path'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { CostEngine } from '../tokenomics/services/index.ts'
-import { argValue, isMain, isObj, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { CostEngine } from '../agentarium/services/index.ts'
+import { argValue, isMain, isObj, type Obj } from '../agentarium/util.ts'
 import { money2, numArg, recentTranscripts, useCurrency, write } from './common.ts'
 
 function git(cwd: string, ...args: string[]): string {
@@ -136,7 +136,7 @@ export function markdown(r: Receipt): string {
     '|---:|---:|---:|---:|---:|---:|',
     `| ${r.sessions} | ${r.requests} | ${n(r.cache_read_tokens)} | ${n(r.cache_write_tokens)} | ${n(r.input_tokens)} | ${n(r.output_tokens)} |`,
     ...(r.routed ? ['', `pennywise routed ${r.routed} prompt(s) to a cheaper model${r.saved_usd > 0.005 ? ` and saved ${fmt(r.saved_usd)}` : ''}.`] : []),
-    '', '<sub>From Claude Code transcripts by tokenomics receipt; API prices, numbers only.</sub>',
+    '', '<sub>From Claude Code transcripts by agentarium receipt; API prices, numbers only.</sub>',
   ].join('\n')
 }
 

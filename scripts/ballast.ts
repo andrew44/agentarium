@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * tokenomics / ballast: stop paying to carry finished work into the next task.
+ * agentarium / ballast: stop paying to carry finished work into the next task.
  *
  * Every step re-sends the whole conversation. When you move on to a different task in the same chat,
  * everything from the last one comes along and is re-read at every step of the new one. ballast
  * notices, says what that costs per step, and suggests /clear (doggybag keeps your notes) or /compact.
- * Rules: tokenomics/engine/ballast.ts.
+ * Rules: agentarium/engine/ballast.ts.
  *
  * Prompt hook (Claude Code: UserPromptSubmit). Speaks up when the context is over the threshold and
  *   new_task   the prompt looks like a different task (little in common with the recent prompts and
@@ -19,23 +19,23 @@
  *   ballast.ts check [--session ID | --transcript FILE] [--json]
  *                     replay a session: every task switch that carried old context, and what it cost
  *
- * Env: TOKENOMICS_BALLAST = warn (default: a notice) | block (pause that prompt once; send it again
- *      to go ahead) | off, TOKENOMICS_BALLAST_MIN_TOKENS (default 60000).
+ * Env: AGENTARIUM_BALLAST = warn (default: a notice) | block (pause that prompt once; send it again
+ *      to go ahead) | off, AGENTARIUM_BALLAST_MIN_TOKENS (default 60000).
  * Always exits 0; a crash never blocks a prompt.
  */
 import { findTranscript } from './coach.ts'
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { carry, lastContext, readCostUsd, stepsPerPrompt, topicShift } from '../tokenomics/engine/ballast.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as lessons from '../tokenomics/engine/lessons.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { CostEngine, PolicyEngine } from '../tokenomics/services/index.ts'
-import { argValue, errText, first, isMain, logErr, readPayload, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { carry, lastContext, readCostUsd, stepsPerPrompt, topicShift } from '../agentarium/engine/ballast.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as lessons from '../agentarium/engine/lessons.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { CostEngine, PolicyEngine } from '../agentarium/services/index.ts'
+import { argValue, errText, first, isMain, logErr, readPayload, type Obj } from '../agentarium/util.ts'
 import { useCurrency, write } from './common.ts'
 
 const TAIL_BYTES = 2 * 1024 * 1024
-const minTokens = () => PolicyEngine.threshold('TOKENOMICS_BALLAST_MIN_TOKENS', 60_000, { min: 1000 })
+const minTokens = () => PolicyEngine.threshold('AGENTARIUM_BALLAST_MIN_TOKENS', 60_000, { min: 1000 })
 const n = (v: number) => Math.round(v).toLocaleString('en-GB')
 
 function said(dbPath: string, sid: string): { rule: string, band: number }[] {
@@ -55,7 +55,7 @@ export function decide(prompt: string, t: trace.Trace, history: { rule: string, 
   const last = lastContext(t)
   const min = minTokens()
   if (!last || last.ctx < min) return null
-  const ttl = Number(process.env.TOKENOMICS_CACHE_TTL) || (last.ttl1h ? 3600 : 300)
+  const ttl = Number(process.env.AGENTARIUM_CACHE_TTL) || (last.ttl1h ? 3600 : 300)
   if (last.ts !== null && nowS - last.ts > ttl) return null                    // cold: doggybag's job
   const band = Math.floor(last.ctx / min)
   const stepUsd = readCostUsd(last.ctx, last.model)
@@ -79,7 +79,7 @@ export function decide(prompt: string, t: trace.Trace, history: { rule: string, 
 }
 
 function hook(source: string): void {
-  const mode = PolicyEngine.mode('TOKENOMICS_BALLAST', 'warn', ['warn', 'block', 'off'])
+  const mode = PolicyEngine.mode('AGENTARIUM_BALLAST', 'warn', ['warn', 'block', 'off'])
   if (mode === 'off') return
   const dbPath = defaultDbPath()
   try {

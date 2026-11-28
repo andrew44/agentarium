@@ -19,7 +19,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" crystalball.ts --devs 10 --tasks 20 --
 - From their own data: `--from-history` (then override any option).
 - A routed mix (as pennywise routes): `--mix "haiku=60,sonnet=35,opus=5"`. Growth: `--growth 10 --months 12`.
 - Narrow it: `--tier balanced`, `--provider bedrock`, `--model opus` (the reference for sensitivities and growth). Currency: `--currency USD`.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name crystalball.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name crystalball.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 

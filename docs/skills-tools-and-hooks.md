@@ -2,7 +2,7 @@
 
 # Skills, tools and hooks: what each one does and when to reach for it
 
-tokenomics is made of three kinds of helper. This page lists every one, says what it does, and, most usefully, **when to reach for it**.
+agentarium is made of three kinds of helper. This page lists every one, says what it does, and, most usefully, **when to reach for it**.
 
 | Kind | How it runs | You... |
 |------|-------------|--------|
@@ -22,14 +22,14 @@ New to tokens, the prompt cache or why context costs money? Read [How tokens wor
 | See what I spent this week / month, and where | [spend-report](#spend-report) | Skill |
 | Know how full the conversation is and what it has cost, right now | [statusline](#statusline) | Tool |
 | Know how long until the prompt cache goes cold | [statusline](#statusline) | Tool |
-| See OPEX vs CAPEX, spend trends and what tokenomics saved as charts | [dashboard](#dashboard) | Tool |
+| See OPEX vs CAPEX, spend trends and what agentarium saved as charts | [dashboard](#dashboard) | Tool |
 | Check where I am against my spending limit | [budget status](#budget-1) | Tool |
 | Stop myself overspending | [budget](#budget) | Hook |
-| Send each prompt to the right model (cheap for trivial, strong for hard) | [pennywise](#pennywise) | Hook (or the [router proxy](#tokenomics-router)) |
+| Send each prompt to the right model (cheap for trivial, strong for hard) | [pennywise](#pennywise) | Hook (or the [router proxy](#agentarium-router)) |
 | Stop the AI pulling huge files or logs into the conversation | [diet](#diet) | Hook |
-| Stop paying for passing tests, progress bars and install chatter every time a test run or build succeeds | [colander](#colander) | Hook (plus `tokenomics colander`) |
-| Pick up after a break where I left off, cheaply | [doggybag](#doggybag) | Hook (plus `tokenomics doggybag`) |
-| Know how much AI time went on building vs running things | [spendlens](#spendlens) + [dashboard](#dashboard) / [spend-report](#spend-report) | Hook + Tool / Skill |
+| Stop paying for passing tests, progress bars and install chatter every time a test run or build succeeds | [colander](#colander) | Hook (plus `agentarium colander`) |
+| Pick up after a break where I left off, cheaply | [doggybag](#doggybag) | Hook (plus `agentarium doggybag`) |
+| Know how much AI time went on building vs running things | [till](#till) + [dashboard](#dashboard) / [spend-report](#spend-report) | Hook + Tool / Skill |
 | Get raw numbers for a script or spreadsheet | [coach.ts --json](#coachts), [report.ts --json](#reportts), or [sqlite3](reference.md#looking-at-your-data) | Tool |
 | Refresh model prices | [update_prices.ts](#update_pricests) | Tool |
 | Know whether the AI is delivering value for the money (cost per feature, bug fixed, passing suite) | [bang-for-buck](#bang-for-buck) | Skill (hook records it) |
@@ -68,7 +68,7 @@ flowchart TD
     Q -->|"Guard rails that act on their own"| H["Hooks:<br/>pennywise, diet, colander, budget, hold-up,<br/>doggybag, haggle, groundhog,<br/>cache-buster, too-many-cooks, kettle"]
     Q -->|"Value, waste and quality"| V["bang-for-buck, sherlock, waistline,<br/>taste-test, spring-clean (skills)"]
     Q -->|"Attribution, planning and dead work"| I["split-the-bill, bazaar, crystal-ball,<br/>deadwood, blinkers (skills)"]
-    Q -->|"Data collected in the background"| SL["spendlens<br/>(hook)"]
+    Q -->|"Data collected in the background"| SL["till<br/>(hook)"]
 ```
 
 ---
@@ -90,11 +90,11 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Don't reach for it when:** you want spend across many sessions (use [spend-report](#spend-report)), or you're on Copilot CLI (there is no transcript to read).
 
-**How:** say *"coach, review my prompts"*, *"why was that session expensive?"*, or type `/tokenomics:coach`. Script behind it: [`coach.ts`](#coachts).
+**How:** say *"coach, review my prompts"*, *"why was that session expensive?"*, or type `/agentarium:coach`. Script behind it: [`coach.ts`](#coachts).
 
 ### spend-report
 
-**What it does.** Turns the spendlens database into a short report for a period (default the last 7 days): money spent in your currency, the OPEX/CAPEX split, top projects and models, the costliest sessions, what pennywise, doggybag, diet and budget did, and three ways to spend less tied to your own numbers.
+**What it does.** Turns the till database into a short report for a period (default the last 7 days): money spent in your currency, the OPEX/CAPEX split, top projects and models, the costliest sessions, what pennywise, doggybag, diet and budget did, and three ways to spend less tied to your own numbers.
 
 **Reach for it when:**
 
@@ -105,7 +105,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Don't reach for it when:** you want to look inside one session (use [coach](#coach)) or want charts (use the [dashboard](#dashboard)).
 
-**How:** say *"spend report"*, *"where did my tokens go this week?"*, or name a period: *"spend report for this month in dollars"*. Script behind it: [`report.ts`](#reportts). Needs the plugin installed so spendlens has been recording.
+**How:** say *"spend report"*, *"where did my tokens go this week?"*, or name a period: *"spend report for this month in dollars"*. Script behind it: [`report.ts`](#reportts). Needs the plugin installed so till has been recording.
 
 ### bang-for-buck
 
@@ -113,7 +113,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** someone asks whether the AI is worth it; you're choosing a default model; or you want a value number to track month to month rather than a spend number.
 
-**How:** *"is the AI worth the money?"*, *"cost per feature this month"*, *"which model is best value?"*. Tool: `tokenomics bang-for-buck`. Details: [bang-for-buck](reference.md#bang-for-buck).
+**How:** *"is the AI worth the money?"*, *"cost per feature this month"*, *"which model is best value?"*. Tool: `agentarium bang-for-buck`. Details: [bang-for-buck](reference.md#bang-for-buck).
 
 ### haggle
 
@@ -121,7 +121,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** you're about to hand over a big task, a refactor or a migration, and want to know the bill first, or want a hard ceiling on it.
 
-**How:** *"how much would it cost to migrate the auth module?"*, *"is this worth £2?"*. Tool: `tokenomics haggle quote "..." --price 2`. Details: [haggle](reference.md#haggle).
+**How:** *"how much would it cost to migrate the auth module?"*, *"is this worth £2?"*. Tool: `agentarium haggle quote "..." --price 2`. Details: [haggle](reference.md#haggle).
 
 ### sherlock
 
@@ -129,7 +129,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** coach says a session was expensive and you want to know which *steps* were wasted, or bang-for-buck shows a costly session with nothing to show.
 
-**How:** *"where did the money go in that session?"*, *"sherlock"*. Tool: `tokenomics sherlock`. Details: [sherlock](reference.md#sherlock).
+**How:** *"where did the money go in that session?"*, *"sherlock"*. Tool: `agentarium sherlock`. Details: [sherlock](reference.md#sherlock).
 
 ### waistline
 
@@ -137,7 +137,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** the bill feels higher but nothing obvious changed; after adding an MCP server, a bigger CLAUDE.md or a new model; or to stop cost creep in an automated agent pipeline.
 
-**How:** *"am I getting worse value than last month?"*. Tool: `tokenomics waistline --days 30`; CI: `--baseline file --ci`. Details: [waistline](reference.md#waistline).
+**How:** *"am I getting worse value than last month?"*. Tool: `agentarium waistline --days 30`; CI: `--baseline file --ci`. Details: [waistline](reference.md#waistline).
 
 ### taste-test
 
@@ -145,7 +145,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** trialling a cheaper model, a trimmed CLAUDE.md or a new prompt, before making it the default.
 
-**How:** *"did the Haiku run do as well as the Opus one?"*. Tool: `tokenomics taste-test --a <id> --a-dir ../a --b <id> --b-dir ../b`. Details: [taste-test](reference.md#taste-test).
+**How:** *"did the Haiku run do as well as the Opus one?"*. Tool: `agentarium taste-test --a <id> --a-dir ../a --b <id> --b-dir ../b`. Details: [taste-test](reference.md#taste-test).
 
 ### spring-clean
 
@@ -153,43 +153,43 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** CLAUDE.md has grown for months, several tools each have their own instruction file, or waistline says context per request is creeping up.
 
-**How:** *"spring-clean my CLAUDE.md"*. Tool: `tokenomics spring-clean`. Details: [spring-clean](reference.md#spring-clean).
+**How:** *"spring-clean my CLAUDE.md"*. Tool: `agentarium spring-clean`. Details: [spring-clean](reference.md#spring-clean).
 
 ### groundhog
 
 **What it does.** Checks a finished session for loops (the same call again, a command failing over and over, edits made and undone, tokens climbing with no progress) and what they cost. The [groundhog hook](#groundhog-1) catches them live.
 
-**How:** *"is it going round in circles?"*. Tool: `tokenomics groundhog`.
+**How:** *"is it going round in circles?"*. Tool: `agentarium groundhog`.
 
 ### cache-buster
 
 **What it does.** Lists every edit in a session to the files at the start of each request (CLAUDE.md and its imports, settings, MCP servers, skills), priced as the cache rebuild each caused. The [cache-buster hook](#cache-buster-1) catches them before the edit.
 
-**How:** *"did editing CLAUDE.md cost anything?"*. Tool: `tokenomics cache-buster`. Details: [cache-buster](reference.md#cache-buster).
+**How:** *"did editing CLAUDE.md cost anything?"*. Tool: `agentarium cache-buster`. Details: [cache-buster](reference.md#cache-buster).
 
 ### too-many-cooks
 
 **What it does.** What your subagents have cost, by type (measured from each one's own transcript), and how many the [too-many-cooks hook](#too-many-cooks-1) caught before they ran.
 
-**How:** *"what do my subagents cost?"*. Tool: `tokenomics too-many-cooks`. Details: [too-many-cooks](reference.md#too-many-cooks).
+**How:** *"what do my subagents cost?"*. Tool: `agentarium too-many-cooks`. Details: [too-many-cooks](reference.md#too-many-cooks).
 
 ### receipt
 
 **What it does.** Adds up every Claude Code request made on the current git branch (sessions and subagents) into one line for a commit trailer, or a short table for a pull request.
 
-**Reach for it when:** you want reviewers, or yourself, to see what a change cost. **How:** *"what did this branch cost?"*. Tool: `tokenomics receipt`, `git commit --trailer "$(tokenomics receipt --trailer)"`. Details: [receipt](reference.md#receipt).
+**Reach for it when:** you want reviewers, or yourself, to see what a change cost. **How:** *"what did this branch cost?"*. Tool: `agentarium receipt`, `git commit --trailer "$(agentarium receipt --trailer)"`. Details: [receipt](reference.md#receipt).
 
 ### dry-run
 
 **What it does.** Prices a skill, plugin or MCP server before you install it: the tokens it adds to every request and what that comes to a month at your pace.
 
-**Reach for it when:** you're about to add an MCP server or a plugin with many skills. **How:** *"what will this MCP server cost?"*. Tool: `tokenomics dry-run mcp -- <command>`. Details: [dry-run](reference.md#dry-run).
+**Reach for it when:** you're about to add an MCP server or a plugin with many skills. **How:** *"what will this MCP server cost?"*. Tool: `agentarium dry-run mcp -- <command>`. Details: [dry-run](reference.md#dry-run).
 
 ### rate-my-prompt
 
 **What it does.** Scores a prompt out of 10 on five cost criteria, 2 points each: points at the code, says what done looks like, one bounded task, no padding, asks for lean output. Gives the fix for each weak one and a tighter rewrite. `judge` is the same skill by a shorter name.
 
-**Reach for it when:** a prompt is about to start a long task, or one keeps costing more turns than it should. **How:** *"rate my prompt: ..."* or `/judge`. Tool: `tokenomics judge "prompt"`, `tokenomics judge --last`. Details: [rate-my-prompt](reference.md#rate-my-prompt).
+**Reach for it when:** a prompt is about to start a long task, or one keeps costing more turns than it should. **How:** *"rate my prompt: ..."* or `/judge`. Tool: `agentarium judge "prompt"`, `agentarium judge --last`. Details: [rate-my-prompt](reference.md#rate-my-prompt).
 
 ### split-the-bill
 
@@ -197,7 +197,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** a manager or finance asks where the money goes, you need a chargeback or showback, or one project or agent seems to cost more than it should.
 
-**How:** *"split the bill by project for November"*, *"how much do subagents cost us?"*. Tool: `tokenomics split-the-bill`. Details: [split-the-bill](reference.md#split-the-bill).
+**How:** *"split the bill by project for November"*, *"how much do subagents cost us?"*. Tool: `agentarium split-the-bill`. Details: [split-the-bill](reference.md#split-the-bill).
 
 ### bazaar
 
@@ -205,7 +205,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** choosing between the Anthropic API, Bedrock and Vertex, comparing vendors, or renegotiating a contract.
 
-**How:** *"which provider is best value for our work?"*. Tool: `tokenomics bazaar` or `tokenomics bazaar quote --input 50000 --output 5000`. Details: [bazaar](reference.md#bazaar).
+**How:** *"which provider is best value for our work?"*. Tool: `agentarium bazaar` or `agentarium bazaar quote --input 50000 --output 5000`. Details: [bazaar](reference.md#bazaar).
 
 ### crystal-ball
 
@@ -213,7 +213,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** writing a budget, proposing a rollout, or comparing models for a team.
 
-**How:** *"what would 10 developers doing 20 tasks a day cost?"*. Tool: `tokenomics crystal-ball --devs 10 --tasks 20 --input 50000 --output 5000`. Details: [crystal-ball](reference.md#crystal-ball).
+**How:** *"what would 10 developers doing 20 tasks a day cost?"*. Tool: `agentarium crystal-ball --devs 10 --tasks 20 --input 50000 --output 5000`. Details: [crystal-ball](reference.md#crystal-ball).
 
 ### deadwood
 
@@ -221,7 +221,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** it's month end, or bang-for-buck shows a lot of spend with nothing to show.
 
-**How:** *"how much did we waste this month?"*. Tool: `tokenomics deadwood`. Details: [deadwood](reference.md#deadwood).
+**How:** *"how much did we waste this month?"*. Tool: `agentarium deadwood`. Details: [deadwood](reference.md#deadwood).
 
 ### pack-light
 
@@ -229,7 +229,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** sessions start big, you've installed a lot of plugins or MCP servers, or once a quarter as housekeeping.
 
-**How:** *"which MCP servers do I actually use?"*. Tool: `tokenomics pack-light`. Details: [pack-light](reference.md#pack-light).
+**How:** *"which MCP servers do I actually use?"*. Tool: `agentarium pack-light`. Details: [pack-light](reference.md#pack-light).
 
 ### waffle
 
@@ -237,7 +237,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** replies feel long, or output is a big share of the spend report.
 
-**How:** *"are the replies too long?"*. Tool: `tokenomics waffle` (one session) or `tokenomics waffle --days 7`. Details: [waffle](reference.md#waffle).
+**How:** *"are the replies too long?"*. Tool: `agentarium waffle` (one session) or `agentarium waffle --days 7`. Details: [waffle](reference.md#waffle).
 
 ### cold-snap
 
@@ -245,13 +245,13 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** the cache hit ratio in the spend report is low, or one turn cost far more than its neighbours.
 
-**How:** *"why is my cache hit rate low?"*. Tool: `tokenomics cold-snap` or `tokenomics cold-snap --days 7`. Details: [cold-snap](reference.md#cold-snap).
+**How:** *"why is my cache hit rate low?"*. Tool: `agentarium cold-snap` or `agentarium cold-snap --days 7`. Details: [cold-snap](reference.md#cold-snap).
 
 ### parrot (skill)
 
 **What it does.** Answers *"what do I keep telling it?"*: the rules, corrections and whole prompts you've repeated across sessions, what the corrected work cost, and the CLAUDE.md line or slash command that says each one once. The [parrot hook](#parrot) points them out as they happen.
 
-**How:** *"what should go in my CLAUDE.md?"*. Tool: `tokenomics parrot` (add `report --here` for this project only). Details: [parrot](reference.md#parrot).
+**How:** *"what should go in my CLAUDE.md?"*. Tool: `agentarium parrot` (add `report --here` for this project only). Details: [parrot](reference.md#parrot).
 
 ### all-you-can-eat
 
@@ -259,19 +259,19 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 **Reach for it when:** you're choosing a plan, wondering whether Max is worth it, or reviewing a subscription you rarely use.
 
-**How:** *"should I get Max?"*. Tool: `tokenomics all-you-can-eat --plan pro`. Details: [all-you-can-eat](reference.md#all-you-can-eat).
+**How:** *"should I get Max?"*. Tool: `agentarium all-you-can-eat --plan pro`. Details: [all-you-can-eat](reference.md#all-you-can-eat).
 
 ### ballast (skill)
 
 **What it does.** Replays a session to find where you switched to a new task while carrying a heavy context, and what re-reading the old context cost. The [ballast hook](#ballast) warns as it happens.
 
-**How:** *"should I have cleared?"*. Tool: `tokenomics ballast`.
+**How:** *"should I have cleared?"*. Tool: `agentarium ballast`.
 
 ### blinkers (skill)
 
 **What it does.** Checks a finished session, or a branch against its task, for changes beyond the request (unrequested docs and tests, dependency and config changes, renames and reformatting, files outside the task) and what they cost. The [blinkers hook](#blinkers) catches them live.
 
-**How:** *"did it do more than I asked?"*. Tool: `tokenomics blinkers`, or `tokenomics blinkers diff --task "..." --base main`.
+**How:** *"did it do more than I asked?"*. Tool: `agentarium blinkers`, or `agentarium blinkers diff --task "..." --base main`.
 
 ---
 
@@ -285,14 +285,14 @@ Where each hook fires:
 | Moment | Claude Code event | Copilot CLI event | Hooks |
 |--------|-------------------|-------------------|-------|
 | Session starts (or `/clear`, or after compaction) | `SessionStart` | (none) | doggybag, waistline\* |
-| You send a prompt | `UserPromptSubmit` | `userPromptSubmitted` | the controller, which runs spendlens, budget\*, hold-up\*, pennywise\*, haggle\*, ballast\*, doggybag, blinkers and parrot\* in one process (Copilot, in one process too: spendlens, premium\*, doggybag, blinkers) |
+| You send a prompt | `UserPromptSubmit` | `userPromptSubmitted` | the controller, which runs till, budget\*, hold-up\*, pennywise\*, haggle\*, ballast\*, doggybag, blinkers and parrot\* in one process (Copilot, in one process too: till, premium\*, doggybag, blinkers) |
 | A tool is about to run | `PreToolUse` (diet: `Read`, `Bash`; blinkers and cache-buster: edits; too-many-cooks: `Agent`; the rest: every tool) | `preToolUse` | diet, groundhog, haggle\*, blinkers, cache-buster\*, too-many-cooks\* |
-| A tool has run | `PostToolUse` (diet: `Read`, `Bash`; colander: `Bash`) | `postToolUse` | diet (sizes), colander; spendlens on Copilot |
+| A tool has run | `PostToolUse` (diet: `Read`, `Bash`; colander: `Bash`) | `postToolUse` | diet (sizes), colander; till on Copilot |
 | A subagent finishes | `SubagentStop` | (none) | too-many-cooks |
 | The conversation is about to be compacted | `PreCompact` | (none) | doggybag |
 | The assistant waits for you | `Notification` (idle, permission) | (none) | kettle |
-| The assistant finishes a turn | `Stop` | (none) | spendlens, doggybag, bang-for-buck, haggle |
-| Session ends | `SessionEnd` | `sessionEnd` | spendlens, doggybag, bang-for-buck\*, sherlock\*, haggle\* |
+| The assistant finishes a turn | `Stop` | (none) | till, doggybag, bang-for-buck, haggle |
+| Session ends | `SessionEnd` | `sessionEnd` | till, doggybag, bang-for-buck\*, sherlock\*, haggle\* |
 
 \* Claude Code only: Copilot ignores prompt-hook output, so it can't pause a prompt, and it has no transcript or token counts for the value and waste helpers to read.
 
@@ -302,7 +302,7 @@ sequenceDiagram
     participant Hooks
     participant AI as Assistant
     You->>Hooks: send prompt
-    Note over Hooks: spendlens scores it<br/>budget: over limit?<br/>hold-up: a whole log pasted in?<br/>pennywise: which model suits it?
+    Note over Hooks: till scores it<br/>budget: over limit?<br/>hold-up: a whole log pasted in?<br/>pennywise: which model suits it?
     Hooks->>AI: prompt (unless paused)
     AI->>Hooks: wants to Read / run Bash
     Note over Hooks: diet: will this flood the context?
@@ -311,36 +311,36 @@ sequenceDiagram
     Note over Hooks: colander: what's worth reading?
     Hooks->>AI: the summary, warnings and failures
     AI->>You: reply (turn ends)
-    Note over Hooks: spendlens records tokens<br/>doggybag arms its watcher
+    Note over Hooks: till records tokens<br/>doggybag arms its watcher
 ```
 
-### spendlens
+### till
 
-**What it does.** Labels each session **OPEX** (running things: logs, metrics, incidents), **CAPEX** (building things: writing or changing code), `mixed` or `unknown`, and saves one row per session to `~/.tokenomics/spendlens.db` with token counts and cost. It never blocks or shows anything. Every other reporting helper reads its data.
+**What it does.** Labels each session **OPEX** (running things: logs, metrics, incidents), **CAPEX** (building things: writing or changing code), `mixed` or `unknown`, and saves one row per session to `~/.agentarium/till.db` with token counts and cost. It never blocks or shows anything. Every other reporting helper reads its data.
 
 **Reach for it when:** you want any history at all. Keep it on; spend-report, the dashboard and budget rely on it. Reach for its settings when:
 
-- Labels look wrong: map your own skills with `TOKENOMICS_SKILL_MAP`, or edit the keyword lists in `tokenomics/engine/classifier.ts`.
-- Keywords keep missing: set `TOKENOMICS_LLM=1` to let a model decide once per session (prompts leave your machine, redacted; point it at a local model if sensitive).
-- A team wants one shared view: point `TOKENOMICS_DB` at a shared location.
+- Labels look wrong: map your own skills with `AGENTARIUM_SKILL_MAP`, or edit the keyword lists in `agentarium/engine/classifier.ts`.
+- Keywords keep missing: set `AGENTARIUM_LLM=1` to let a model decide once per session (prompts leave your machine, redacted; point it at a local model if sensitive).
+- A team wants one shared view: point `AGENTARIUM_DB` at a shared location.
 
-**Script:** `scripts/spendlens.ts` (`prompt`, `tool`, `finalize`, and `capabilities` to see what each assistant supports). Details: [What spendlens saves](reference.md#spendlens).
+**Script:** `scripts/till.ts` (`prompt`, `tool`, `finalize`, and `capabilities` to see what each assistant supports). Details: [What till saves](reference.md#till).
 
 ### pennywise
 
-**What it does.** A model router. Scores each prompt from weighted signals (length, code, simple-task phrases, technical terms, complex work, reasoning words, multi-step structure) into one of four tiers, `SIMPLE` → Haiku, `MEDIUM` → Sonnet, `COMPLEX` → Opus, `REASONING` → Opus (you choose the map). As a hook it hands the prompt to a subagent on that model, routing down to save money and up when your model is out of its depth. It only routes down when the saving beats the cost of the hand-off, moves back up when an answer didn't land, and learns from both. As a background proxy (`tokenomics router on`) it rewrites the model of every request instead, cache-aware, with fallback and no hand-off.
+**What it does.** A model router. Scores each prompt from weighted signals (length, code, simple-task phrases, technical terms, complex work, reasoning words, multi-step structure) into one of four tiers, `SIMPLE` → Haiku, `MEDIUM` → Sonnet, `COMPLEX` → Opus, `REASONING` → Opus (you choose the map). As a hook it hands the prompt to a subagent on that model, routing down to save money and up when your model is out of its depth. It only routes down when the saving beats the cost of the hand-off, moves back up when an answer didn't land, and learns from both. As a background proxy (`agentarium router on`) it rewrites the model of every request instead, cache-aware, with fallback and no hand-off.
 
 **Reach for it (keep it on) when:** you tend to leave one model selected all day, or a team is new to choosing models. Run the proxy when you want every turn routed with full context rather than handed to a subagent. Set it to `block` if you'd rather be asked to switch with `/model`, or `off` if you always pick models deliberately.
 
-**To steer one prompt:** start it with `keep-model:`, or `haiku:` / `sonnet:` / `opus:` / `fable:` to force a model. Curious why a prompt went where it did? `tokenomics router explain "<prompt>"`. Claude Code only. Details: [Using pennywise](reference.md#pennywise).
+**To steer one prompt:** start it with `keep-model:`, or `haiku:` / `sonnet:` / `opus:` / `fable:` to force a model. Curious why a prompt went where it did? `agentarium router explain "<prompt>"`. Claude Code only. Details: [Using pennywise](reference.md#pennywise).
 
 ### diet
 
 **What it does.** Before a `Read` or `Bash` call runs, refuses a small set of calls known to flood the context (whole lockfiles or minified files, unbounded `kubectl logs` / `git log` / `find /`, `cat` of a huge file) and tells the AI how to ask for less. The AI retries with a narrower call on its own. Each block is logged with an estimate of tokens kept out.
 
-**Reach for it (keep it on) when:** you do a lot of ops or debugging work (logs, big repos), since one unbounded log dump is paid for again on every later turn. Raise `TOKENOMICS_DIET_MAX_KB` if it blocks files you genuinely need whole.
+**Reach for it (keep it on) when:** you do a lot of ops or debugging work (logs, big repos), since one unbounded log dump is paid for again on every later turn. Raise `AGENTARIUM_DIET_MAX_KB` if it blocks files you genuinely need whole.
 
-**It learns.** After each `Read` or `Bash` it records how much came back, by program name or file type only; a program that keeps printing more than the limit unfiltered gets asked for a filter too. `tokenomics diet sizes` shows what it has learned.
+**It learns.** After each `Read` or `Bash` it records how much came back, by program name or file type only; a program that keeps printing more than the limit unfiltered gets asked for a filter too. `agentarium diet sizes` shows what it has learned.
 
 **When you need the whole thing:** append `# diet-ok` to the command. Works in Claude Code and Copilot CLI. Details: [Using diet](reference.md#diet).
 
@@ -348,9 +348,9 @@ sequenceDiagram
 
 **What it does.** After a test run, build, lint or install succeeds, shows the AI the first and last lines, every warning and anything that failed, and leaves out the passing tests, progress bars, download chatter and repeated lines. A green 353-test run goes in as 13 lines instead of 2,818. The full output is saved first, and a footer gives its path, so the AI greps it when it needs a line instead of running the suite again.
 
-**Reach for it (keep it on) when:** you or the agent run tests, builds or installs often, which is most coding. Everything the AI reads stays in the context and is re-read at every later step, so a noisy green run costs you again and again. Name your own scripts with `TOKENOMICS_COLANDER_COMMANDS` (e.g. `ci.sh,just`).
+**Reach for it (keep it on) when:** you or the agent run tests, builds or installs often, which is most coding. Everything the AI reads stays in the context and is re-read at every later step, so a noisy green run costs you again and again. Name your own scripts with `AGENTARIUM_COLANDER_COMMANDS` (e.g. `ci.sh,just`).
 
-**To see what it does to some output:** `npm test 2>&1 | tokenomics colander strain`. `tokenomics colander` shows the week's strains by program.
+**To see what it does to some output:** `npm test 2>&1 | agentarium colander strain`. `agentarium colander` shows the week's strains by program.
 
 **When you need the whole thing:** append `# colander-off` to the command. Claude Code and Copilot CLI, successful commands only (a failing one reaches the AI whole). Details: [Using colander](reference.md#colander).
 
@@ -358,9 +358,9 @@ sequenceDiagram
 
 **What it does.** Tracks spend against a daily and/or per-session limit in your currency. One notice at 80%; at 100% your next prompt is paused with cheaper ways forward (`/compact`, a smaller model, a fresh session).
 
-**Reach for it when:** you're paying out of your own pocket, you have a monthly allowance to stretch, or you're trialling a new, pricier model. It does nothing until you set `TOKENOMICS_BUDGET_DAILY`, `TOKENOMICS_BUDGET_SESSION` and/or `TOKENOMICS_BUDGET_MONTHLY` (a monthly allowance spread over the working days left before it resets).
+**Reach for it when:** you're paying out of your own pocket, you have a monthly allowance to stretch, or you're trialling a new, pricier model. It does nothing until you set `AGENTARIUM_BUDGET_DAILY`, `AGENTARIUM_BUDGET_SESSION` and/or `AGENTARIUM_BUDGET_MONTHLY` (a monthly allowance spread over the working days left before it resets).
 
-**When it pauses you:** send the same prompt again, or start it with `over-budget:`; you won't be paused again for that limit that day. Use `TOKENOMICS_BUDGET_MODE=warn` for notices only. Claude Code only (Copilot bills premium requests, which hooks can't see). Details: [Using budget](reference.md#budget).
+**When it pauses you:** send the same prompt again, or start it with `over-budget:`; you won't be paused again for that limit that day. Use `AGENTARIUM_BUDGET_MODE=warn` for notices only. Claude Code only (Copilot bills premium requests, which hooks can't see). Details: [Using budget](reference.md#budget).
 
 ### hold-up
 
@@ -368,17 +368,17 @@ sequenceDiagram
 
 **Reach for it (keep it on) when:** you copy logs, stack traces, JSON, test output or whole documents into prompts, or fire off one-line asks for the whole repo. Once sent, a paste stays in the conversation until you `/clear` or `/compact`.
 
-**When it pauses you:** send the same prompt again to go ahead. `TOKENOMICS_HOLDUP=warn` for notices only (the paste still goes in), `TOKENOMICS_HOLDUP_MIN_TOKENS` to change the size, `TOKENOMICS_HOLDUP_BROAD=off` to leave broad prompts alone. Claude Code and VS Code (without the money); Copilot CLI ignores prompt-hook output. Details: [hold-up](reference.md#hold-up).
+**When it pauses you:** send the same prompt again to go ahead. `AGENTARIUM_HOLDUP=warn` for notices only (the paste still goes in), `AGENTARIUM_HOLDUP_MIN_TOKENS` to change the size, `AGENTARIUM_HOLDUP_BROAD=off` to leave broad prompts alone. Claude Code and VS Code (without the money); Copilot CLI ignores prompt-hook output. Details: [hold-up](reference.md#hold-up).
 
 ### doggybag
 
 **What it does.** Just before the prompt cache expires, packs a short "where we got to" note into your project at `.doggybag/latest.md` (the folder ignores itself in git): branch and changes, tasks, your last requests, files edited, recent commands, and how to carry on. No model is called, so it costs nothing. If you come back after the cache went cold, your next prompt makes sure it's packed and tells you what carrying on cold would cost; `/clear` (or a new session in the folder) loads it automatically.
 
-**Reach for it when:** you step away from a session for more than a few minutes and plan to come back. Instead of carrying on in the cold session (which re-writes the whole conversation into the cache), type `/clear` and keep going. Need one now? `tokenomics doggybag`.
+**Reach for it when:** you step away from a session for more than a few minutes and plan to come back. Instead of carrying on in the cold session (which re-writes the whole conversation into the cache), type `/clear` and keep going. Need one now? `agentarium doggybag`.
 
 It also packs one before `/compact` or auto-compact and loads it back afterwards, so the file names and decisions a summary drops are still there.
 
-**Turn it off** (`TOKENOMICS_DOGGYBAG=off`) if you never resume work across breaks. Copilot support is best effort. Details: [Using doggybag](reference.md#doggybag).
+**Turn it off** (`AGENTARIUM_DOGGYBAG=off`) if you never resume work across breaks. Copilot support is best effort. Details: [Using doggybag](reference.md#doggybag).
 
 ---
 
@@ -388,11 +388,11 @@ It also packs one before `/compact` or auto-compact and loads it back afterwards
 
 **Reach for it (keep it on) when:** you let the agent work unattended, or on long debugging sessions where a stuck agent burns money fastest.
 
-**When it's wrong:** append `# groundhog-ok` to a command; `TOKENOMICS_GROUNDHOG=warn` for notices only. In Copilot CLI it catches identical calls in a row. Details: [groundhog](reference.md#groundhog).
+**When it's wrong:** append `# groundhog-ok` to a command; `AGENTARIUM_GROUNDHOG=warn` for notices only. In Copilot CLI it catches identical calls in a row. Details: [groundhog](reference.md#groundhog).
 
 ### cache-buster
 
-**What it does.** Before an edit to CLAUDE.md (or a file it imports), settings, the MCP server list or a skill, says what the cache rebuild it causes will cost, once per file per session. `TOKENOMICS_CACHEBUSTER=ask` confirms first; `block` has the agent leave the change as a note. Claude Code only. Details: [cache-buster](reference.md#cache-buster).
+**What it does.** Before an edit to CLAUDE.md (or a file it imports), settings, the MCP server list or a skill, says what the cache rebuild it causes will cost, once per file per session. `AGENTARIUM_CACHEBUSTER=ask` confirms first; `block` has the agent leave the change as a note. Claude Code only. Details: [cache-buster](reference.md#cache-buster).
 
 ### too-many-cooks
 
@@ -400,11 +400,11 @@ It also packs one before `/compact` or auto-compact and loads it back afterwards
 
 ### kettle
 
-**What it does.** When Claude Code waits for you, a terminal notification says how long until the cache goes cold and what's at risk. `TOKENOMICS_KETTLE=desktop` adds a system notification. Claude Code only. Details: [kettle](reference.md#kettle).
+**What it does.** When Claude Code waits for you, a terminal notification says how long until the cache goes cold and what's at risk. `AGENTARIUM_KETTLE=desktop` adds a system notification. Claude Code only. Details: [kettle](reference.md#kettle).
 
 ### haggle (hook)
 
-**What it does.** Quotes each substantial prompt as you send it and tracks the task's spend as it runs; tells you once it passes its estimate and its cap; if you set the price (`haggle £2: ...`, or `TOKENOMICS_HAGGLE=strict`) it stops the agent at the cap and has it ask you to approve more (`haggle +£1`). Claude Code only. Details: [haggle](reference.md#haggle).
+**What it does.** Quotes each substantial prompt as you send it and tracks the task's spend as it runs; tells you once it passes its estimate and its cap; if you set the price (`haggle £2: ...`, or `AGENTARIUM_HAGGLE=strict`) it stops the agent at the cap and has it ask you to approve more (`haggle +£1`). Claude Code only. Details: [haggle](reference.md#haggle).
 
 ### blinkers
 
@@ -412,25 +412,25 @@ It also packs one before `/compact` or auto-compact and loads it back afterwards
 
 **Reach for it (keep it on) when:** you want small, reviewable changes; an agent tends to "improve" things along the way.
 
-**When it's in the way:** say *"blinkers off"* in a prompt, or set `TOKENOMICS_BLINKERS=warn` (or `off`). Details: [blinkers](reference.md#blinkers).
+**When it's in the way:** say *"blinkers off"* in a prompt, or set `AGENTARIUM_BLINKERS=warn` (or `off`). Details: [blinkers](reference.md#blinkers).
 
 ### ballast
 
 **What it does.** When you send a prompt in a conversation over 60,000 tokens, checks whether it starts a different task (little in common with your recent prompts and the files touched, or "new task", "unrelated", "something else"). If so, it tells you once what the old context costs to re-read at every step and suggests `/clear` (doggybag keeps your notes) or `/compact`. It also notes each time the context grows past another 60,000. Claude Code only.
 
-**When it's wrong:** ignore it; it won't repeat itself. `TOKENOMICS_BALLAST=off` turns it off, `block` pauses the prompt once instead. Details: [ballast](reference.md#ballast).
+**When it's wrong:** ignore it; it won't repeat itself. `AGENTARIUM_BALLAST=off` turns it off, `block` pauses the prompt once instead. Details: [ballast](reference.md#ballast).
 
 ### parrot
 
 **What it does.** Notes a hash (never the text) of each standing rule ("always use pnpm"), correction ("no, use the v2 client") and whole prompt you send. When the same one turns up in a third session in a project, it tells you once and suggests the line for CLAUDE.md or a slash command, so you can say it once instead of every session. Claude Code only.
 
-**When it's wrong:** ignore it; it won't repeat itself. `TOKENOMICS_PARROT=off` turns it off; `TOKENOMICS_PARROT_MIN` changes how many sessions count. Details: [parrot](reference.md#parrot).
+**When it's wrong:** ignore it; it won't repeat itself. `AGENTARIUM_PARROT=off` turns it off; `AGENTARIUM_PARROT_MIN` changes how many sessions count. Details: [parrot](reference.md#parrot).
 
 ### fishingrod
 
-**What it does.** Not a hook of its own: it adds a lesson to the notices from hold-up, ballast, parrot, haggle, pennywise, doggybag and budget. The first 3 times each kind of notice comes up, it says why that prompt costs what it does and what to type next time (with an example); after that, one line pointing to `tokenomics fishingrod <lesson>`. Claude Code only, like those notices.
+**What it does.** Not a hook of its own: it adds a lesson to the notices from hold-up, ballast, parrot, haggle, pennywise, doggybag and budget. The first 3 times each kind of notice comes up, it says why that prompt costs what it does and what to type next time (with an example); after that, one line pointing to `agentarium fishingrod <lesson>`. Claude Code only, like those notices.
 
-**When it's in the way:** `TOKENOMICS_FISHINGROD=off` drops the lessons and pointers; `TOKENOMICS_FISHINGROD_TIMES` changes how many times each is shown in full. Details: [fishingrod](reference.md#fishingrod).
+**When it's in the way:** `AGENTARIUM_FISHINGROD=off` drops the lessons and pointers; `AGENTARIUM_FISHINGROD_TIMES` changes how many times each is shown in full. Details: [fishingrod](reference.md#fishingrod).
 
 ### bang-for-buck, sherlock and waistline (hooks)
 
@@ -450,28 +450,28 @@ Scripts you run yourself. All need only Node.js 22.18+ (they're TypeScript, run 
 
 | Command | Use it to |
 |---------|-----------|
-| `/tokenomics:statusline` (plugin) or `tokenomics statusline --install claude` (or `copilot`, `both`) | Install it (backs up your settings first). `--uninstall` removes it, `--status` says where it is. |
-| `tokenomics statusline --band-off` (`--band-on`) | Hide (or show) the band in the desktop app, and Copilot's status bar item and window. |
-| `tokenomics vscode --status-bar` | Put Copilot's numbers in VS Code's status bar: premium requests left and when they run out. |
-| `tokenomics copilot --window` | The same in a small window beside the GitHub Copilot app. |
-| `/tokenomics-pane` | Open the pane: Now, Ahead and Advice tabs beside the chat. If the app isn't drawing it, it says why. |
-| `tokenomics statusline --outlook-off` (`--outlook-on`) | Hide (or show) the forecast row under the terminal statusline. |
-| `tokenomics statusline --set-currency USD` | Choose £, $ or € for every cost tokenomics shows. |
-| `tokenomics statusline --update-rate` | Fetch today's exchange rates. |
-| `tokenomics statusline --watch` | A smoothly ticking countdown in a spare terminal pane. |
-| `tokenomics statusline --demo --theme light` | Preview every state and colour. |
+| `/agentarium:statusline` (plugin) or `agentarium statusline --install claude` (or `copilot`, `both`) | Install it (backs up your settings first). `--uninstall` removes it, `--status` says where it is. |
+| `agentarium statusline --band-off` (`--band-on`) | Hide (or show) the band in the desktop app, and Copilot's status bar item and window. |
+| `agentarium vscode --status-bar` | Put Copilot's numbers in VS Code's status bar: premium requests left and when they run out. |
+| `agentarium copilot --window` | The same in a small window beside the GitHub Copilot app. |
+| `/agentarium-pane` | Open the pane: Now, Ahead and Advice tabs beside the chat. If the app isn't drawing it, it says why. |
+| `agentarium statusline --outlook-off` (`--outlook-on`) | Hide (or show) the forecast row under the terminal statusline. |
+| `agentarium statusline --set-currency USD` | Choose £, $ or € for every cost agentarium shows. |
+| `agentarium statusline --update-rate` | Fetch today's exchange rates. |
+| `agentarium statusline --watch` | A smoothly ticking countdown in a spare terminal pane. |
+| `agentarium statusline --demo --theme light` | Preview every state and colour. |
 
 Details: [statusline](reference.md#statusline), [band](reference.md#band) and [pane](reference.md#pane) reference.
 
 ### dashboard
 
-`scripts/dashboard.ts`: a local web page over the spendlens database with a % OPEX vs % CAPEX bar, spend and what tokenomics saved, a line for each helper that stepped in, daily trend, per-project split, skills used and recent sessions.
+`scripts/dashboard.ts`: a local web page over the till database with a % OPEX vs % CAPEX bar, spend and what agentarium saved, a line for each helper that stepped in, daily trend, per-project split, skills used and recent sessions.
 
 **Reach for it when:** you want trends or a picture to share (a team review, a finance question, proof the guard-rails pay for themselves), rather than a written summary. `--demo` shows it with fake data before you have any of your own.
 
 ```
-tokenomics dashboard              # http://127.0.0.1:8765
-tokenomics dashboard --demo
+agentarium dashboard              # http://127.0.0.1:8765
+agentarium dashboard --demo
 ```
 
 Read-only, local only. Details: [dashboard reference](reference.md#dashboard).
@@ -504,61 +504,61 @@ node scripts/coach.ts --session <id> --json
 node scripts/coach.ts --transcript path/to/file.jsonl
 ```
 
-### tokenomics router
+### agentarium router
 
-`tokenomics router on` runs pennywise as a routing proxy in the background and points Claude Code at it (`off` undoes it; `serve` runs it in the foreground). `status` shows what it saved, `explain "<prompt>"` the tier, score and signals for a prompt, `eval` how well it routes a labelled set, and `learn` what the routes that held and missed would change. **Reach for it** when you want every request routed with full context, or to tune the tiers.
+`agentarium router on` runs pennywise as a routing proxy in the background and points Claude Code at it (`off` undoes it; `serve` runs it in the foreground). `status` shows what it saved, `explain "<prompt>"` the tier, score and signals for a prompt, `eval` how well it routes a labelled set, and `learn` what the routes that held and missed would change. **Reach for it** when you want every request routed with full context, or to tune the tiers.
 
-### tokenomics audit and tokenomics profile
+### agentarium audit and agentarium profile
 
-`tokenomics audit` runs every leak check (pack-light, waffle, cold-snap, ballast, spring-clean, deadwood, groundhog, parrot, waistline) in one report, biggest money first. `tokenomics profile frugal | balanced | quality` sets every switch with one word; `tokenomics profile` shows what's in effect. `tokenomics copilot` shows the Copilot premium-request allowance: left, pace, and when it runs out. `tokenomics vscode` adds the VS Code agent hooks to a workspace ([details](installation.md#copilot-in-vs-code)).
+`agentarium audit` runs every leak check (pack-light, waffle, cold-snap, ballast, spring-clean, deadwood, groundhog, parrot, waistline) in one report, biggest money first. `agentarium profile frugal | balanced | quality` sets every switch with one word; `agentarium profile` shows what's in effect. `agentarium copilot` shows the Copilot premium-request allowance: left, pace, and when it runs out. `agentarium vscode` adds the VS Code agent hooks to a workspace ([details](installation.md#copilot-in-vs-code)).
 
-### tokenomics doggybag
+### agentarium doggybag
 
-`tokenomics doggybag` (or `node scripts/doggybag.ts write`) packs a doggybag on demand. **Reach for it** when you're about to stop and want the note now rather than waiting for the cache timer.
+`agentarium doggybag` (or `node scripts/doggybag.ts write`) packs a doggybag on demand. **Reach for it** when you're about to stop and want the note now rather than waiting for the cache timer.
 
-### spendlens.ts capabilities
+### till.ts capabilities
 
-`node scripts/spendlens.ts capabilities` lists what each assistant can report (transcript, token counts, tool events, billing). **Reach for it** when a column is empty and you want to know whether that's expected for that assistant.
+`node scripts/till.ts capabilities` lists what each assistant can report (transcript, token counts, tool events, billing). **Reach for it** when a column is empty and you want to know whether that's expected for that assistant.
 
 ### Value, waste and quality tools
 
 The scripts behind the seven value skills; run them directly for no-token answers or JSON (`--json` on each):
 
 ```
-tokenomics bang-for-buck --days 30                 # cost per outcome; also: session, mark <kind>, ingest <dir>
-tokenomics haggle quote "migrate auth" --price 2 # is it worth £2?   haggle status: quoted vs actual
-tokenomics sherlock --session <id>               # hidden waste in a session
-tokenomics waistline --days 30                   # cost regression; --save-baseline / --baseline F --ci
-tokenomics taste-test --a <id> --b <id> --a-dir ../a --b-dir ../b   # add --gate to fail CI on a quality loss
-tokenomics spring-clean --dir .                   # context hygiene audit
-tokenomics groundhog --session <id>              # loops in a finished session
+agentarium bang-for-buck --days 30                 # cost per outcome; also: session, mark <kind>, ingest <dir>
+agentarium haggle quote "migrate auth" --price 2 # is it worth £2?   haggle status: quoted vs actual
+agentarium sherlock --session <id>               # hidden waste in a session
+agentarium waistline --days 30                   # cost regression; --save-baseline / --baseline F --ci
+agentarium taste-test --a <id> --b <id> --a-dir ../a --b-dir ../b   # add --gate to fail CI on a quality loss
+agentarium spring-clean --dir .                   # context hygiene audit
+agentarium groundhog --session <id>              # loops in a finished session
 ```
 
 ### Intelligence engine tools
 
 ```
-tokenomics split-the-bill --month 2026-11          # spend by project, developer, agent, category, model, provider, status
-tokenomics split-the-bill --csv > ai-spend.csv     # one row per session, for finance; --db a.db --db b.db for a team
-tokenomics bazaar --min-quality 70               # best-value provider for your own workload; quote, list
-tokenomics blinkers diff --task "..." --base main --ci   # scope creep on a branch; blinkers: the latest session
-tokenomics crystal-ball --devs 10 --tasks 20 --input 50000 --output 5000   # monthly forecast; --from-history
-tokenomics deadwood --month 2026-11              # spend on work that produced nothing; session, mark <status>
-tokenomics pack-light --days 30                   # fixed load per request; MCP servers and skills you never use
-tokenomics ballast                               # task switches that carried a heavy context
-tokenomics waffle --days 7                       # output spend: long replies, recaps, whole-file rewrites
-tokenomics cold-snap --days 7                     # every cache rebuild, its cause and cost
-tokenomics parrot                                # rules, corrections and prompts you keep repeating
-tokenomics fishingrod [lesson]                   # the why behind each notice, and what to do next time
-tokenomics all-you-can-eat --plan pro               # pay-as-you-go or a subscription, from your own spend
+agentarium split-the-bill --month 2026-11          # spend by project, developer, agent, category, model, provider, status
+agentarium split-the-bill --csv > ai-spend.csv     # one row per session, for finance; --db a.db --db b.db for a team
+agentarium bazaar --min-quality 70               # best-value provider for your own workload; quote, list
+agentarium blinkers diff --task "..." --base main --ci   # scope creep on a branch; blinkers: the latest session
+agentarium crystal-ball --devs 10 --tasks 20 --input 50000 --output 5000   # monthly forecast; --from-history
+agentarium deadwood --month 2026-11              # spend on work that produced nothing; session, mark <status>
+agentarium pack-light --days 30                   # fixed load per request; MCP servers and skills you never use
+agentarium ballast                               # task switches that carried a heavy context
+agentarium waffle --days 7                       # output spend: long replies, recaps, whole-file rewrites
+agentarium cold-snap --days 7                     # every cache rebuild, its cause and cost
+agentarium parrot                                # rules, corrections and prompts you keep repeating
+agentarium fishingrod [lesson]                   # the why behind each notice, and what to do next time
+agentarium all-you-can-eat --plan pro               # pay-as-you-go or a subscription, from your own spend
 ```
 
-The signature features also answer to what they do: `tokenomics value-meter` (bang-for-buck), `agent-forensics` (sherlock), `quality-gate` (taste-test), and the new tools to `cost-attribution`, `provider-arbitrage`, `scope-guard`, `spend-simulator` and `dead-work`, and the newest to `fixed-overhead`, `context-carry`, `output-audit`, `cache-misses`, `repeated-instructions`, `plan-fit` and `lessons` (fishingrod).
+The signature features also answer to what they do: `agentarium value-meter` (bang-for-buck), `agent-forensics` (sherlock), `quality-gate` (taste-test), and the new tools to `cost-attribution`, `provider-arbitrage`, `scope-guard`, `spend-simulator` and `dead-work`, and the newest to `fixed-overhead`, `context-carry`, `output-audit`, `cache-misses`, `repeated-instructions`, `plan-fit` and `lessons` (fishingrod).
 
 ### update_prices.ts
 
 `scripts/update_prices.ts`: refreshes `data/model-prices.json` from Claude's pricing page. A GitHub Action already runs it every Monday.
 
-**Reach for it when:** a new model has launched or prices changed and you don't want to wait for Monday, or (`--check`) to confirm the file is current. To override a single price instead, use `"prices"` in `~/.tokenomics/statusline.json` (see [Prices](configuration.md#prices)).
+**Reach for it when:** a new model has launched or prices changed and you don't want to wait for Monday, or (`--check`) to confirm the file is current. To override a single price instead, use `"prices"` in `~/.agentarium/statusline.json` (see [Prices](configuration.md#prices)).
 
 ```
 node scripts/update_prices.ts            # fetch and update
@@ -569,14 +569,14 @@ node scripts/update_prices.ts --check    # exit 1 if out of date
 
 ## A sensible setup
 
-- **Everyone:** install the plugin (spendlens, diet, doggybag and pennywise run by default) and the [statusline](#statusline).
+- **Everyone:** install the plugin (till, diet, doggybag and pennywise run by default) and the [statusline](#statusline).
 - **Paying personally or on an allowance:** also set a [budget](#budget).
 - **Weekly:** ask for a [spend-report](#spend-report).
 - **After any session that surprised you:** ask the [coach](#coach), then [sherlock](#sherlock) for the wasted steps.
 - **Monthly:** ask [bang-for-buck](#bang-for-buck) whether value is improving and [waistline](#waistline) whether costs are creeping; [spring-clean](#spring-clean) your instruction files.
 - **Before a big task:** ask [haggle](#haggle) for a quote, or start the prompt with `haggle £X:`.
 - **Before switching to a cheaper model or trimmed instructions for good:** run a [taste-test](#taste-test).
-- **Teams:** share a database with `TOKENOMICS_DB` and look at the [dashboard](#dashboard) together.
+- **Teams:** share a database with `AGENTARIUM_DB` and look at the [dashboard](#dashboard) together.
 
 See [Installation](installation.md) to get set up, [Configuration](configuration.md) for every setting, and [Installation → Troubleshooting](installation.md#troubleshooting) if something looks wrong.
 

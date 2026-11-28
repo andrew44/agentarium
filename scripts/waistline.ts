@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / waistline: AI cost regression testing. Is the same kind of work getting more
+ * agentarium / waistline: AI cost regression testing. Is the same kind of work getting more
  * expensive? Treat cost creep like a performance regression: catch it before it becomes normal.
  *
  * Compares two periods of the ledger (bang-for-buck writes it), or the ledger against a saved
@@ -22,20 +22,20 @@
  *   waistline.ts nudge              hook (SessionStart): at most once a day, a one-line notice when
  *                                   last week cost noticeably more than the week before
  *
- * Env: TOKENOMICS_WAISTLINE=off turns the nudge off; TOKENOMICS_WAISTLINE_THRESHOLD (default 15, %).
+ * Env: AGENTARIUM_WAISTLINE=off turns the nudge off; AGENTARIUM_WAISTLINE_THRESHOLD (default 15, %).
  */
 import { appendFileSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as ledger from '../tokenomics/engine/ledger.ts'
-import { LABELS, total } from '../tokenomics/engine/outcomes.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { argValue, errText, isMain, logErr, now, today, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as ledger from '../agentarium/engine/ledger.ts'
+import { LABELS, total } from '../agentarium/engine/outcomes.ts'
+import * as store from '../agentarium/engine/store.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { argValue, errText, isMain, logErr, now, today, type Obj } from '../agentarium/util.ts'
 
 const MIN_SESSIONS = 3                  // fewer than this on either side: not enough to call a trend
 const MATERIAL_TOKENS = 2_000           // tool output per session below this is noise
@@ -192,12 +192,12 @@ export function markdown(r: Obj): string {
 }
 
 function threshold(args: string[]): number {
-  const v = Number(argValue(args, '--threshold') ?? process.env.TOKENOMICS_WAISTLINE_THRESHOLD ?? 15)
+  const v = Number(argValue(args, '--threshold') ?? process.env.AGENTARIUM_WAISTLINE_THRESHOLD ?? 15)
   return Number.isFinite(v) && v > 0 ? v : 15
 }
 
 function nudge(source: string): void {
-  const mode = (process.env.TOKENOMICS_WAISTLINE ?? 'on').trim().toLowerCase()
+  const mode = (process.env.AGENTARIUM_WAISTLINE ?? 'on').trim().toLowerCase()
   if (mode === 'off') return
   const dbPath = defaultDbPath()
   try {
@@ -215,7 +215,7 @@ function nudge(source: string): void {
     const worst = res.checks.filter((c) => c.status === 'regression' && c.unit === 'usd').sort((a, b) => b.change_pct - a.change_pct)[0]
     if (!res.enough_data || !worst) return
     const [, symbol, rate] = currency.current()
-    const msg = `tokenomics waistline: ${worst.name} is up ${worst.change_pct}% on the week before ` +
+    const msg = `agentarium waistline: ${worst.name} is up ${worst.change_pct}% on the week before ` +
       `(${currency.formatMoney(worst.after * rate, symbol)} vs ${currency.formatMoney(worst.before * rate, symbol)}). ` +
       "Ask for a 'waistline report' to see why."
     const out = getAdapter(source).notify(msg)
@@ -238,7 +238,7 @@ export function main(args: string[]): number {
       process.stderr.write(`unknown currency ${JSON.stringify(cur)}: use GBP, USD or EUR\n`)
       return 2
     }
-    process.env.TOKENOMICS_CURRENCY = c
+    process.env.AGENTARIUM_CURRENCY = c
   }
   const dbPath = argValue(args, '--db') ?? defaultDbPath()
   const daysRaw = Number.parseInt(argValue(args, '--days') ?? '', 10)

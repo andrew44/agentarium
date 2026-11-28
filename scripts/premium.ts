@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * tokenomics / premium: Copilot's premium-request allowance, as a guard. Copilot bills premium
+ * agentarium / premium: Copilot's premium-request allowance, as a guard. Copilot bills premium
  * requests against a monthly allowance, not tokens, so this is its budget.
  *
  * Prompt hook (Copilot: userPromptSubmitted, run by the controller). Once this month's premium
- * requests reach TOKENOMICS_COPILOT_ALLOWANCE (each prompt counted at its model's multiplier, see
- * engine/premium.ts; the same figures as the statusline and `tokenomics copilot`), the next prompt is paused with what
+ * requests reach AGENTARIUM_COPILOT_ALLOWANCE (each prompt counted at its model's multiplier, see
+ * engine/premium.ts; the same figures as the statusline and `agentarium copilot`), the next prompt is paused with what
  * was used and what to do. Send the same prompt again to carry on.
  *
  * VS Code honours the pause (its adapter declares `prompt_decision`). Copilot CLI ignores prompt-hook output today: the Copilot adapter declares no `prompt_decision`
@@ -14,21 +14,21 @@
  *
  * Usage (hook command):  premium.ts [source]      source = copilot | vscode (Claude Code bills tokens: nothing to do)
  * Env:
- *   TOKENOMICS_PREMIUM              block (default) | warn (a notice, no pause) | off
- *   TOKENOMICS_COPILOT_ALLOWANCE    premium requests a month (unset = the guard does nothing)
- *   TOKENOMICS_COPILOT_MULTIPLIER   requests per prompt, your model's multiplier (default 1)
+ *   AGENTARIUM_PREMIUM              block (default) | warn (a notice, no pause) | off
+ *   AGENTARIUM_COPILOT_ALLOWANCE    premium requests a month (unset = the guard does nothing)
+ *   AGENTARIUM_COPILOT_MULTIPLIER   requests per prompt, your model's multiplier (default 1)
  * Records what it did in premium_events. Always exits 0; a crash never blocks a prompt.
  */
 import { copilotAllowance, copilotUsage, FORECAST_STEPS, premiumOutlook, type Premium } from './statusline.ts'
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as events from '../tokenomics/engine/events.ts'
-import type { PlatformAdapter } from '../tokenomics/platform/adapter.ts'
-import { BILLING_COPILOT_PREMIUM_REQUESTS, Capability } from '../tokenomics/platform/capabilities.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { errText, first, isMain, logErr, readPayload, sha1, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as events from '../agentarium/engine/events.ts'
+import type { PlatformAdapter } from '../agentarium/platform/adapter.ts'
+import { BILLING_COPILOT_PREMIUM_REQUESTS, Capability } from '../agentarium/platform/capabilities.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { errText, first, isMain, logErr, readPayload, sha1, type Obj } from '../agentarium/util.ts'
 
-const mode = () => (process.env.TOKENOMICS_PREMIUM ?? 'block').trim().toLowerCase()
+const mode = () => (process.env.AGENTARIUM_PREMIUM ?? 'block').trim().toLowerCase()
 
 /** This session's earlier premium_events: the last action and the prompt it was about. */
 function seen(dbPath: string, sid: string): { action: string, prompt_sha: string | null }[] {

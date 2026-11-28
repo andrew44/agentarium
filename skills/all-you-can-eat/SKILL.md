@@ -5,7 +5,7 @@ description: Plan fit - sets the user's recorded Claude Code spend (priced at AP
 
 # all-you-can-eat: are you on the right plan?
 
-spendlens prices every session at API rates, whichever way the user pays, so the ledger already holds the pay-as-you-go price of their real work. You compare it with the plans, from the script's numbers only.
+till prices every session at API rates, whichever way the user pays, so the ledger already holds the pay-as-you-go price of their real work. You compare it with the plans, from the script's numbers only.
 
 ## 1. Measure
 
@@ -16,7 +16,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" allyoucaneat.ts --plan <plan> --json
 ```
 
 - `--months 6` for a longer view. Read-only.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name allyoucaneat.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name allyoucaneat.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 

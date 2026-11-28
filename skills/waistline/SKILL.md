@@ -15,7 +15,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" waistline.ts --json --days 30
 
 - "Than last month" → `--days 30` (last 30 days vs the 30 before). "This week" → `--days 7` (default).
 - `--threshold 10` makes it stricter (default 15%). Currency on request: `--currency USD`.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name waistline.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name waistline.ts -path "*agentarium*" 2>/dev/null | head -1`.
 - If `enough_data` is false, say there are too few sessions on one side to call a trend, show the numbers anyway, and suggest backfilling with `bangforbuck.ts ingest ~/.claude/projects`.
 
 ## 2. Reply format
@@ -33,8 +33,8 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" waistline.ts --json --days 30
 Save a baseline from the ledger or from transcripts produced in CI, commit it, then compare on every run:
 
 ```bash
-node scripts/waistline.ts --save-baseline .tokenomics-baseline.json --days 30          # once, locally
-node scripts/waistline.ts --baseline .tokenomics-baseline.json --transcripts ./transcripts --ci
+node scripts/waistline.ts --save-baseline .agentarium-baseline.json --days 30          # once, locally
+node scripts/waistline.ts --baseline .agentarium-baseline.json --transcripts ./transcripts --ci
 ```
 
 `--ci` exits 1 on a regression and writes the report to the GitHub job summary (`$GITHUB_STEP_SUMMARY`). Offer to add the step to their workflow; don't edit CI files unless asked.

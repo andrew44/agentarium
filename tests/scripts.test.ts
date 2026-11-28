@@ -14,14 +14,14 @@ import * as dashboard from '../scripts/dashboard.ts'
 import * as doggybag from '../scripts/doggybag.ts'
 import * as pennywise from '../scripts/pennywise.ts'
 import * as statusline from '../scripts/statusline.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import { today } from '../tokenomics/util.ts'
+import * as store from '../agentarium/engine/store.ts'
+import { today } from '../agentarium/util.ts'
 
 const POSIX = process.platform !== 'win32'
 
 describe('modules', () => {
   test('every module loads on its own (no import cycles)', () => {
-    const dir = join(ROOT, 'tokenomics')
+    const dir = join(ROOT, 'agentarium')
     const mods = readdirSync(dir, { recursive: true, encoding: 'utf8' }).filter((f) => f.endsWith('.ts'))
     assert.ok(mods.length > 10)
     for (const m of mods) {
@@ -68,7 +68,7 @@ describe('dashboard', () => {
     assert.ok(Object.values(data.totals).reduce((a: number, v: any) => a + v.sessions, 0) > 0)
   })
 
-  test('the demo shows spend and what tokenomics did', (c) => {
+  test('the demo shows spend and what agentarium did', (c) => {
     const t = useTemp(c)
     dashboard.seedDemo(t.db)
     const data = dashboard.build(t.db, 30)
@@ -92,7 +92,7 @@ describe('dashboard', () => {
     db.run('INSERT INTO cost_events(session_id, ts, day, usd) VALUES(?,?,?,?)', 'a', '', today(day(5)), 1)
     db.run('INSERT INTO cost_events(session_id, ts, day, usd) VALUES(?,?,?,?)', 'a', '', today(), 0.5)
     db.close()
-    const data = await withEnv({ TOKENOMICS_CURRENCY: 'USD' }, () => dashboard.build(t.db, 30))
+    const data = await withEnv({ AGENTARIUM_CURRENCY: 'USD' }, () => dashboard.build(t.db, 30))
     assert.deepEqual(data.money, { code: 'USD', symbol: '$', rate: 1 })
     assert.equal(data.spend_usd, 1.5)
     assert.deepEqual([data.totals.capex.spend, data.totals.opex.spend], [1.5, 0])
@@ -179,7 +179,7 @@ describe('doggybag', () => {
   test('start can just say it exists', (c) => {
     const { cwd, meta } = setup(c)
     meta()
-    return withEnv({ TOKENOMICS_DOGGYBAG_INJECT: '0' }, () => {
+    return withEnv({ AGENTARIUM_DOGGYBAG_INJECT: '0' }, () => {
       const out = doggybag.start({ session_id: 'new', cwd, source: 'startup' })!
       assert.ok(out.systemMessage.includes('about ? tokens vs ?'))
       assert.ok(!('hookSpecificOutput' in out))
@@ -189,7 +189,7 @@ describe('doggybag', () => {
   test('a cold prompt packs and warns', (c) => {
     const { cwd, transcript } = setup(c)
     const path = transcript('2020-01-01T00:00:00Z')                    // cache long expired
-    return withEnv({ TOKENOMICS_DOGGYBAG_COLD_MIN_TOKENS: '0' }, () => {
+    return withEnv({ AGENTARIUM_DOGGYBAG_COLD_MIN_TOKENS: '0' }, () => {
       const out = doggybag.prompt({ session_id: 'sess', cwd, transcript_path: path, prompt: 'carry on' }, 'claude-code')!
       assert.ok(out.systemMessage.includes('went cold'))
       assert.ok(existsSync(join(cwd, '.doggybag', 'latest.md')))
@@ -199,7 +199,7 @@ describe('doggybag', () => {
   test('a cold prompt is paused once in block mode', (c) => {
     const { cwd, transcript } = setup(c)
     const d = { session_id: 'sess', cwd, transcript_path: transcript('2020-01-01T00:00:00Z'), prompt: 'carry on' }
-    return withEnv({ TOKENOMICS_DOGGYBAG_COLD_MIN_TOKENS: '0', TOKENOMICS_DOGGYBAG_COLD: 'block' }, () => {
+    return withEnv({ AGENTARIUM_DOGGYBAG_COLD_MIN_TOKENS: '0', AGENTARIUM_DOGGYBAG_COLD: 'block' }, () => {
       assert.equal(doggybag.prompt(d, 'claude-code')!.decision, 'block')
       assert.ok(!('decision' in doggybag.prompt(d, 'claude-code')!))
     })
@@ -236,7 +236,7 @@ describe('doggybag', () => {
   test('the hook commands run quietly', (c) => {
     const { t, cwd, transcript } = setup(c)
     const path = transcript('2020-01-01T00:00:00Z')
-    const env = t.env({ TOKENOMICS_DOGGYBAG_COLD_MIN_TOKENS: '0' })
+    const env = t.env({ AGENTARIUM_DOGGYBAG_COLD_MIN_TOKENS: '0' })
     const p = runScript('doggybag.ts', ['prompt', 'claude-code'], { env,
       input: JSON.stringify({ session_id: 'sess', cwd, transcript_path: path, prompt: 'carry on' }) })
     assert.deepEqual([p.status, p.stderr], [0, ''])
@@ -305,9 +305,9 @@ describe('statusline install', () => {
   function setup(c: Parameters<typeof useTemp>[0]) {
     const t = useTemp(c)
     const h = t.home
-    const env = t.env({ TOKENOMICS_HOME: join(h, '.tokenomics'), CLAUDE_CONFIG_DIR: join(h, '.claude'), COPILOT_HOME: join(h, '.copilot') })
+    const env = t.env({ AGENTARIUM_HOME: join(h, '.agentarium'), CLAUDE_CONFIG_DIR: join(h, '.claude'), COPILOT_HOME: join(h, '.copilot') })
     const settings = join(h, '.claude', 'settings.json')
-    const copy = join(h, '.tokenomics', 'statusline.mts')
+    const copy = join(h, '.agentarium', 'statusline.mts')
     const run = (args: string[], extra: Env = {}) => {
       const p = runScript('statusline.ts', args, { input: '{}', env: { ...env, ...extra } })
       assert.equal(p.status, 0, p.stderr)
@@ -335,8 +335,8 @@ describe('statusline install', () => {
 
   test('ask offers once, then stays quiet', (c) => {
     const { run, settings } = setup(c)
-    assert.ok(JSON.parse(run(['--sync'], { TOKENOMICS_STATUSLINE: 'ask' })).systemMessage.includes('/tokenomics:statusline'))
-    assert.equal(run(['--sync'], { TOKENOMICS_STATUSLINE: 'ask' }), '')
+    assert.ok(JSON.parse(run(['--sync'], { AGENTARIUM_STATUSLINE: 'ask' })).systemMessage.includes('/agentarium:statusline'))
+    assert.equal(run(['--sync'], { AGENTARIUM_STATUSLINE: 'ask' }), '')
     assert.ok(!existsSync(settings))
   })
 
@@ -362,13 +362,13 @@ describe('statusline install', () => {
 
   test('off never offers', (c) => {
     const { run } = setup(c)
-    assert.equal(run(['--sync'], { TOKENOMICS_STATUSLINE: 'off' }), '')
-    assert.equal(run(['--sync'], { TOKENOMICS_STATUSBAR: 'off' }), '')    // the old name still works
+    assert.equal(run(['--sync'], { AGENTARIUM_STATUSLINE: 'off' }), '')
+    assert.equal(run(['--sync'], { AGENTARIUM_STATUSBAR: 'off' }), '')    // the old name still works
   })
 
   test('auto installs and refreshes', (c) => {
     const { run, copy, cmd } = setup(c)
-    assert.ok(run(['--sync'], { TOKENOMICS_STATUSLINE: 'auto' }).includes('installed'))
+    assert.ok(run(['--sync'], { AGENTARIUM_STATUSLINE: 'auto' }).includes('installed'))
     assert.ok(cmd().includes(copy))
     writeFileSync(copy, '// stale\n')
     assert.equal(run(['--sync']), '')
@@ -382,7 +382,7 @@ describe('statusline install', () => {
     const { run, settings, cmd } = setup(c)
     mkdirSync(join(settings, '..'), { recursive: true })
     writeFileSync(settings, JSON.stringify({ statusLine: { type: 'command', command: 'mine' } }))
-    assert.equal(run(['--sync'], { TOKENOMICS_STATUSLINE: 'auto' }), '')
+    assert.equal(run(['--sync'], { AGENTARIUM_STATUSLINE: 'auto' }), '')
     assert.equal(cmd(), 'mine')
     assert.ok(run(['--status']).includes('another status line'))
   })
@@ -402,7 +402,7 @@ describe('statusline install', () => {
   ] as [string, string, boolean][]) {
     test(`migrates ${what}`, (c) => {
       const { h, run, settings, copy, cmd } = setup(c)
-      const home = join(h, '.tokenomics')
+      const home = join(h, '.agentarium')
       mkdirSync(home, { recursive: true })
       const old = join(home, oldName)
       writeFileSync(old, '# the old copy\n')
@@ -439,7 +439,7 @@ describe('pennywise', () => {
     assert.deepEqual(tiers, ['SIMPLE', 'MEDIUM', 'COMPLEX', 'REASONING'])
   })
 
-  test('the tier map from env', () => withEnv({ TOKENOMICS_ROUTER_TIERS: 'REASONING=fable' }, () => {
+  test('the tier map from env', () => withEnv({ AGENTARIUM_ROUTER_TIERS: 'REASONING=fable' }, () => {
     const r = pennywise.score('design the architecture and compare the trade-offs', 0, pennywise.loadConfig())
     assert.equal(r.model, 'fable')
     assert.ok(pennywise.resolveModel('fable').startsWith('claude-fable'))
@@ -451,7 +451,7 @@ describe('pennywise', () => {
 
   const handle = (c: Parameters<typeof useTemp>[0], prompt: string, model = 'claude-opus-5-5', mode = 'route') => {
     const t = useTemp(c)
-    return withEnv({ TOKENOMICS_PENNYWISE: mode, ANTHROPIC_BASE_URL: '', TOKENOMICS_DB: join(t.home, 'db.sqlite') },
+    return withEnv({ AGENTARIUM_PENNYWISE: mode, ANTHROPIC_BASE_URL: '', AGENTARIUM_DB: join(t.home, 'db.sqlite') },
       () => pennywise.handle({ session_id: 's', model, prompt }))
   }
 
@@ -496,8 +496,8 @@ describe('pennywise', () => {
     } finally {
       db.close()
     }
-    return withEnv({ TOKENOMICS_PENNYWISE: 'route', ANTHROPIC_BASE_URL: '', TOKENOMICS_DB: dbPath, TOKENOMICS_CURRENCY: 'USD',
-      TOKENOMICS_BUDGET_DAILY: '10', TOKENOMICS_BUDGET_SESSION: undefined, TOKENOMICS_BUDGET_MODE: undefined, ...extra },
+    return withEnv({ AGENTARIUM_PENNYWISE: 'route', ANTHROPIC_BASE_URL: '', AGENTARIUM_DB: dbPath, AGENTARIUM_CURRENCY: 'USD',
+      AGENTARIUM_BUDGET_DAILY: '10', AGENTARIUM_BUDGET_SESSION: undefined, AGENTARIUM_BUDGET_MODE: undefined, ...extra },
     () => pennywise.handle({ session_id: 's', model, prompt }))
   }
   const routine = 'add a /health endpoint to the flask api'           // MEDIUM: Sonnet
@@ -520,8 +520,8 @@ describe('pennywise', () => {
       .includes('model: "opus"'))                                       // a forced model still wins
   })
 
-  test('TOKENOMICS_PENNYWISE_BUDGET=off ignores the budget', async (c) => {
-    const out = (await underBudget(c, 8.5, routine, 'claude-opus-5-5', { TOKENOMICS_PENNYWISE_BUDGET: 'off' }))!
+  test('AGENTARIUM_PENNYWISE_BUDGET=off ignores the budget', async (c) => {
+    const out = (await underBudget(c, 8.5, routine, 'claude-opus-5-5', { AGENTARIUM_PENNYWISE_BUDGET: 'off' }))!
     assert.ok(out.hookSpecificOutput.additionalContext.includes('model: "sonnet"'))
   })
 
@@ -590,7 +590,7 @@ describe('pennywise proxy', () => {
     })
     await new Promise<void>((r) => up.listen(0, '127.0.0.1', r))
     c.after(() => up.close())
-    await withEnv({ TOKENOMICS_DB: join(t.home, 'db.sqlite') }, async () => {
+    await withEnv({ AGENTARIUM_DB: join(t.home, 'db.sqlite') }, async () => {
       const srv = await pennywise.serve(0, { upstream: `http://127.0.0.1:${(up.address() as AddressInfo).port}` })
       c.after(() => srv.close())
       const port = (srv.address() as AddressInfo).port
@@ -616,7 +616,7 @@ describe('pennywise proxy', () => {
   })
 })
 
-describe('the tokenomics command', { skip: !POSIX && 'uses a shell-script stand-in for claude' }, () => {
+describe('the agentarium command', { skip: !POSIX && 'uses a shell-script stand-in for claude' }, () => {
   function setup(c: Parameters<typeof useTemp>[0]) {
     const t = useTemp(c)
     const h = t.home
@@ -624,7 +624,7 @@ describe('the tokenomics command', { skip: !POSIX && 'uses a shell-script stand-
     const log = join(h, 'claude.log')
     writeFileSync(join(fakebin, 'claude'), `#!/bin/sh\necho "$*" >> "${log}"\n`)
     chmodSync(join(fakebin, 'claude'), 0o755)
-    const env: Env = t.env({ TOKENOMICS_HOME: join(h, '.tokenomics'), CLAUDE_CONFIG_DIR: join(h, '.claude'),
+    const env: Env = t.env({ AGENTARIUM_HOME: join(h, '.agentarium'), CLAUDE_CONFIG_DIR: join(h, '.claude'),
       COPILOT_HOME: join(h, '.copilot'), SHELL: '/bin/bash', PATH: `${fakebin}:/usr/bin:/bin` })
     const settings = join(h, '.claude', 'settings.json')
     const cli = (...args: string[]) => {
@@ -638,23 +638,23 @@ describe('the tokenomics command', { skip: !POSIX && 'uses a shell-script stand-
   test('setup installs the plugin, the statusline and the launcher', (c) => {
     const { h, settings, log, cli } = setup(c)
     assert.ok(cli('setup').includes('plugin installed'))
-    assert.ok(readFileSync(log, 'utf8').includes('plugin install tokenomics@tokenomics'))
+    assert.ok(readFileSync(log, 'utf8').includes('plugin install agentarium@agentarium'))
     assert.ok(JSON.parse(readFileSync(settings, 'utf8')).statusLine.command.includes('statusline.mts'))
-    const launcher = join(h, '.local', 'bin', 'tokenomics')
+    const launcher = join(h, '.local', 'bin', 'agentarium')
     assert.ok(statSync(launcher).isFile())
     const rc = join(h, process.platform === 'darwin' ? '.bash_profile' : '.bashrc')   // what bash reads
-    assert.ok(readFileSync(rc, 'utf8').includes('added by the tokenomics installer'))
-    assert.equal(readFileSync(join(h, '.tokenomics', 'node'), 'utf8').trim(), process.execPath.replaceAll('\\', '/'))
+    assert.ok(readFileSync(rc, 'utf8').includes('added by the agentarium installer'))
+    assert.equal(readFileSync(join(h, '.agentarium', 'node'), 'utf8').trim(), process.execPath.replaceAll('\\', '/'))
     const p = spawnSync(launcher, ['help'], { encoding: 'utf8' })                      // the launcher runs the CLI
     assert.ok(p.stdout.includes('one command for setup'), p.stderr)
     cli('setup')                                                                       // idempotent: one PATH line only
-    assert.equal(readFileSync(rc, 'utf8').split('tokenomics installer').length - 1, 1)
+    assert.equal(readFileSync(rc, 'utf8').split('agentarium installer').length - 1, 1)
 
     cli('uninstall')
     assert.ok(!('statusLine' in JSON.parse(readFileSync(settings, 'utf8'))))
     assert.ok(!existsSync(launcher))
-    assert.ok(!readFileSync(rc, 'utf8').includes('tokenomics'))
-    assert.ok(readFileSync(log, 'utf8').includes('plugin uninstall tokenomics@tokenomics'))
+    assert.ok(!readFileSync(rc, 'utf8').includes('agentarium'))
+    assert.ok(readFileSync(log, 'utf8').includes('plugin uninstall agentarium@agentarium'))
   })
 
   test("setup keeps someone else's status line", (c) => {
@@ -719,7 +719,7 @@ describe('run.sh', { skip: !POSIX && 'needs a POSIX sh; Windows CI runs it throu
     const t = useTemp(c)
     const bin = t.mkdir('bin')
     const nodebin = t.mkdir('nodebin')                                  // Node.js lives here, on PATH or not
-    const cache = join(t.home, '.tokenomics', 'node')
+    const cache = join(t.home, '.agentarium', 'node')
     const probe = join(SCRIPTS, `_run_probe_${process.pid}.ts`)
     writeFileSync(probe, "import { readFileSync } from 'node:fs'\nconsole.log(readFileSync(0, 'utf8').toUpperCase(), JSON.stringify(process.argv.slice(2)))\nprocess.exitCode = 3\n")
     c.after(() => unlinkSync(probe))
@@ -776,7 +776,7 @@ describe('launcher wiring', () => {
       assert.ok(statSync(join(SCRIPTS, cmd.split('run.sh')[1].replaceAll('"', '').trim().split(/\s+/)[0])).isFile(), cmd)
     }
     for (const h of Object.values(cp.hooks).flat() as any[]) {
-      assert.ok(h.powershell.includes('.tokenomics/node'))
+      assert.ok(h.powershell.includes('.agentarium/node'))
       assert.ok(/scripts\\\w+\.ts/.test(h.powershell))
     }
     for (const skill of readdirSync(join(ROOT, 'skills'))) {

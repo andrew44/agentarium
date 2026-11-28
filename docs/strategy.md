@@ -2,12 +2,12 @@
 
 # Product strategy
 
-> **tokenomics prevents future spend, it doesn't just report past spend.** Every other choice in this
+> **agentarium prevents future spend, it doesn't just report past spend.** Every other choice in this
 > document follows from that.
 
 Most AI cost tools are receipts: they tell you what you already paid. By the time a receipt says the
 lockfile read cost £0.40, the cache rebuild cost £0.71 and the hello-world ran on Opus, the money has
-gone. tokenomics is built around the moment *before* the spend: the prompt you're about to send, the
+gone. agentarium is built around the moment *before* the spend: the prompt you're about to send, the
 tool call the agent is about to make, the cache that is about to go cold, the budget that is about to
 run out. Reports still matter, but their job is to tune prevention, not to be the product.
 
@@ -17,7 +17,7 @@ Three decisions put that into practice, plus one asset we keep on purpose.
 
 ## 1. Automated prevention is the USP
 
-**tokenomics optimises the economics of the whole AI coding session**, not one request and not the
+**agentarium optimises the economics of the whole AI coding session**, not one request and not the
 monthly bill. It steps in automatically at each point in a session where money is about to be spent,
 and it says what it did and why, with a one-step override every time.
 
@@ -49,7 +49,7 @@ demonstration of the USP, so it leads the README, the docs and the roadmap.
 What pennywise does now:
 
 - **Routes every prompt** to the tier it needs (Haiku / Sonnet / Opus / Fable), as a hook (nothing to
-  set up) or as a per-request routing proxy (cache-aware, with fallback), which `tokenomics router on`
+  set up) or as a per-request routing proxy (cache-aware, with fallback), which `agentarium router on`
   starts in the background and points Claude Code at.
 - **Only routes when it pays.** Every route is priced net of the hand-off (the session's model still
   reads the conversation to pass the task on and relay the answer); a route down that the hand-off
@@ -90,15 +90,15 @@ this session, net of its hand-offs. Next for the band is in the [roadmap](#roadm
 
 ## Copilot compatibility is a strategic asset
 
-tokenomics already runs on Claude Code and GitHub Copilot CLI, through one engine and one event
+agentarium already runs on Claude Code and GitHub Copilot CLI, through one engine and one event
 format with a small adapter per assistant. We keep it that way on purpose: teams rarely use one
 assistant, and prevention that only works in one of them is a policy with a hole in it.
 
 We're honest about the differences rather than pretending they don't exist:
 
-- **What prevents spend on Copilot today:** diet, groundhog, blinkers, doggybag, spendlens and the
+- **What prevents spend on Copilot today:** diet, groundhog, blinkers, doggybag, till and the
   statusline, with a premium-request forecast: requests left this month, the pace, the day they run
-  out, and what the next prompts use (`TOKENOMICS_COPILOT_ALLOWANCE`, `tokenomics copilot`), each
+  out, and what the next prompts use (`AGENTARIUM_COPILOT_ALLOWANCE`, `agentarium copilot`), each
   prompt counted at its own model's multiplier when Copilot's session state names the model.
 - **What can't yet:** Copilot ignores hook output on prompt submit, so pennywise's hook routing,
   budget's pause and haggle's quote are Claude Code only. Its prompt hook already runs through the
@@ -124,27 +124,27 @@ what the assistant can report, never a second implementation.
 | ✅ | **The outlook on the terminal statusline**, as a second row. | `statusline.ts` `renderOutlook` |
 | ✅ | **pennywise's savings, net of the hand-off.** Every route is priced (stay − hand-off − routed); a route down the hand-off would eat isn't taken; savings are logged per route and shown on the statusline, the band, `router status` and the weekly report. Routes up are counted as what quality cost, never as savings. | `estimateHandoff`, `estimateRequest`, `pennywise_events.saved_usd` |
 | ✅ | **Cache- and context-aware hook routing** (part one). The hook reads the session's context size from the transcript, so the hand-off's price, and the decision, scale with it. | `lastTurn`, `estimateHandoff` |
-| ✅ | **The proxy as the recommended way to run.** `tokenomics router on / off / status`: the proxy in the background, Claude Code pointed at it, restarted by a SessionStart hook when it's down. | `startBackground`, `setProxyEnv`, `ensure` |
+| ✅ | **The proxy as the recommended way to run.** `agentarium router on / off / status`: the proxy in the background, Claude Code pointed at it, restarted by a SessionStart hook when it's down. | `startBackground`, `setProxyEnv`, `ensure` |
 | ✅ | **One session controller.** The eight prompt-time helpers run in one process, in decision order; the first pause decides alone, otherwise one message. | `controller.ts` |
 | ✅ | **Route by outcome.** Escalations and `keep-model:` overrides tune the tier thresholds (bounded, at every session end); bang-for-buck's cost per successful result suggests tier swaps (`--apply-tiers`). | `learn`, `pennywise_learned.json` |
 | ✅ | **A labelled evaluation set**, and a better scorer from it: 69% → 90% on the right tier, "routed too low" 12 → 2. | `data/pennywise-eval.json`, `router eval` |
 | ✅ | **Move back up when a routed answer didn't land** (hook: the session's model; proxy: one tier up). | `FAILED_RE`, `ESCALATE_WINDOW` |
-| ✅ | **Profiles and one config file.** `frugal` / `balanced` / `quality`, and `~/.tokenomics/config.json` for your own defaults; env > file > profile. | `tokenomics/profile.ts`, `tokenomics profile` |
+| ✅ | **Profiles and one config file.** `frugal` / `balanced` / `quality`, and `~/.agentarium/config.json` for your own defaults; env > file > profile. | `agentarium/profile.ts`, `agentarium profile` |
 | ✅ | **Fewer things to learn.** Three groups (prevent, look forward, prove and audit) and one `audit` that runs every leak check, biggest money first. | `audit.ts`, the README |
-| ✅ | **Copilot: a premium-request budget and forecast** on the statusline and `tokenomics copilot`. | `premiumOutlook`, `renderPremium` |
+| ✅ | **Copilot: a premium-request budget and forecast** on the statusline and `agentarium copilot`. | `premiumOutlook`, `renderPremium` |
 | ✅ | **Measured, not just estimated, savings.** The next prompt reads what the routed subagent really used from the transcript and logs it beside the estimate; `router status` shows both; `learn` calibrates the task shape (`WORK`) from the measured routes. | `measureSidechain`, `work()`, `measuredSummary` |
 | ✅ | **Cache-aware hook routing** (part two). The hook prices the hand-off with the session's cache: cold, both sides pay the context re-write (so it's priced, but it doesn't change whether a route pays: the Agent call re-writes it too); warm, a routed task that outlasts the cache costs the relay a re-write, which stops big-context routes down. | `cacheState`, `estimateHandoff(…, cache)` |
 | ✅ | **Escalate on evidence, not only words.** A routed-down answer that ended on a failing check, was reverted or refused, or tripped groundhog counts as a miss in the hook; in the proxy's tool loop, two failing checks in a row, a revert or a groundhog refusal moves up one tier mid-loop. | `missEvidence`, `loopEvidence` |
 | ✅ | **Learning per project.** Routes are logged with the repository's name; a project with enough routes in a tier gets its own offset (a 0 included), the rest fall back to the global ones. | `learn` (`projects`), `loadConfig(project)` |
 | ✅ | **haggle's agreed price as a budget.** An open contract's cap is a budget the band's forecast counts down against ("£0.80 of £2.00 left this task, ~3 steps") when it's the tightest. | `taskContractUsd`, `budgetLeft(…, task)` |
-| ✅ | **The controller on Copilot too.** One process for Copilot's prompt hook (spendlens, premium, doggybag, blinkers), and a premium-request guard that pauses once the allowance is used up as soon as the adapter reports Copilot honours prompt-hook output; until then it records `would-pause`. | `COPILOT_STEPS`, `premium.ts`, `Capability.PROMPT_DECISION` |
+| ✅ | **The controller on Copilot too.** One process for Copilot's prompt hook (till, premium, doggybag, blinkers), and a premium-request guard that pauses once the allowance is used up as soon as the adapter reports Copilot honours prompt-hook output; until then it records `would-pause`. | `COPILOT_STEPS`, `premium.ts`, `Capability.PROMPT_DECISION` |
 | ✅ | **Profiles per project and per phase.** `"projects"` in config.json picks a profile by folder (longest prefix wins); with `budget_profile` set, the budget hook marks a day past its warning share and that profile applies for the rest of it. | `projectProfile`, `inBudgetPhase`, `budget.markPhase` |
-| ✅ | **A growing evaluation set.** Each escalation and `keep-model:` is kept as a labelled case (hash and score; the text only with `TOKENOMICS_PENNYWISE_EVAL=text`); `router eval --mine` scores them; `router eval --check` fails CI on a scorer regression. | `addCase`, `pennywise_eval.json`, `tests.yml` |
-| ✅ | **Copilot model multipliers.** The Copilot adapter reads the session's model from Copilot's session state (or config) when it's there; each prompt is recorded at that model's multiplier (`TOKENOMICS_COPILOT_MULTIPLIERS`, your figures: GitHub lists them per plan) and the forecast adds them up. | `sessionModel`, `engine/premium.ts`, `copilotUsage` |
+| ✅ | **A growing evaluation set.** Each escalation and `keep-model:` is kept as a labelled case (hash and score; the text only with `AGENTARIUM_PENNYWISE_EVAL=text`); `router eval --mine` scores them; `router eval --check` fails CI on a scorer regression. | `addCase`, `pennywise_eval.json`, `tests.yml` |
+| ✅ | **Copilot model multipliers.** The Copilot adapter reads the session's model from Copilot's session state (or config) when it's there; each prompt is recorded at that model's multiplier (`AGENTARIUM_COPILOT_MULTIPLIERS`, your figures: GitHub lists them per plan) and the forecast adds them up. | `sessionModel`, `engine/premium.ts`, `copilotUsage` |
 | ✅ | **Copilot Fusion routing.** When the pick is Copilot Fusion, the adapter reports the model Fusion routed to and Fusion as the router; the prompt counts at the routed model's multiplier and the statusline shows `Copilot Fusion → <model>`. | `sessionRoute`, `telemetry_events.router`, `copilotRoute` |
-| ✅ | **Copilot in VS Code.** A `vscode` adapter for VS Code's agent hooks (preview): prompts and tool calls recorded, diet, groundhog and blinkers on tool calls, and the premium guard, which can pause there. `tokenomics vscode` installs the hooks into a workspace. | `adapters/vscode.ts`, `vscode-hooks.json`, `premiumBilled` |
+| ✅ | **Copilot in VS Code.** A `vscode` adapter for VS Code's agent hooks (preview): prompts and tool calls recorded, diet, groundhog and blinkers on tool calls, and the premium guard, which can pause there. `agentarium vscode` installs the hooks into a workspace. | `adapters/vscode.ts`, `vscode-hooks.json`, `premiumBilled` |
 | ✅ | **The pane.** The band's numbers beside the chat in three tabs (Now, Ahead, Advice), the advice listed in full, most urgent first; a glance when minimised. | `hooks/pane.tsx`, `advise` |
-| ✅ | **Controller latency in `tokenomics doctor`.** The controller times each prompt-time helper (`controller_events`); `doctor` shows each one's median and p90 and flags one that slows every prompt. | `latency`, `latencyLines` |
+| ✅ | **Controller latency in `agentarium doctor`.** The controller times each prompt-time helper (`controller_events`); `doctor` shows each one's median and p90 and flags one that slows every prompt. | `latency`, `latencyLines` |
 | ✅ | **Every Claude Code hook event in use.** `PostToolUse` (diet learns what each program prints), `SubagentStop` (each subagent's real cost), `PreCompact` (doggybag before compaction) and `Notification` (kettle: time left on the cache). Two new guards catch spend before it happens: cache-buster (an instruction-file edit mid-session) and too-many-cooks (a subagent not worth sending). | `cachebuster.ts`, `toomanycooks.ts`, `kettle.ts`, `engine/prefix.ts` |
 | ✅ | **A guard on pasted logs.** hold-up pauses a prompt of 10,000 tokens or more before it joins the conversation, says whether it's a log, data, an encoded blob, a diff, source code, a document or other text, prices carrying it and suggests pointing the agent at the file instead. It also pauses a short prompt that is blatantly too broad ("refactor the whole codebase") with nothing named to start from. Claude Code and VS Code. | `holdup.ts`, `engine/holdup.ts` |
 | ✅ | **Cost before and after the work.** dry-run prices a skill, plugin or MCP server before it's installed; receipt puts what a branch cost into a commit trailer or a pull request. | `dryrun.ts`, `receipt.ts` |
@@ -157,19 +157,19 @@ Each item is tested against the rule at the top: does it change what the next st
 
 #### More AI environments
 
-Goal: prevention that works in whichever editor or agent a team uses, so switching tools doesn't mean losing sight of spend. It extends the current shape (one engine, a small adapter per platform) and does not copy features per platform. Tracked in [#4](https://github.com/andrew44/tokenomics/issues/4).
+Goal: prevention that works in whichever editor or agent a team uses, so switching tools doesn't mean losing sight of spend. It extends the current shape (one engine, a small adapter per platform) and does not copy features per platform. Tracked in [#4](https://github.com/andrew44/agentarium/issues/4).
 
 | | What | Notes |
 |---|---|---|
 | ⬜ | **A standard adapter interface**, with each adapter's supported capabilities documented and detected at run time. | Designed: see [the adapter interface](#the-adapter-interface) below. Features degrade when a platform doesn't expose them. Claude Code and Copilot CLI keep working unchanged. |
 | ⬜ | **A generic provider integration.** Usage from provider APIs and telemetry, OpenAI-compatible endpoints, local usage logs, gateways or proxies, and imported usage and cost reports. | Designed: see [the generic provider layer](#the-generic-provider-layer) below. It is the way in for JetBrains AI Assistant (no hooks) and for pennywise on any tool with no prompt hook, such as Cline. It builds on the existing proxy, so it is the `proxy_endpoint` capability made real. |
 | ⬜ | **Unified cost reporting** across platforms: spend by model, provider, project and session, cumulative spend, and actual and estimated savings per tool. | Designed: see [unified cost reporting](#unified-cost-reporting) below. Every figure is labelled measured, reported or estimated. No exact token counts or savings are claimed where a platform doesn't expose enough data. |
-| ⬜ | **Priority 1 adapters, in this order:** Codex CLI, then Junie CLI (flagged Early Access), then Cursor at `partial`. | Re-scored against the vendors' docs on 22 November 2026: see [the candidates](#scoring-the-priority-1-candidates). Codex and Junie both use Claude-shaped command hooks, so they share a base class. Codex is designed: see [the Codex CLI adapter](#the-codex-cli-adapter). Its usage comes per request from `PostModelRequest`, and its money waits for OpenAI prices. Junie CLI is designed: see [the Junie CLI adapter](#the-junie-cli-adapter). Its hooks carry no usage, so its money comes through a custom model profile pointed at the router. Cursor is designed: see [the Cursor adapter](#the-cursor-adapter). It moves ahead of Codex for one piece: Cursor already runs tokenomics' Claude Code hooks, mislabelled. |
+| ⬜ | **Priority 1 adapters, in this order:** Codex CLI, then Junie CLI (flagged Early Access), then Cursor at `partial`. | Re-scored against the vendors' docs on 22 November 2026: see [the candidates](#scoring-the-priority-1-candidates). Codex and Junie both use Claude-shaped command hooks, so they share a base class. Codex is designed: see [the Codex CLI adapter](#the-codex-cli-adapter). Its usage comes per request from `PostModelRequest`, and its money waits for OpenAI prices. Junie CLI is designed: see [the Junie CLI adapter](#the-junie-cli-adapter). Its hooks carry no usage, so its money comes through a custom model profile pointed at the router. Cursor is designed: see [the Cursor adapter](#the-cursor-adapter). It moves ahead of Codex for one piece: Cursor already runs agentarium's Claude Code hooks, mislabelled. |
 | ⬜ | **A TypeScript plugin shim** for tools whose hooks are in-process plugins: Cline first, then Kilo Code and OpenCode. | Designed: see [the plugin shim](#the-plugin-shim) below. Cline's command hooks are gone: its hooks are now SDK plugin hooks. One small plugin forwards events to `scripts/run.sh`. It has tool decisions, context, usage and result rewrites; `beforeRun` may serve as its prompt hook, to be confirmed. |
 | ⬜ | **Priority 2 adapters:** Gemini CLI (which also covers Gemini Code Assist's agent mode), Kiro CLI (which also covers Amazon Q Developer CLI), Google Antigravity, Windsurf / Devin Desktop, OpenCode (via the shim), Aider (an importer) and Zed (no adapter). | Scored on 23 November 2026: see [the Priority 2 candidates](#scoring-the-priority-2-candidates). Nine names are seven pieces of work, and only four are adapters. |
-| ⬜ | **Priority 3, browser-based builders:** Replit Agent, Bolt.new, Lovable and Vercel v0. | Researched: see [the browser builders](#the-browser-builders) below. None of them gets an adapter. v0 gets a usage importer and a metered upstream, the rest get a page saying what tokenomics can and can't do there. |
-| ✅ | **The GitHub Copilot app** (desktop, technical preview). | Built on Copilot CLI and installs the same plugin, so it runs on the `copilot` adapter (alias `copilot-app`). A separate adapter waits until GitHub documents app-specific hook payloads ([#28](https://github.com/andrew44/tokenomics/issues/28)). |
-| ✅ | **Copilot's live numbers** in VS Code and the Copilot app. | Neither runs mods or draws a status line, so the band's job is done by a VS Code status bar item (`tokenomics vscode --status-bar`, a small extension in `vscode/`) and a small window beside the app (`tokenomics copilot --window`), both from `statusline.ts --copilot --json`: premium requests left, the pace and when they run out. |
+| ⬜ | **Priority 3, browser-based builders:** Replit Agent, Bolt.new, Lovable and Vercel v0. | Researched: see [the browser builders](#the-browser-builders) below. None of them gets an adapter. v0 gets a usage importer and a metered upstream, the rest get a page saying what agentarium can and can't do there. |
+| ✅ | **The GitHub Copilot app** (desktop, technical preview). | Built on Copilot CLI and installs the same plugin, so it runs on the `copilot` adapter (alias `copilot-app`). A separate adapter waits until GitHub documents app-specific hook payloads ([#28](https://github.com/andrew44/agentarium/issues/28)). |
+| ✅ | **Copilot's live numbers** in VS Code and the Copilot app. | Neither runs mods or draws a status line, so the band's job is done by a VS Code status bar item (`agentarium vscode --status-bar`, a small extension in `vscode/`) and a small window beside the app (`agentarium copilot --window`), both from `statusline.ts --copilot --json`: premium requests left, the pace and when they run out. |
 | ⬜ | **Retest Copilot's prompt hooks.** Its docs add a `userPromptTransformed` event that can rewrite what the model receives. | Docs re-read on 23 November 2026: see [the retest](#copilots-prompt-hooks-retested). The new event can't block, so budget's pause and the premium guard stay `would-pause`, but it gives Copilot context injection, and two other events change more. Needs one real install to close. |
 
 Where a platform allows it, each adapter aims to offer the same prevention as today: spend tracking, model recommendations and routing, context and cache warnings, a status line and session hand-offs (including across tools where practical). Prompts and source code stay out of telemetry unless the user opts in. Each integration gets its own installation, configuration and limitations page.
@@ -178,19 +178,19 @@ Where a platform allows it, each adapter aims to offer the same prevention as to
 
 *Design for the first item above, drafted from the code as it stands and revised after the vendor-docs check (22 November 2026).*
 
-**What's already there.** Most of the interface exists. `tokenomics/platform/adapter.ts` is the base class
+**What's already there.** Most of the interface exists. `agentarium/platform/adapter.ts` is the base class
 both adapters extend: translation methods (`sessionId`, `lifecycle`, `toolCall`, `sessionEvidence`,
 `sessionModel`), hook-output builders that return `null` when a platform can't express them (`denyTool`,
 `blockPrompt`, `addContext` and four more), and 14 capabilities declared as `native`, `partial` or `none`
 with a note. The registry loads each adapter on its own and falls back to `GenericAdapter` if one fails,
-and `spendlens.ts capabilities` prints the lot as JSON. So the work is closing five gaps, not a rewrite.
+and `till.ts capabilities` prints the lot as JSON. So the work is closing five gaps, not a rewrite.
 
 **The gaps.**
 
 1. **Declared, not detected.** Capabilities are a fixed table per adapter. The roadmap already depends
    on detection: the premium guard waits for Copilot to honour prompt-hook output, and today that
    needs a code change to the table. A new platform's hook payloads vary by version even more.
-2. **Few callers ask.** Only 5 places in `scripts/` and `tokenomics/` call `supports(...)` (transcript
+2. **Few callers ask.** Only 5 places in `scripts/` and `agentarium/` call `supports(...)` (transcript
    twice, token usage, tool events and prompt decision). The rest rely on a builder returning `null`,
    which works but leaves no record of what was skipped and why.
 3. **Capabilities a new platform needs are missing.** Nothing says whether a platform has a status line,
@@ -216,8 +216,8 @@ and `spendlens.ts capabilities` prints the lot as JSON. So the work is closing f
   last seen; no payload content), so `doctor` can say "Copilot 1.4 started sending usage on 3 Dec".
 - **Prompt decision is confirmed, not assumed.** Whether a platform honours prompt-hook output can't be
   seen from the payload. The adapter declares it per platform version (Copilot's CLI version, read the way
-  `sessionModel` reads session state) with `TOKENOMICS_<PLATFORM>_CAPS` as a user override, for example
-  `TOKENOMICS_COPILOT_CAPS=prompt_decision:native`. The premium guard then flips on with no release.
+  `sessionModel` reads session state) with `AGENTARIUM_<PLATFORM>_CAPS` as a user override, for example
+  `AGENTARIUM_COPILOT_CAPS=prompt_decision:native`. The premium guard then flips on with no release.
 - **Four new capabilities:** `statusline` (a command-driven status bar), `proxy_endpoint` (the tool can
   use a custom base URL, so the router can sit in front of it), `tool_decision` (a pre-tool hook can deny
   or ask) and `reported_cost` (the platform states money or credits itself). `tool_output_interception`
@@ -225,7 +225,7 @@ and `spendlens.ts capabilities` prints the lot as JSON. So the work is closing f
 - **Every guard asks first and records the skip.** A helper that needs a capability calls one shared
   `need(adapter, cap, helper)` in the controller. On `none` it returns early and records `skipped` with
   the capability in that helper's `<name>_events` table once per session. `doctor` lists the helpers each
-  platform runs, partly runs and can't run, which is the honest answer to "does tokenomics work in X?".
+  platform runs, partly runs and can't run, which is the honest answer to "does agentarium work in X?".
 - **A provenance label on every figure.** `SessionEvidence` gains a `source` for usage and cost:
   `measured` (from a transcript or proxy), `reported` (the platform's own number) or `estimated` (from
   prompt and tool counts). The unified report in the third item depends on it, so it lands here first.
@@ -237,8 +237,8 @@ and `spendlens.ts capabilities` prints the lot as JSON. So the work is closing f
   the same fixtures: each lifecycle event maps to one of the six shared events, every capability is
   declared (an undeclared one fails, so a new capability can't be silently `none`), hook builders return
   `null` exactly where the table says `none`, and no evidence field holds prompt text unless
-  `TOKENOMICS_STORE_PROMPT` is on. A new adapter is done when it passes this file.
-- **Generated docs.** `spendlens.ts capabilities --markdown` writes the platform-by-capability table
+  `AGENTARIUM_STORE_PROMPT` is on. A new adapter is done when it passes this file.
+- **Generated docs.** `till.ts capabilities --markdown` writes the platform-by-capability table
   into `docs/architecture.md` between markers, and a test fails if the table and the code disagree. Each
   integration's limitations page links to its column.
 
@@ -249,17 +249,17 @@ should be written against the contract test before any of its features.
 
 **Picking the first new adapter.** The contract makes the Priority 1 choice a scoring exercise. For each
 candidate, before writing code, fill in its column of the capability table from its published hook and
-extension docs, then rank by what tokenomics could *prevent* there, not just record: `prompt_decision`
+extension docs, then rank by what agentarium could *prevent* there, not just record: `prompt_decision`
 and `tool_decision` first (guards can act), then `token_usage` or `proxy_endpoint` (pennywise and the
 band have figures), then `transcript`. That research is below.
 
 **New ideas from this pass.**
 
 - `proxy_endpoint` may matter more than hooks for the long tail. Any tool that takes an OpenAI- or
-  Anthropic-compatible base URL could get measured usage and routing from `tokenomics router` with no
+  Anthropic-compatible base URL could get measured usage and routing from `agentarium router` with no
   adapter at all, which overlaps with the generic provider item and could be the same piece of work.
 - Detected capabilities give a cheap compatibility signal for users: `doctor` can say "this version of
-  your assistant gives tokenomics 9 of 18 capabilities" and name what an upgrade would add.
+  your assistant gives agentarium 9 of 18 capabilities" and name what an upgrade would add.
 
 #### Scoring the Priority 1 candidates
 
@@ -295,7 +295,7 @@ unreliable, ✗ none, ? not found in the docs.
 - **Copilot**'s `modifiedPrompt` is still SDK-only, as the [Copilot section](#copilot-compatibility-is-a-strategic-asset)
   says, with a new `userPromptTransformed` event to test.
 
-**The ranking**, by what tokenomics could prevent there:
+**The ranking**, by what agentarium could prevent there:
 
 1. **Codex CLI.** Both decisions, context injection, the model in every payload and a custom base URL.
    Its hook schema has the same shape as Claude Code's, so most of the adapter is translation, and
@@ -349,13 +349,13 @@ a live response before code depends on them.*
 
 **Why it moved up.** Two of the six Priority 1 candidates (JetBrains AI Assistant, and Cline for prompt-time
 routing) can only be reached through a base URL. Every candidate except Cursor takes one. A provider layer
-gives tokenomics measured usage on any tool that can be pointed at a local endpoint, with no adapter.
+gives agentarium measured usage on any tool that can be pointed at a local endpoint, with no adapter.
 
 **What's already there.**
 
 - **A proxy, but for one API and one job.** `pennywise.ts serve` listens on `127.0.0.1`, rewrites `model` on
   `POST /v1/messages` and passes every other path through untouched. The upstream is one URL
-  (`TOKENOMICS_ROUTER_UPSTREAM`, default `https://api.anthropic.com`).
+  (`AGENTARIUM_ROUTER_UPSTREAM`, default `https://api.anthropic.com`).
 - **It reads nothing back.** `relay` streams the response straight to the client. The proxy logs what it
   decided and the estimated saving, but never the `usage` the provider returned, so its figures are
   `estimated` even though the real ones pass through it.
@@ -385,16 +385,16 @@ gives tokenomics measured usage on any tool that can be pointed at a local endpo
    OpenAI-shaped streams carry usage only when the client asks for it. The proxy may add
    `stream_options.include_usage: true` to a streamed chat request, because it adds one final chunk that
    clients already ignore. That is the only change to a request body the meter makes, and
-   `TOKENOMICS_PROVIDER_INCLUDE_USAGE=off` turns it off.
+   `AGENTARIUM_PROVIDER_INCLUDE_USAGE=off` turns it off.
 
 2. **Routes by path, upstreams by name.** One proxy, several upstreams:
-   `TOKENOMICS_PROVIDER_UPSTREAMS=anthropic=https://api.anthropic.com,openai=https://api.openai.com,local=http://127.0.0.1:11434`.
+   `AGENTARIUM_PROVIDER_UPSTREAMS=anthropic=https://api.anthropic.com,openai=https://api.openai.com,local=http://127.0.0.1:11434`.
    A client picks one by path prefix (`http://127.0.0.1:8787/openai/v1`), so a tool that only takes one
-   base URL still works. Keys pass through in the client's own headers: tokenomics never stores one.
+   base URL still works. Keys pass through in the client's own headers: agentarium never stores one.
    pennywise's routing stays on Anthropic Messages for now, since its tiers are Claude models. On other
    paths the proxy meters only, until the tiers can name another vendor's models.
 
-3. **Importers for usage the proxy can't see.** `spendlens.ts import <file>` reads a usage or cost export
+3. **Importers for usage the proxy can't see.** `till.ts import <file>` reads a usage or cost export
    into the same table with `source = 'reported'`: Anthropic's and OpenAI's usage and cost exports, Cursor's
    usage CSV, and an OpenTelemetry file in the GenAI conventions (`gen_ai.usage.input_tokens`,
    `gen_ai.usage.output_tokens`, `gen_ai.request.model` ‡), which also covers Claude Code's and Codex's own
@@ -411,12 +411,12 @@ gives tokenomics measured usage on any tool that can be pointed at a local endpo
 Cline or JetBrains session behind the proxy gets the forecast, the budget and the cache-risk price the
 same way a Claude Code session does. budget's pause can't act there without a prompt hook, but the
 proxy can: once a budget is used up it can answer a request with a 429 and a message in the provider's
-error format. That is a guard like any other (`TOKENOMICS_PROVIDER_BUDGET=off`, logged in
+error format. That is a guard like any other (`AGENTARIUM_PROVIDER_BUDGET=off`, logged in
 `provider_events`), and it is off by default until we know how each client shows the error.
 
 **Order of work**, each a pull request:
 
-1. The meter for Anthropic Messages only, so Claude Code behind `tokenomics router on` gets measured
+1. The meter for Anthropic Messages only, so Claude Code behind `agentarium router on` gets measured
    usage per request and `router status` shows measured beside estimated.
 2. `provider_events` read by the ledger and the band, with the provenance label from the adapter design.
 3. Named upstreams and the OpenAI Chat Completions and Responses parsers, with recorded fixtures.
@@ -442,7 +442,7 @@ error format. That is a guard like any other (`TOKENOMICS_PROVIDER_BUDGET=off`, 
 - Metering in the proxy gives a per-request latency and error rate for every provider, which is what
   bazaar's `latency` and `availability` columns are waiting for.
 - `doctor` could test the proxy end to end with a `count_tokens` call (Anthropic) or a one-token request
-  (others), so "is my tool going through tokenomics?" has an answer.
+  (others), so "is my tool going through agentarium?" has an answer.
 
 #### Unified cost reporting
 
@@ -532,7 +532,7 @@ Codex or Cline session sits in the same view, their estimates on that platform c
 - A test that every report reads `spend()` and nothing else for money would stop the three reports drifting
   apart again. `spring-clean` could flag a new `SUM(cost_usd)` outside the view.
 - The savings table gives the README a figure it can show for real installs: "saved a median £x per developer
-  per week, y% of it measured". `tokenomics doctor --share` could print it, with nothing personal in it.
+  per week, y% of it measured". `agentarium doctor --share` could print it, with nothing personal in it.
 - sherlock's waste found and the savings table together give a "could have saved" next to "did save" for each
   helper, which points at the guard-rail to switch on or tighten next.
 
@@ -549,12 +549,12 @@ Fields marked ‡ are named in the docs without a schema and need a recorded pay
   `native` per request, `cache_info` is `partial` until we see whether a cached-input count is in it, and the
   transcript stays a fallback the docs call unstable.
 - **The trust step is a fact of the install.** Every non-managed hook is skipped until it is reviewed in `/hooks`,
-  trusted by its hash. A change to the hook file or to a bundled script needs a fresh review, so each tokenomics
+  trusted by its hash. A change to the hook file or to a bundled script needs a fresh review, so each agentarium
   upgrade that touches `codex-hooks.json` will silently switch the guards off until the user opens `/hooks`.
 
 **Constraints the reference adds.**
 
-| Fact | What it means for tokenomics |
+| Fact | What it means for agentarium |
 |---|---|
 | `SessionEnd` and `Interrupt` time out after 1 s by default, 3 s at most | Our Claude Code `SessionEnd` runs six hooks with 10 to 20 s timeouts. On Codex the end-of-session work (finalize, doggybag, sherlock, haggle close, pennywise learn) moves to `Stop`, which keeps the 600 s default, or is picked up by the next `SessionStart`. `SessionEnd` only writes a marker. |
 | Matching command hooks run at the same time | The Claude Code files list `Stop` hooks in an order (finalize before arm before the message). On Codex each event gets one hook: the controller, which already runs helpers in order in one process. |
@@ -564,7 +564,7 @@ Fields marked ‡ are named in the docs without a schema and need a recorded pay
 | `model` and `cwd` in every payload, `turn_id` on turn events | `sessionModel` is a field read. `turn_id` gives a clean key for "this turn's requests", which the band needs for its forecast. |
 | Codex sets `CLAUDE_PLUGIN_ROOT` for plugin hooks | Our scripts already find their root through it, so a Codex plugin can call `scripts/run.sh` unchanged. |
 
-**The adapter.** `tokenomics/adapters/codex.ts`, built on a `ClaudeShapedAdapter` base taken out of
+**The adapter.** `agentarium/adapters/codex.ts`, built on a `ClaudeShapedAdapter` base taken out of
 `ClaudeCodeAdapter` (event names, `hookSpecificOutput` builders, `tool_response` success), so Junie can reuse it next.
 
 | Capability | Level | From |
@@ -581,7 +581,7 @@ Fields marked ‡ are named in the docs without a schema and need a recorded pay
 | `billing_info`, `reported_cost` | none | tokens and plan limits only: every cost is `estimated` from the price table |
 | `statusline` | none | `tui.status_line` in `config.toml` is a list of built-in footer items, not a command |
 
-**How the money is counted.** A `PostModelRequest` hook (`spendlens.ts request codex`, async so it never slows a turn)
+**How the money is counted.** A `PostModelRequest` hook (`till.ts request codex`, async so it never slows a turn)
 writes one row per attempt to `provider_events`, the table from [the provider layer](#the-generic-provider-layer),
 with `source = 'measured'` for the tokens and the client set to `codex`. That makes the Codex adapter the provider
 meter's first writer, before the proxy parsers exist, and the unified `spend()` view reads it with no special case.
@@ -603,9 +603,9 @@ every Codex figure shows as tokens only.
 | pennywise | records the tier it would pick, routes nothing | the hook can't change the model and the router only speaks Anthropic Messages; see the ideas below |
 | bang-for-buck, taste-test, sherlock | yes, from `Stop` | not from `SessionEnd`: 1 s is too short |
 
-**Install.** `tokenomics codex` writes `~/.codex/hooks.json` (user scope, as the scoring section says, since project
+**Install.** `agentarium codex` writes `~/.codex/hooks.json` (user scope, as the scoring section says, since project
 hooks need a trusted project as well as review), keeps any hooks already there, and ends by saying: "open `/hooks`
-in Codex and trust the tokenomics hooks, or they won't run". `doctor` checks for a row from a Codex hook in the last
+in Codex and trust the agentarium hooks, or they won't run". `doctor` checks for a row from a Codex hook in the last
 session and, if the hook file is newer than the last row, says the hooks are probably waiting for review. A Codex
 plugin (`.codex-plugin/plugin.json` ‡: the manifest schema wasn't in the pages read) can come later, once the hooks
 have been tried by hand.
@@ -616,7 +616,7 @@ have been tried by hand.
    design proves it).
 2. The Codex adapter, fixtures recorded from a real session (one per event, `token_usage` included) and the contract
    test passing.
-3. `codex-hooks.json` with one controller hook per event, the `SessionEnd` work moved to `Stop`, and `tokenomics codex`.
+3. `codex-hooks.json` with one controller hook per event, the `SessionEnd` work moved to `Stop`, and `agentarium codex`.
 4. The `PostModelRequest` meter into `provider_events`, shown as tokens by `router status` and the weekly report.
 5. Money for Codex, once OpenAI prices are in the table.
 6. Docs: `docs/integrations/codex.md` with the capability column, the trust step and the helpers that can't run.
@@ -642,7 +642,7 @@ have been tried by hand.
   may never send one. Doing the end-of-session work on the last `Stop` and treating `SessionEnd` as a marker, with
   the next `SessionStart` finishing anything left open, would make Claude Code more reliable too.
 - Hook trust by hash means every upgrade is a re-review on Codex. Keeping the hook file stable (one controller line
-  per event, all logic behind `run.sh`) means a tokenomics upgrade changes scripts, not the hook file. The docs
+  per event, all logic behind `run.sh`) means an agentarium upgrade changes scripts, not the hook file. The docs
   say a changed bundled script also needs review in a plugin, which is one more reason to start with user-scope
   hooks rather than a plugin.
 
@@ -650,7 +650,7 @@ have been tried by hand.
 
 - **Plan or API key.** Codex bills against a ChatGPT plan's limits or an API key's tokens, and no hook payload
   says which. The adapter should read the sign-in mode from `~/.codex/auth.json` where it can ‡, with
-  `TOKENOMICS_CODEX_BILLING=plan|tokens` as the override. On a plan, usage is shown in tokens and never priced,
+  `AGENTARIUM_CODEX_BILLING=plan|tokens` as the override. On a plan, usage is shown in tokens and never priced,
   the same rule as Copilot's premium requests. Only an API-key session is priced once OpenAI prices land.
 - **No read tool.** Codex reads files through `Bash` (`cat`, `sed -n`), so diet's matcher there is `Bash` alone,
   and its shell checks do the work its `Read` check does on Claude Code.
@@ -750,15 +750,15 @@ But the payloads are thinner than the scoring table assumed:
   this has to be solved before the tool guards can run (see the open questions).
 - **The way in for money is a custom model profile, not a hook.** A profile in `~/.junie/models/*.json` takes a full
   `baseUrl`, used as-is with no path added, and `apiType: "Anthropic"` (Messages), as well as two OpenAI formats and
-  Google. A profile pointed at `tokenomics router` is plain Anthropic Messages, which the proxy already speaks: the
+  Google. A profile pointed at `agentarium router` is plain Anthropic Messages, which the proxy already speaks: the
   provider layer's step 1 (the meter) gives measured usage, and pennywise can route per request, with no new parser.
 
 **Constraints the reference adds.**
 
-| Fact | What it means for tokenomics |
+| Fact | What it means for agentarium |
 |---|---|
-| `PermissionRequest` auto-approves on exit 0 with no block decision | tokenomics must never register a `PermissionRequest` hook. Our hooks exit 0 on any error, which there would mean "approve everything". The contract test should fail any Junie hook file that lists the event. |
-| Non-JSON stdout on `PreToolUse` and `PostToolUse` becomes model context | A stray line from a script (a warning, a debug print) would be sent to the model and paid for. Every tokenomics hook sets `strictJsonOutput: true`, and without `blockOnError` a bad line is then only a warning. |
+| `PermissionRequest` auto-approves on exit 0 with no block decision | agentarium must never register a `PermissionRequest` hook. Our hooks exit 0 on any error, which there would mean "approve everything". The contract test should fail any Junie hook file that lists the event. |
+| Non-JSON stdout on `PreToolUse` and `PostToolUse` becomes model context | A stray line from a script (a warning, a debug print) would be sent to the model and paid for. Every agentarium hook sets `strictJsonOutput: true`, and without `blockOnError` a bad line is then only a warning. |
 | Timeouts: 10 s for `SessionStart`, `UserPromptSubmit` and `PreToolUse`; 600 s for `Stop` and `PostToolUse`; 2 s for `SessionEnd`, 10 s in total | The controller has 10 s on the prompt, a third of what Claude Code gives it. `doctor`'s latency check warns at a p90 over 5 s. End-of-session work moves to `Stop`, as on Codex. |
 | `Stop` fires only before a task is submitted successfully, never for chat-type tasks, and `decision: "block"` makes the agent retry | No helper blocks on `Stop`. Because a chat or failed task never sends `Stop`, the next `SessionStart` (and `StopFailure`) finishes any session left open. |
 | `PostToolUse` doesn't fire when a tool fails, but does on a non-zero shell exit, with `exit_code` | Failing checks are still visible to `missEvidence` through `exit_code`. A tool that errors outright is seen only by its `PreToolUse`. |
@@ -768,7 +768,7 @@ But the payloads are thinner than the scoring table assumed:
 | Batch mode (`-p`) has no `UserPromptSubmit`; ACP (Junie run by an editor over the Agent Client Protocol ‡) has only `SessionStart`, `PreToolUse` and `SessionEnd` | Prompt-time guards run only in the TUI. Run from an editor over ACP, only the tool guards run, and the proxy profile carries the rest. |
 | Hooks in a project's `.junie/config.json` are ignored | Install to `~/.junie/config.json`, merged into the existing file, which also holds `model`, `byok` and other keys. |
 
-**The adapter.** `tokenomics/adapters/junie.ts`, on `ClaudeShapedAdapter` with Junie's field map.
+**The adapter.** `agentarium/adapters/junie.ts`, on `ClaudeShapedAdapter` with Junie's field map.
 
 | Capability | Level | From |
 |---|---|---|
@@ -803,17 +803,17 @@ which case a session was in.
 | pennywise | routes, through the proxy profile | the hook can't change the model, but the router can, per request; Junie's hidden helper calls on the smaller model go through it too when `fasterModel` points at the proxy |
 | bang-for-buck, taste-test, sherlock | from `Stop`, or the next `SessionStart` | not from `SessionEnd`: 2 s is too short |
 
-**Install.** `tokenomics junie` merges a `hooks` object into `~/.junie/config.json` (one controller line per event,
+**Install.** `agentarium junie` merges a `hooks` object into `~/.junie/config.json` (one controller line per event,
 `strictJsonOutput: true`, no `PermissionRequest`), keeping every other key, and with `--proxy` writes
-`~/.junie/models/tokenomics.json` (`apiType: "Anthropic"`, `baseUrl` the router's `/v1/messages`, `apiKey:
+`~/.junie/models/agentarium.json` (`apiType: "Anthropic"`, `baseUrl` the router's `/v1/messages`, `apiKey:
 "${ANTHROPIC_API_KEY}"` and both `primaryModel` and `fasterModel` pointed at it), then says to pick it with
-`junie --model custom:tokenomics`. It ends by saying that hooks need the Early Access build. `doctor` reports whether
+`junie --model custom:agentarium`. It ends by saying that hooks need the Early Access build. `doctor` reports whether
 the Junie build is Early Access ‡, whether hooks fired in the last session and whether the proxy profile is in use.
 
 **Order of work**, each a pull request, after Codex's first two (the base class and the contract test):
 
 1. The Junie field map and fixtures, the first one recorded from a real Early Access session to settle the session key.
-2. The proxy profile in `tokenomics junie --proxy`, so a BYOK Anthropic user gets measured usage and routing first.
+2. The proxy profile in `agentarium junie --proxy`, so a BYOK Anthropic user gets measured usage and routing first.
    This needs only the provider layer's step 1.
 3. The hooks: `junie-hooks.json`, the install merge and the contract test rule against `PermissionRequest`.
 4. `billingModel` per session, and the "subscription, not priced" line in reports.
@@ -842,7 +842,7 @@ the Junie build is Early Access ‡, whether hooks fired in the last session and
   transcript, so the proxy alone is enough for a forecast.
 - "Exit 0 approves" on `PermissionRequest` shows that the fail-open rule ("a hook exits 0 on error") is not safe on
   every event. The adapter should declare, per event, what exit 0 means, and the contract test should fail a hook file
-  that registers tokenomics on an event where it means "allow".
+  that registers agentarium on an event where it means "allow".
 - Junie reads extensions' `hooks/hooks.json` with `${CLAUDE_PLUGIN_ROOT}`, so this repo would load as a Junie
   extension as it stands, running Claude Code's hook file under the `claude-code` platform name. The `junie` adapter
   should spot a Junie payload (`project_path` is Junie's alone) and `doctor` should warn, until the extension
@@ -856,7 +856,7 @@ and need a real install.*
 
 **What changed since the scoring.** Two findings move part of this work to the front of the queue.
 
-- **Cursor already runs tokenomics.** Cursor loads Claude Code hooks from `~/.claude/settings.json` and the project's
+- **Cursor already runs agentarium.** Cursor loads Claude Code hooks from `~/.claude/settings.json` and the project's
   `.claude/settings.json` and `.claude/settings.local.json`, with "Include Third-Party Plugins, Skills, and Other
   Configs" on by default. cursor-agent also imports installed Claude Code plugins from
   `~/.claude/plugins/installed_plugins.json` †. Our `hooks/hooks.json` passes `claude-code` as the source on every
@@ -871,7 +871,7 @@ and need a real install.*
 
 **What Cursor gives hooks.**
 
-| | What the docs say | What it means for tokenomics |
+| | What the docs say | What it means for agentarium |
 |---|---|---|
 | Every payload | `conversation_id`, `generation_id`, `model`, `model_id`, `hook_event_name`, `cursor_version`, `workspace_roots`, `user_email`, `transcript_path` | `conversation_id` is the session key (staff say `generation_id` is unreliable outside the IDE †); `cursor_version` is what `observe()` keys on; `user_email` is never stored |
 | `beforeSubmitPrompt` | `prompt`, `attachments`; output `continue`, `user_message` | `prompt_decision` ◐: budget and haggle can stop a prompt. No `additional_context`, so pennywise can't hand off and ballast and parrot can't add a note |
@@ -881,7 +881,7 @@ and need a real install.*
 | `stop` | `status` (`completed`, `aborted`, `error`), `loop_count`; output `followup_message` | `turn_end`; `followup_message` is how doggybag or the band could speak after a reply |
 | `preCompact` | `context_tokens`, `context_window_size`, `context_usage_percent` | `context_info` ◐, only when a compaction is near |
 | `sessionStart` / `sessionEnd` | `session_id`, `reason`, `duration_ms`, `final_status`; `sessionStart` output `env`, `additional_context` | doggybag's hand-off note can go in at session start |
-| Config | enterprise, team, project `.cursor/hooks.json`, user `~/.cursor/hooks.json`; per hook `timeout`, `failClosed` (default `false`), `matcher`; exit 2 blocks, other failures pass | install at user scope; tokenomics never sets `failClosed`, since a hook must not block by crashing |
+| Config | enterprise, team, project `.cursor/hooks.json`, user `~/.cursor/hooks.json`; per hook `timeout`, `failClosed` (default `false`), `matcher`; exit 2 blocks, other failures pass | install at user scope; agentarium never sets `failClosed`, since a hook must not block by crashing |
 
 **Where it is weaker than the table suggests** †. In `cursor-agent -p`, `beforeSubmitPrompt`, `afterAgentResponse` and
 `stop` don't fire, so there are no prompt guards and no usage; staff call it a known gap with no date. One report says
@@ -904,7 +904,7 @@ adapter ships at `partial` and leans on `observe()`.
    Cursor's native fields (`permission`, `agent_message`, `continue`, `user_message`) and return `null` for `askTool`
    and for `addContext` on the prompt hook.
 3. **One prompt hook does less on Cursor.** The controller runs the steps whose output Cursor honours: budget,
-   haggle's quote as a pause, spendlens recording. pennywise records the tier it would have picked and the saving it
+   haggle's quote as a pause, till recording. pennywise records the tier it would have picked and the saving it
    would have made as `would-route`, so `router status` can show what Cursor is leaving on the table. Routing proper
    waits for the generic provider layer, and Cursor's base URL override goes through Cursor's servers †, so it may never
    arrive. That is stated on the limitations page.
@@ -912,8 +912,8 @@ adapter ships at `partial` and leans on `observe()`.
    `reported` (Cursor's own figure), priced from `data/model-prices.json` where the model is a Claude one. Cursor's
    own models (`composer-*`) have no public price, so they show as tokens with "no price". Without the event (CLI
    print mode, cloud agents), the session is `estimated` from prompt and tool counts, as for Copilot.
-5. **No double hooks.** A user who has both the Claude Code plugin imported and `tokenomics cursor` installed would run
-   every guard twice. `tokenomics cursor` writes `~/.cursor/hooks.json` and checks whether third-party imports are on;
+5. **No double hooks.** A user who has both the Claude Code plugin imported and `agentarium cursor` installed would run
+   every guard twice. `agentarium cursor` writes `~/.cursor/hooks.json` and checks whether third-party imports are on;
    when they are, it says so and installs nothing, because detection (1) already does the job. `doctor` warns when
    both are active.
 6. **Fixtures before features.** Cursor payloads recorded from the IDE and from `cursor-agent` (interactive and
@@ -940,12 +940,12 @@ message works on Claude Code.
 2. The adapter, its fixtures and the contract test, with tool guards and lifecycle only.
 3. Prompt-hook steps that Cursor honours, and pennywise's `would-route` record.
 4. Usage from `afterAgentResponse` once a fixture shows the field names.
-5. `tokenomics cursor` and an integration page with the CLI's gaps listed.
+5. `agentarium cursor` and an integration page with the CLI's gaps listed.
 
 **Open questions.**
 
 - Does `${CLAUDE_PLUGIN_ROOT}` resolve when Cursor runs an imported plugin's hooks? If not, every imported command
-  fails and, being fail-open, does nothing. Detection (1) then has nothing to detect, and `tokenomics cursor` must
+  fails and, being fail-open, does nothing. Detection (1) then has nothing to detect, and `agentarium cursor` must
   install after all.
 - Does `afterAgentResponse` give per-turn or cumulative counts, and does it split cache writes from cache reads?
 - Is `beforeSubmitPrompt`'s reported cut-off of about a second still there? The controller's p90 from `doctor` would
@@ -957,7 +957,7 @@ message works on Claude Code.
   scripts with the wrong source label. Payload detection in the registry is the general fix, and `doctor` could list
   "sessions seen from platforms you didn't install for".
 - Cursor merges hook answers across enterprise, team, project and user (`deny` beats `ask` beats `allow`). A team that
-  ships diet through Cursor's team dashboard would get it on every machine without anyone installing tokenomics,
+  ships diet through Cursor's team dashboard would get it on every machine without anyone installing agentarium,
   though the database would then be on each machine. Worth a line on the integration page.
 - `subagentStop` reports `message_count`, `tool_call_count` and `modified_files` per subagent. That is enough for
   bang-for-buck to score a Cursor subagent's result the way it scores a routed one on Claude Code.
@@ -968,10 +968,10 @@ message works on Claude Code.
 plugin and hook pages on 22 November 2026. Fields marked ‡ are not named in the docs and need a live capture before
 code depends on them.*
 
-**The problem.** Every hook tokenomics has today is a command: the platform runs `scripts/run.sh` with JSON on
+**The problem.** Every hook agentarium has today is a command: the platform runs `scripts/run.sh` with JSON on
 stdin and reads JSON from stdout. Cline, Kilo Code and OpenCode run hooks inside their own process instead, as
 functions on a TypeScript plugin object. Nothing there runs a command for us, so the shim is a small plugin that
-turns each in-process hook call into the command call the rest of tokenomics already understands.
+turns each in-process hook call into the command call the rest of agentarium already understands.
 
 **What the Cline docs settled.**
 
@@ -979,7 +979,7 @@ turns each in-process hook call into the command call the rest of tokenomics alr
   `capabilities` and a `hooks` object. Each hook gets a `snapshot` (agent id, conversation id, iteration, messages
   and usage) plus its own fields:
 
-  | Hook | Extra input | Can return | tokenomics lifecycle |
+  | Hook | Extra input | Can return | agentarium lifecycle |
   |---|---|---|---|
   | `beforeRun` | none | `stop` and `reason`, `appendContext` | `prompt`, if a run starts per user message ‡ |
   | `beforeModel` | `request` | `messages`, `tools`, `options`, `stop` and `reason` | none (one model request) |
@@ -1004,29 +1004,29 @@ turns each in-process hook call into the command call the rest of tokenomics alr
    first request. If a run starts once per user message, and `snapshot.messages` ends with that message ‡, then
    `beforeRun` is `UserPromptSubmit` by another name, and the controller (budget, haggle, ballast, parrot and
    pennywise's advice) can run there. That is the first thing to test.
-2. **`afterTool` can rewrite a result.** No other platform lets tokenomics change what a tool returned. diet
+2. **`afterTool` can rewrite a result.** No other platform lets agentarium change what a tool returned. diet
    today can only refuse a flooding call before it runs; on Cline it could let the call run and cut the result
    to its head and tail with a note, which costs the model one turn less. That is a new mode for diet
-   (`TOKENOMICS_DIET_MODE=trim`), off by default, and `tool_output_interception` is `native` here.
+   (`AGENTARIUM_DIET_MODE=trim`), off by default, and `tool_output_interception` is `native` here.
 
 **The design.**
 
-- **One self-contained file per host.** `plugins/cline/tokenomics.ts` exports the plugin and imports nothing but
+- **One self-contained file per host.** `plugins/cline/agentarium.ts` exports the plugin and imports nothing but
   Node built-ins, the same rule as `statusline.ts`, because `cline plugin install` may copy the file somewhere
   else. The path to `scripts/run.sh` is written into it at install time. Kilo Code and OpenCode each get their
   own small entry file later, sharing the same transport code by copy, checked by a test that the shared block is
   identical in each.
 - **The shim forwards; the adapter translates.** The shim knows nothing about scoring. Each hook call becomes one
   JSON payload in Cline's own field names (`hook`, the conversation id, `cwd`, the model when the request shows
-  it, `usage`, and `tool` and `input` for tool hooks) passed to `run.sh spendlens.ts <mode> cline`. A new
-  `ClineAdapter` in `tokenomics/adapters/cline.ts` maps it to the shared lifecycle and builds output in Cline's
+  it, `usage`, and `tool` and `input` for tool hooks) passed to `run.sh till.ts <mode> cline`. A new
+  `ClineAdapter` in `agentarium/adapters/cline.ts` maps it to the shared lifecycle and builds output in Cline's
   shape: `denyTool` returns `{ skip: true, reason }`, `askTool` returns `{ policy: { autoApprove: false } }`,
   `addContext` returns `{ appendContext }`, `blockPrompt` and `interrupt` return `{ stop: true, reason }`. The shim
-  passes back only those keys and drops anything else, so a bug in tokenomics can't rewrite a request.
+  passes back only those keys and drops anything else, so a bug in agentarium can't rewrite a request.
 - **Less in the payload than Cline offers.** `snapshot.messages` is the whole conversation. The shim never sends
   it: only the message count, the last user message (for pennywise's and haggle's scoring, the same text Claude
   Code's prompt hook already gets) and the usage totals. Tool inputs go through as Claude Code's do. Storage rules
-  don't change: no prompt or file text is kept unless `TOKENOMICS_STORE_PROMPT` is on.
+  don't change: no prompt or file text is kept unless `AGENTARIUM_STORE_PROMPT` is on.
 - **A deadline under Cline's.** The shim kills its child process after 2.5 seconds and returns nothing, so Cline
   never sees a timeout and never counts the plugin towards `failed`. Every hook call is wrapped so that nothing
   throws out of the shim. A killed call is recorded as `timeout` in `controller_events`, so `doctor` shows it next
@@ -1034,7 +1034,7 @@ turns each in-process hook call into the command call the rest of tokenomics alr
 - **One process per session, not per call.** Starting Node.js and opening SQLite for every tool call costs
   around 100 ms twice per call (before and after). The first version does exactly that, because it is simple and
   `controller_events` will measure it. If the p90 is over a second, the second version keeps one child per
-  session alive (`run.sh spendlens.ts serve-hooks cline`, one JSON line in, one out), started by the plugin's
+  session alive (`run.sh till.ts serve-hooks cline`, one JSON line in, one out), started by the plugin's
   `setup()` and stopped by `ctx.onDispose`. It still goes through `run.sh`, as the architecture rules require.
 - **Usage from `afterModel`.** `snapshot.usage` is cumulative ‡, so the adapter records the difference between
   two calls as one request's measured usage, with the model from `beforeModel`'s `request`. `afterRun`'s
@@ -1066,15 +1066,15 @@ turns each in-process hook call into the command call the rest of tokenomics alr
 | diet's trim mode | ✅ new | `afterTool` result rewrite |
 | budget, haggle, ballast, parrot | ◐ | only if `beforeRun` is per user message |
 | the band's forecast | ◐ | in `appendContext`, not on a status line |
-| spendlens, report, split-the-bill | ✅ tokens, ◐ money | priced when the model has a row in the price table |
-| pennywise | ◐ | through `tokenomics router` as Cline's base URL; in the plugin, only if `beforeModel`'s `options` can set the model ‡ |
+| till, report, split-the-bill | ✅ tokens, ◐ money | priced when the model has a row in the price table |
+| pennywise | ◐ | through `agentarium router` as Cline's base URL; in the plugin, only if `beforeModel`'s `options` can set the model ‡ |
 | cold-snap, coldcache | ✗ for now | no cache figures |
 
 If `beforeModel` can change the model, pennywise on Cline would route per request inside the plugin, the way the
 proxy does, with no subagent hand-off to pay for. That would make Cline the cheapest place to route of any
 platform, so it is the second thing to test.
 
-**Install.** `tokenomics cline` writes the plugin with the absolute `run.sh` path, runs `cline plugin install` on
+**Install.** `agentarium cline` writes the plugin with the absolute `run.sh` path, runs `cline plugin install` on
 it at user scope and prints how to check it with `cline hub plugins`. `doctor` reads the plugin's status
 (`ready`, `degraded`, `failed`) where the host reports it, and says when the plugin is installed but has never
 sent an event.
@@ -1086,7 +1086,7 @@ sent an event.
 2. `ClineAdapter` with fixtures from the capture, passing the adapter contract test.
 3. The shim, with a fake host in `tests/cline_shim.test.ts` that calls each hook, checks the 2.5-second deadline
    and checks that nothing but the allowed keys come back.
-4. `tokenomics cline` and the integration page in `docs/`.
+4. `agentarium cline` and the integration page in `docs/`.
 5. diet's trim mode.
 6. The per-session process, if the measured p90 asks for it.
 7. Kilo Code and OpenCode entry files.
@@ -1096,7 +1096,7 @@ sent an event.
 - Windows: `run.sh` needs `sh`. Claude Code always has bash there, but a Cline CLI user may not. The shim could
   look for Git Bash, or the rules could allow one Node.js entry point for in-process hosts. This needs a decision
   before step 3.
-- Plugins can also register tools. A `tokenomics_budget` tool the model can call to see what's left would put
+- Plugins can also register tools. A `agentarium_budget` tool the model can call to see what's left would put
   the forecast in front of the model when it plans, not only at prompt time. Worth it only if the model uses it
   unprompted; a test task would show that.
 - OpenCode's docs list plugin locations and config but the hook reference page couldn't be read, and third-party
@@ -1123,7 +1123,7 @@ only record what they would have done.
 
 **What the docs say now.**
 
-| Event | Output honoured | What it means for tokenomics |
+| Event | Output honoured | What it means for agentarium |
 |---|---|---|
 | `userPromptSubmitted` | `modifiedPrompt`, SDK hooks only; "command and HTTP config-file … hooks have their output dropped" | No change. Still nothing to pause with. |
 | `userPromptTransformed` (new) | `modifiedTransformedPrompt`, which replaces what the model reads and what is stored in session history. "Mutation-only: it can rewrite the content the model receives, but not block or handle the turn." | Context injection, not a decision. ‡ The reference says command hooks "are supported on all hook types" and names no exception for this event, but every example is SDK code. |
@@ -1162,7 +1162,7 @@ Two failure rules matter more than any of the above. Timeouts fail open for ever
 1. The fail-closed fix: `run.sh` gains a mode that runs the script and maps any exit code but 0 and 2 to 0,
    used by every `preToolUse` entry in `copilot-hooks.json`, with a test for a script that fails to load.
 2. `postToolUse` output in the Copilot adapter (`replaceResult(text)` on the base class, `null` where a
-   platform can't), and diet trimming on Copilot behind `TOKENOMICS_DIET_TRIM=off`, logged in `diet_events`.
+   platform can't), and diet trimming on Copilot behind `AGENTARIUM_DIET_TRIM=off`, logged in `diet_events`.
    *Half done:* the base class has `toolOutput` and `replaceOutput` (Copilot's is `modifiedResult`), and colander
    uses them on `postToolUse`. diet's trim mode is still to come.
 3. One real install to settle the three ‡ marks: does a command hook on `userPromptTransformed` run and is its
@@ -1176,7 +1176,7 @@ Two failure rules matter more than any of the above. Timeouts fail open for ever
 
 - If `transcriptPath` on `agentStop` is the session's `events.jsonl`, `sessionModel` can read it directly
   instead of guessing the session-state folder, and the transcript capability could become `partial`.
-- `agentStop` can force another turn, and Copilot caps that at 8 in a row. Nothing in tokenomics should ever
+- `agentStop` can force another turn, and Copilot caps that at 8 in a row. Nothing in agentarium should ever
   use it: a forced turn is a premium request the user didn't ask for. The adapter should declare it and the
   contract test should fail any helper that returns `decision: "block"` on a stop event for a premium-billed
   platform.
@@ -1230,7 +1230,7 @@ And two aren't adapters at all:
 | `statusline` | ✗ | ✗ | ✗ | ✗ |
 | Timeout, failure | 60 s; fails open (any exit but 2 is a warning) | per hook, no default stated; † fails closed on `PreToolUse` | 30 s; failure not documented | ? |
 
-**The ranking**, by what tokenomics could prevent there:
+**The ranking**, by what agentarium could prevent there:
 
 1. **Gemini CLI.** The best fit after Codex, and better than Codex in one way: `BeforeModel` can change the
    model per request, so pennywise can route inside the hook with no proxy and no subagent hand-off. That is
@@ -1254,12 +1254,12 @@ And two aren't adapters at all:
    model or usage. Wait for the English payload reference, then score it again. The Devin CLI is a separate
    product with Claude-shaped hooks (below).
 5. **OpenCode**, through [the plugin shim](#the-plugin-shim), which already plans an OpenCode entry file.
-6. **Aider**, as an importer: `spendlens.ts import` learns its history file's cost lines, and the user can point
-   it at `tokenomics router` for measured usage. No guards.
+6. **Aider**, as an importer: `till.ts import` learns its history file's cost lines, and the user can point
+   it at `agentarium router` for measured usage. No guards.
 7. **Zed**, no work beyond the provider layer and a page saying which ACP agents bring their own hooks.
 
 **Change to the milestone.** Priority 2 starts with Gemini CLI, and it could move ahead of Cursor in Priority 1:
-it has more of what tokenomics needs, and Cursor has no usage at all. Kiro CLI follows, as a config file on the
+it has more of what agentarium needs, and Cursor has no usage at all. Kiro CLI follows, as a config file on the
 Claude-shaped base. Windsurf waits for its docs.
 
 **What it adds to the provider layer.** A third wire format, Gemini's `generateContent`, with usage in
@@ -1270,7 +1270,7 @@ it should come in step 3 of the provider layer with the two OpenAI ones.
 **Open questions.**
 
 - Do Claude Code's, Codex's and Gemini CLI's own hooks fire when they run inside Zed over ACP? If they do,
-  Zed users get tokenomics with no work; if not, the ACP adapters are the place to ask for it. One install
+  Zed users get agentarium with no work; if not, the ACP adapters are the place to ask for it. One install
   each answers it.
 - Gemini CLI's `BeforeModel` can swap the model, but does a mid-turn swap keep the cache? On Gemini the
   cached prefix is per model, so a route down could pay a cold cache, as a Claude subagent does. pennywise's
@@ -1282,7 +1282,7 @@ it should come in step 3 of the provider layer with the two OpenAI ones.
 
 - **The Devin CLI reads Claude Code's hooks by default** (`.claude/settings.json` and `~/.claude/settings.json`,
   through `read_config_from.claude`), with a Claude-shaped payload but no `transcript_path` documented. So
-  tokenomics' Claude Code hooks may already run under Devin and record its sessions as Claude Code ones. The
+  agentarium's Claude Code hooks may already run under Devin and record its sessions as Claude Code ones. The
   registry should tell the two apart (by an environment variable or a missing field) and pick a `devin`
   field map, or the reports will mix them. It is the same problem [the Cursor adapter](#the-cursor-adapter) found, so
   one detection step in the registry should cover both.
@@ -1302,7 +1302,7 @@ API pages on 23 November 2026. Cells marked ‡ come from search results because
 and need checking before code depends on them.*
 
 **The short answer.** All four run the agent on the vendor's servers, in the vendor's browser tab. There is no
-hook, no transcript and no base URL to point at a proxy, so nothing tokenomics does before a prompt or a tool
+hook, no transcript and no base URL to point at a proxy, so nothing agentarium does before a prompt or a tool
 call can run there. What is left is the receipt, and only v0 hands it over through an API. That decides the
 plan: no adapters, one importer, one metered upstream and an honest page.
 
@@ -1315,9 +1315,9 @@ plan: no adapters, one importer, one metered upstream and an honest page.
 | The vendor's own guard | usage alerts and hard budget caps in Settings → Billing | a daily cap on Free only | a monthly spend limit on auto top-up and per-member limits on build credits | ? not found |
 | What drives the cost | how much the agent does per request; context sent to the model | reading and syncing project files, so the cost per message grows with project size | request complexity in build mode; the model and tokens behind AI calls in the deployed app | the model and message length |
 
-**What tokenomics can do there.**
+**What agentarium can do there.**
 
-1. **Import v0's usage report.** A `v0` importer for the provider layer's step 5 (`spendlens.ts import --v0`, with
+1. **Import v0's usage report.** A `v0` importer for the provider layer's step 5 (`till.ts import --v0`, with
    a key from `V0_API_KEY` that is never stored) reads `/v1/reports/usage` into `provider_events` with
    `source = 'reported'`, one row per message, keyed by `chatId` so unified reporting counts a chat as a session.
    It is the only one of the four where a report can be filled in without the user typing anything.
@@ -1326,10 +1326,10 @@ plan: no adapters, one importer, one metered upstream and an honest page.
    the OpenAI Chat Completions parser. That is measured usage and the band's forecast, with no v0-specific code.
 3. **Credits are their own unit.** A new billing model, `vendor_credits`, sits beside Copilot's premium requests.
    Replit's, Lovable's and v0's credits are counted, never converted to money and never added to a money
-   column, unless the user gives a rate (`TOKENOMICS_CREDIT_RATES=lovable=0.10`, their figure, as with Copilot's
+   column, unless the user gives a rate (`AGENTARIUM_CREDIT_RATES=lovable=0.10`, their figure, as with Copilot's
    multipliers). Bolt's "tokens" are a plan unit too, not model tokens, so they are credits here and are never
    priced from `model-prices.json`.
-4. **One page, no adapter.** `docs/integrations/browser-builders.md` says, per builder, what tokenomics sees
+4. **One page, no adapter.** `docs/integrations/browser-builders.md` says, per builder, what agentarium sees
    (nothing, a manual CSV or an API) and which of the vendor's own guards to switch on: Replit's hard cap,
    Lovable's monthly spend limit. Pointing people at a cap that already exists prevents more spend than
    anything we could build around these tools.
@@ -1345,7 +1345,7 @@ the top of the roadmap, so it is out.
 
 **Order of work**, after the provider layer's importer step:
 
-1. The `vendor_credits` billing model and `TOKENOMICS_CREDIT_RATES`, with unified reporting showing credits in
+1. The `vendor_credits` billing model and `AGENTARIUM_CREDIT_RATES`, with unified reporting showing credits in
    their own column.
 2. The v0 importer, with a recorded fixture of the usage report.
 3. `v0` as a named upstream, with a fixture from a real Model API response that confirms the `usage` fields ‡.
@@ -1368,6 +1368,6 @@ the top of the roadmap, so it is out.
   money. Kiro, Windsurf and Cursor also sell credits or requests, so the same billing model may cover several
   Priority 2 platforms.
 - The vendors' hard caps (Replit, Lovable) are prevention we don't have to build. `doctor` could ask once which
-  builders a team uses and list the cap to set in each, matched to the user's `TOKENOMICS_BUDGET_MONTHLY`.
+  builders a team uses and list the cap to set in each, matched to the user's `AGENTARIUM_BUDGET_MONTHLY`.
 - v0's usage report gives a per-chat cost with a user on every row, which is the shape split-the-bill already
   reads. A team on v0 could get the same "who spent it" view as a Claude Code team from one API key.

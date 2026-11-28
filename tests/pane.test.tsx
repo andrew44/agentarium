@@ -10,11 +10,11 @@ function seed(on: On, values: { line?: unknown, now?: number }) {
 }
 
 const PANE = {
-  plugin: 'tokenomics',
+  plugin: 'agentarium',
   component: 'Pane',
-  requestId: 'tokenomics',
+  requestId: 'agentarium',
   props: {
-    title: 'Tokenomics', isFocused: false, bodyColumns: 60, placement: 'dock',
+    title: 'Agentarium', isFocused: false, bodyColumns: 60, placement: 'dock',
     scroll: { offset: 0, bodyRows: 30 }, view: {},
   },
 } as const
@@ -122,7 +122,7 @@ function engine(on: On, store: Record<string, unknown> = {}, surfaces: string[] 
   on('process.hookEnv', () => ({ value: {} }))
   on('process.run', () => ({ value: { exitCode: 0, stdout: '{"show":false}', stderr: '',
     isStdoutTruncated: false, isStderrTruncated: false } }))
-  on('command.register', () => ({ value: { command: 'tokenomics-pane' } }))
+  on('command.register', () => ({ value: { command: 'agentarium-pane' } }))
   on('ui.open', (_, e) => { opened.push(e.id); return { value: placed } })
   on('store.get', (_, e) => ({ value: store[e.key] }))
   on('store.set', (_, e) => { store[e.key] = e.value; return { value: undefined } })
@@ -135,13 +135,13 @@ test('opens by itself in the desktop app; the command opens it and forgets a clo
   const { opened, store } = engine(on, { 'pane.closed': false })
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   await clock.advance(10)
-  expect(opened).toEqual(['tokenomics'])
+  expect(opened).toEqual(['agentarium'])
 
   store['pane.closed'] = true                            // as a close by hand leaves it
-  await $.command.run({ command: 'tokenomics-pane', args: '', origin: { kind: 'composer' },
+  await $.command.run({ command: 'agentarium-pane', args: '', origin: { kind: 'composer' },
     presentation: { isFullscreen: false, columns: 120 } })
   expect(store['pane.closed']).toBeUndefined()
-  expect(opened).toEqual(['tokenomics', 'tokenomics'])
+  expect(opened).toEqual(['agentarium', 'agentarium'])
 })
 
 test('closed by hand last time: no pane unasked', async ($, on) => {
@@ -163,10 +163,10 @@ test('in the desktop app it opens when the app attaches, after a start with no s
   surfaces.push('desktop')
   await $.session.attach({ surface: 'desktop', clientId: 'desktop:default' })
   await clock.advance(10)
-  expect(opened).toEqual(['tokenomics'])
+  expect(opened).toEqual(['agentarium'])
   await $.session.attach({ surface: 'desktop', clientId: 'desktop:second' })
   await clock.advance(10)
-  expect(opened).toEqual(['tokenomics'])                 // once, not per client
+  expect(opened).toEqual(['agentarium'])                 // once, not per client
 })
 
 test('an attach after a close by hand opens nothing', async ($, on) => {
@@ -192,14 +192,14 @@ test('an app that attached before the start still gets the pane', async ($, on) 
   const { opened } = engine(on, { 'pane.closed': false }, ['desktop'])
   await $.session.start({ cwd: '/', surface: null, isInteractive: false })
   await clock.advance(10)
-  expect(opened).toEqual(['tokenomics'])
+  expect(opened).toEqual(['agentarium'])
 })
 
 // An app that never says how it lays panes out: the engine opens the pane but nothing draws it.
 const UNDRAWN = 'no attached surface places panes (desktop:default)'
 
 function undrawn(on: On, logs: { text: string, to: string }[], isPlacedLater = false) {
-  on('ui.panes', () => ({ value: [{ id: 'tokenomics', title: 'Tokenomics', isShown: isPlacedLater,
+  on('ui.panes', () => ({ value: [{ id: 'agentarium', title: 'Agentarium', isShown: isPlacedLater,
     isFocused: false, isPlaced: isPlacedLater }] }))
   on('ui.log', (_, e) => { logs.push({ text: e.text, to: e.to }); return { value: undefined } })
 }
@@ -208,7 +208,7 @@ test('the command says why when the app does not draw the pane', async ($, on) =
   const logs: { text: string, to: string }[] = []
   engine(on, {}, ['desktop'], { isPlaced: false, reason: UNDRAWN })
   undrawn(on, logs)
-  const { text } = await $.command.run({ command: 'tokenomics-pane', args: '', origin: { kind: 'composer' },
+  const { text } = await $.command.run({ command: 'agentarium-pane', args: '', origin: { kind: 'composer' },
     presentation: { isFullscreen: false, columns: 120 } })
   expect(text).toContain('nothing here draws it yet')
   expect(text).toContain(UNDRAWN)

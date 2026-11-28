@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / blinkers: keep the agent on the job you asked for. Scope creep costs money twice: the
+ * agentarium / blinkers: keep the agent on the job you asked for. Scope creep costs money twice: the
  * tokens to write the extra change, and the review time to read it. blinkers doesn't tell the agent to
  * write less code; it compares each change with the task and asks before it wanders:
  *
@@ -22,9 +22,9 @@
  *   blinkers.ts diff --task "fix the login redirect" [--base main] [--json] [--ci]
  *                                   judge a branch's changed files against a task (PR review, CI)
  *
- * TOKENOMICS_BLINKERS: ask (default: the agent must ask you first; Claude Code shows a confirm prompt,
+ * AGENTARIUM_BLINKERS: ask (default: the agent must ask you first; Claude Code shows a confirm prompt,
  * Copilot refuses the call and tells it to ask), block (refuse; the agent must ask in chat), warn (tell
- * you, never stop anything) or off. TOKENOMICS_BLINKERS_FILES: most files a task may change before
+ * you, never stop anything) or off. AGENTARIUM_BLINKERS_FILES: most files a task may change before
  * blinkers asks (default: 3 per named file, at least 6). Say "blinkers off" / "blinkers on" in a prompt to
  * switch it for the session. Each file is asked about once per session. Always exits 0 as a hook.
  */
@@ -33,17 +33,17 @@ import { existsSync } from 'node:fs'
 import { basename, isAbsolute, join } from 'node:path'
 
 import { findTranscript } from './coach.ts'
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb, type Db } from '../tokenomics/engine/db.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { TOOL_CODE_EDIT } from '../tokenomics/engine/evidence.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { CostEngine, InsightsEngine, PolicyEngine, TelemetryEngine } from '../tokenomics/services/index.ts'
-import { argValue, asDict, errText, first, isMain, isObj, logErr, now, readPayload, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb, type Db } from '../agentarium/engine/db.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { TOOL_CODE_EDIT } from '../agentarium/engine/evidence.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { CostEngine, InsightsEngine, PolicyEngine, TelemetryEngine } from '../agentarium/services/index.ts'
+import { argValue, asDict, errText, first, isMain, isObj, logErr, now, readPayload, type Obj } from '../agentarium/util.ts'
 import { numArg, write } from './common.ts'
 
 const MODES = ['ask', 'block', 'warn', 'off']
-const mode = () => PolicyEngine.mode('TOKENOMICS_BLINKERS', 'ask', MODES)
+const mode = () => PolicyEngine.mode('AGENTARIUM_BLINKERS', 'ask', MODES)
 
 function ensure(db: Db): void {
   db.exec(`CREATE TABLE IF NOT EXISTS blinkers_scope(session_id TEXT PRIMARY KEY, ts TEXT, scope TEXT, enabled INTEGER DEFAULT 1);
@@ -107,7 +107,7 @@ export function onTool(source: string, payload: Obj, dbPath = defaultDbPath()): 
     const s = loadScope(db, sid)
     if (!s || !s.enabled) return null                    // no task seen for this session: nothing to compare with
     const touched = db.all('SELECT path FROM blinkers_touched WHERE session_id=?', sid).map((r) => String(r.path))
-    const maxFiles = PolicyEngine.threshold('TOKENOMICS_BLINKERS_FILES', 0, { min: 1 }) || undefined
+    const maxFiles = PolicyEngine.threshold('AGENTARIUM_BLINKERS_FILES', 0, { min: 1 }) || undefined
     const finding = InsightsEngine.judgeChange(s.scope, { path: rel, created, ...editTexts(input) }, touched, { maxFiles })
     const remember = () => db.run('INSERT OR IGNORE INTO blinkers_touched(session_id, path) VALUES(?,?)', sid, rel)
     if (!finding) {

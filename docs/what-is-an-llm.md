@@ -2,7 +2,7 @@
 
 # What is an LLM?
 
-Claude, the models behind GitHub Copilot, ChatGPT and Gemini are all **large language models**, or **LLMs**. Every token tokenomics counts is a token an LLM read or wrote. This guide explains what they are in two parts:
+Claude, the models behind GitHub Copilot, ChatGPT and Gemini are all **large language models**, or **LLMs**. Every token agentarium counts is a token an LLM read or wrote. This guide explains what they are in two parts:
 
 1. **[The simple version](#part-1-the-simple-version)**: no technical background needed. Five minutes.
 2. **[The technical version](#part-2-the-technical-version)**: transformers, training, the context window, model sizes, and how all of it shows up in your bill.
@@ -53,7 +53,7 @@ flowchart LR
 
 Providers usually offer a range of sizes. Claude, for example, comes as **Haiku** (small and fast), **Sonnet** (middle) and **Opus** (largest and most capable).
 
-Think of it like hiring help: you wouldn't pay a senior consultant to tidy a spreadsheet. Bigger models are better at hard problems but cost more per token. For simple jobs a small model is often just as good, at a fraction of the price. tokenomics' **pennywise** helper does that matching for you.
+Think of it like hiring help: you wouldn't pay a senior consultant to tidy a spreadsheet. Bigger models are better at hard problems but cost more per token. For simple jobs a small model is often just as good, at a fraction of the price. agentarium's **pennywise** helper does that matching for you.
 
 ### What an LLM is not
 
@@ -134,7 +134,7 @@ Providers ship families of models at different sizes and prices. Broadly:
 | **Medium** (e.g. Claude Sonnet) | Strong all-round, good value. | Most day-to-day coding and writing. |
 | **Large** (e.g. Claude Opus) | Best at long, complex, ambiguous work. | Architecture, hard debugging, long agentic tasks. |
 
-Prices per token can differ by an order of magnitude between tiers, so model choice is often the biggest single lever on cost. The right choice is the cheapest model that **still succeeds** at the task, which is what tokenomics' [pennywise](reference.md#pennywise) (routing) and [bang-for-buck](reference.md#bang-for-buck) (cost per successful result) are built around.
+Prices per token can differ by an order of magnitude between tiers, so model choice is often the biggest single lever on cost. The right choice is the cheapest model that **still succeeds** at the task, which is what agentarium's [pennywise](reference.md#pennywise) (routing) and [bang-for-buck](reference.md#bang-for-buck) (cost per successful result) are built around.
 
 ### 2.7 Giving a model knowledge it doesn't have
 
@@ -158,7 +158,7 @@ cost = input tokens        x input price
      + output tokens       x output price (including thinking)
 ```
 
-So the things that make an LLM expensive are: a long conversation, big files or logs in the context, a cold cache, long answers, lots of thinking, and a bigger model than the job needs. Each one has a tokenomics helper aimed at it; see [Saving tokens](saving-tokens.md).
+So the things that make an LLM expensive are: a long conversation, big files or logs in the context, a cold cache, long answers, lots of thinking, and a bigger model than the job needs. Each one has an agentarium helper aimed at it; see [Saving tokens](saving-tokens.md).
 
 ### 2.9 Quick reference
 

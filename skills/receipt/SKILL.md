@@ -15,7 +15,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" receipt.ts --branch feat/login   # ano
 ```
 
 - `--days N` (default 90) limits how far back it looks; `--currency USD` changes the currency.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name receipt.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name receipt.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Use it
 

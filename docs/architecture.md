@@ -11,11 +11,11 @@ flowchart LR
     A1 --> CAP{"Capability<br/>registry"}
     A2 --> CAP
     CAP --> E["Shared engine<br/>classifier + LLM step"]
-    E --> DB[("spendlens.db<br/>one row per session id")]
+    E --> DB[("till.db<br/>one row per session id")]
 ```
 
-- **Shared engine** (`tokenomics/engine/`): the scoring rules, the optional AI-model check, and the database. Both assistants go through exactly the same code.
-- **Adapters** (`tokenomics/adapters/`): translation only, no scoring. Each one lists its capabilities (transcript, token counts, tool events, billing and so on) as `native`, `partial` or `none`.
+- **Shared engine** (`agentarium/engine/`): the scoring rules, the optional AI-model check, and the database. Both assistants go through exactly the same code.
+- **Adapters** (`agentarium/adapters/`): translation only, no scoring. Each one lists its capabilities (transcript, token counts, tool events, billing and so on) as `native`, `partial` or `none`.
 - **If something is missing**, the engine copes: no transcript means it uses the prompt and tool events it stored; an unknown assistant, or an adapter that fails to load, still gets its prompts logged by session id, and the other assistant is unaffected.
 - **Billing stays separate**: Claude Code tokens are priced (`engine/pricing.ts`); Copilot premium requests are never turned into tokens or money.
 - **VS Code is a third adapter** (`adapters/vscode.ts`), built on the Copilot one: Claude Code's hook names and output shapes, Copilot's tools and bill. Scripts that need a Claude Code transcript ask `premiumBilled(source)` in the registry rather than checking for `copilot` by name, so Copilot CLI and VS Code are treated alike. The GitHub Copilot app is built on Copilot CLI and runs the same plugin hooks, so it has no adapter of its own: `copilot-app` is an alias for `copilot` in the registry.
@@ -25,7 +25,7 @@ flowchart LR
 
 ## The intelligence engine
 
-Above the engine modules sit five shared services (`tokenomics/services/`). Every helper is built from them, so no feature has a Claude version and a Copilot version:
+Above the engine modules sit five shared services (`agentarium/services/`). Every helper is built from them, so no feature has a Claude version and a Copilot version:
 
 ```mermaid
 flowchart LR
@@ -45,9 +45,9 @@ flowchart LR
 | Stage | Service | What it owns |
 |---|---|---|
 | **Observe** | `TelemetryEngine` (`services/telemetry.ts`) | The shared event (`session_start`, `prompt`, `tool_call`, `tool_result`, `turn_end`, `session_end`) with project, developer, tool kind, what a command was for, file path and success; per-session cost by agent / subagent and by model, with provider, latency and API errors. Never prompt text, file contents or command text. |
-| **Understand** | `CostEngine` (`services/cost.ts`) | Model prices, display currency, which provider served a model, the offering catalogue (`data/providers.json` + `~/.tokenomics/providers.json`), workload costs with or without cached-token prices, and team projections. |
+| **Understand** | `CostEngine` (`services/cost.ts`) | Model prices, display currency, which provider served a model, the offering catalogue (`data/providers.json` + `~/.agentarium/providers.json`), workload costs with or without cached-token prices, and team projections. |
 | | `InsightsEngine` (`services/insights.ts`) | Waste and recommendations: dead work, scope creep, provider arbitrage, attribution, plus forensics (sherlock) and loops (groundhog). |
-| **Optimise** | `PolicyEngine` (`services/policy.ts`) | Modes and thresholds from settings, budgets, and turning a decision (`allow`, `warn`, `context`, `ask`, `deny`, `block`, `interrupt`) into the platform's hook output. A platform that can't express an action falls back to the nearest one it can; a missing feature never makes a guard stricter. `activity()` reads every guard's event table back: what each one stopped, flagged and saved (the dashboard's "What tokenomics did"). |
+| **Optimise** | `PolicyEngine` (`services/policy.ts`) | Modes and thresholds from settings, budgets, and turning a decision (`allow`, `warn`, `context`, `ask`, `deny`, `block`, `interrupt`) into the platform's hook output. A platform that can't express an action falls back to the nearest one it can; a missing feature never makes a guard stricter. `activity()` reads every guard's event table back: what each one stopped, flagged and saved (the dashboard's "What agentarium did"). |
 | **Prove** | `OutcomeEngine` (`services/outcome.ts`) | Task status and quality from observable signals: test, lint and build results, commits, PRs, commits reaching the main branch, reverts, refusals, interruptions, and hand marks. Token counts are never treated as evidence of success. |
 
 `services/value.ts` runs all five over one session and writes the enriched ledger row (bang-for-buck calls it at every turn end). Adapters gained three translation methods for this: `lifecycle()` (the platform's event name → the shared one), `toolOk()` (did a finished call succeed) and `askTool()` (a confirm prompt, where the platform has one).
@@ -56,12 +56,12 @@ flowchart LR
 
 Everything is TypeScript. Node.js 22.18+ runs the `.ts` files directly (it strips the types itself), so there is no build step and nothing is compiled; SQLite comes from Node's built-in `node:sqlite`. There are no runtime packages at all: TypeScript and `@types/node` are dev dependencies, used only to type-check (`npm run typecheck`).
 
-The older tools (statusline, pennywise, doggybag, coach) are still standalone scripts; the statusline must stay a single file because `--install` copies it to `~/.tokenomics/statusline.mts` (and the plugin's `statusline.ts --sync` SessionStart hook refreshes that copy after each plugin update). The band (`hooks/band.tsx`) is a [mod](https://code.claude.com/docs/en/plugins/mods/interface) that draws the statusline's numbers (`statusline.ts --json`) above the prompt box in the desktop app, where there is no statusline. The pane (`hooks/pane.tsx`) draws the same numbers beside the chat, in tabs, with the advice in full. Copilot has no mods, so its numbers are drawn elsewhere from `statusline.ts --copilot --json`: a VS Code extension (`vscode/extension.js`) puts it in the status bar, and the dashboard server's `/copilot` page (`dashboard/copilot.html`) is a small window for the Copilot app. The extension is plain JavaScript because VS Code loads it with its own Electron build of Node.js, which can't be counted on to strip types; it only draws. A plugin has one hooks module, so `band.tsx` is it and calls the pane's `registerPane` and `startPane`; `hooks/lens.ts` holds the helpers both draw with (the cache timer, the budget's words, the pictures). Their tests (`tests/band.test.tsx`, `tests/pane.test.tsx`) run with `claude plugin test .`.
+The older tools (statusline, pennywise, doggybag, coach) are still standalone scripts; the statusline must stay a single file because `--install` copies it to `~/.agentarium/statusline.mts` (and the plugin's `statusline.ts --sync` SessionStart hook refreshes that copy after each plugin update). The band (`hooks/band.tsx`) is a [mod](https://code.claude.com/docs/en/plugins/mods/interface) that draws the statusline's numbers (`statusline.ts --json`) above the prompt box in the desktop app, where there is no statusline. The pane (`hooks/pane.tsx`) draws the same numbers beside the chat, in tabs, with the advice in full. Copilot has no mods, so its numbers are drawn elsewhere from `statusline.ts --copilot --json`: a VS Code extension (`vscode/extension.js`) puts it in the status bar, and the dashboard server's `/copilot` page (`dashboard/copilot.html`) is a small window for the Copilot app. The extension is plain JavaScript because VS Code loads it with its own Electron build of Node.js, which can't be counted on to strip types; it only draws. A plugin has one hooks module, so `band.tsx` is it and calls the pane's `registerPane` and `startPane`; `hooks/lens.ts` holds the helpers both draw with (the cache timer, the budget's words, the pictures). Their tests (`tests/band.test.tsx`, `tests/pane.test.tsx`) run with `claude plugin test .`.
 
 ## Handy commands
 
 ```bash
-node scripts/spendlens.ts capabilities     # what each assistant supports
+node scripts/till.ts capabilities          # what each assistant supports
 npm test                                   # run the tests (node:test; no installs needed)
 npm install && npm run typecheck           # type-check with TypeScript (the only dev dependencies)
 node scripts/update_prices.ts              # refresh data/model-prices.json
@@ -72,7 +72,7 @@ Tests run on every push and pull request against Node.js 22.18 (the oldest suppo
 ## What's in the repo
 
 ```text
-tokenomics/
+agentarium/
 ├── .claude-plugin/
 │   ├── plugin.json                 Claude Code manifest
 │   └── marketplace.json            lets the repo be added as a marketplace
@@ -82,15 +82,15 @@ tokenomics/
 ├── hooks/lens.ts                   what the band and the pane share: the cache timer, budget words, pictures
 ├── plugin.json                     Copilot CLI manifest
 ├── copilot-hooks.json              Copilot CLI hooks
-├── vscode-hooks.json               VS Code agent hooks (`tokenomics vscode` writes them into a workspace)
+├── vscode-hooks.json               VS Code agent hooks (`agentarium vscode` writes them into a workspace)
 ├── vscode/                         Copilot's numbers in VS Code's status bar: a small extension (plain JavaScript,
 │                                   as VS Code loads it) that draws `statusline.ts --copilot --json`;
-│                                   `tokenomics vscode --status-bar` packs it as a .vsix and installs it
+│                                   `agentarium vscode --status-bar` packs it as a .vsix and installs it
 ├── skills/
 │   ├── coach/SKILL.md              prompt and cache review skill
 │   ├── spend-report/SKILL.md       weekly spend report skill
-│   ├── dashboard/SKILL.md          opens the dashboard (/tokenomics:dashboard)
-│   ├── statusline/SKILL.md         installs / removes the statusline, band on/off (/tokenomics:statusline)
+│   ├── dashboard/SKILL.md          opens the dashboard (/agentarium:dashboard)
+│   ├── statusline/SKILL.md         installs / removes the statusline, band on/off (/agentarium:statusline)
 │   ├── bang-for-buck/ haggle/ sherlock/ waistline/ taste-test/ spring-clean/ groundhog/
 │   │                               value, waste and quality skills (each a SKILL.md over its script)
 │   ├── split-the-bill/ bazaar/ blinkers/ crystal-ball/ deadwood/
@@ -101,7 +101,7 @@ tokenomics/
 │   ├── cache-buster/ too-many-cooks/ receipt/ dry-run/
 │   │                               prefix-edit, subagent, branch-cost and install-cost skills
 │   └── rate-my-prompt/ judge/      prompt score out of 10 (judge is its alias)
-├── tokenomics/
+├── agentarium/
 │   ├── engine/                     shared logic: classifier.ts, llm.ts, store.ts, session.ts, evidence.ts,
 │   │                               pricing.ts, currency.ts, diet.ts, colander.ts (what to keep of a
 │   │                               command's output), budget.ts, events.ts, and for the
@@ -122,14 +122,14 @@ tokenomics/
 │   └── util.ts                     shared helpers
 ├── install.sh / install.ps1        one-line installers (download, then run scripts/cli.ts setup)
 ├── scripts/
-│   ├── cli.ts                      the `tokenomics` command: setup, update, uninstall, dashboard, report, vscode
+│   ├── cli.ts                      the `agentarium` command: setup, update, uninstall, dashboard, report, vscode
 │   ├── run.sh                      launcher every hook and skill uses: finds Node.js 22.18+ on any OS
-│   ├── spendlens.ts                the OPEX/CAPEX hook runner (calls the engine)
+│   ├── till.ts                     the OPEX/CAPEX hook runner (calls the engine)
 │   ├── pennywise.ts                model router: complexity tiers; hook (subagent) or local proxy
 │   ├── doggybag.ts                 packs a resume note into <project>/.doggybag before the cache expires or compaction
 │   ├── diet.ts                     stops tool calls that would flood the context; learns output sizes post-tool
 │   ├── colander.ts                 strains test, build and install output before the model reads it (post-tool hook);
-│   │                               keeps the full output in ~/.tokenomics/colander/ for a day; strain, report
+│   │                               keeps the full output in ~/.agentarium/colander/ for a day; strain, report
 │   ├── budget.ts                   daily / per-session spending limits
 │   ├── holdup.ts                   pauses a prompt that pastes in a huge log, document or file, or asks for the whole repo (run by the controller)
 │   ├── premium.ts                  Copilot's premium-request allowance guard (run by the controller)
@@ -137,9 +137,9 @@ tokenomics/
 │   ├── coach.ts                    transcript analyser used by the coach skill
 │   ├── statusline.ts               the statusline for Claude Code and Copilot CLI (terminal); --json feeds the band,
 │   │                               --copilot --json Copilot's numbers (VS Code's status bar, the Copilot window)
-│   ├── dashboard.ts                local web server over the spendlens database (--background): spend, OPEX / CAPEX
-│   │                               and what tokenomics did; /copilot is the small window for the Copilot app
-│   │                               (`tokenomics copilot --window`)
+│   ├── dashboard.ts                local web server over the till database (--background): spend, OPEX / CAPEX
+│   │                               and what agentarium did; /copilot is the small window for the Copilot app
+│   │                               (`agentarium copilot --window`)
 │   ├── bangforbuck.ts              cost per outcome; writes the ledger at each turn end
 │   ├── haggle.ts                   task quotes and contracts (prompt, guard, settle, close hooks)
 │   ├── sherlock.ts                 agent forensics: costed waste in a session
@@ -181,10 +181,10 @@ tokenomics/
 
 ## Adding a helper
 
-1. Put shared logic in `tokenomics/engine/` or, for anything about cost, events, outcomes, policy or insights, in the matching service in `tokenomics/services/`, so both assistants use it. Never write a platform-specific copy.
+1. Put shared logic in `agentarium/engine/` or, for anything about cost, events, outcomes, policy or insights, in the matching service in `agentarium/services/`, so both assistants use it. Never write a platform-specific copy.
 2. Add a thin script in `scripts/` that reads the hook payload through the adapter, decides with the services, and prints `PolicyEngine.enforce(adapter, action, message)`.
 3. Register the hook in `hooks/hooks.json` (Claude Code) and, if Copilot can support it, `copilot-hooks.json` and `vscode-hooks.json`. Always call it through the launcher (`sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" <name>.ts ...`), never `node` directly: the launcher finds the right Node.js on every OS, including Windows.
-4. Add a settings switch (`TOKENOMICS_<NAME>=off`) so people can opt out.
+4. Add a settings switch (`AGENTARIUM_<NAME>=off`) so people can opt out.
 5. Log what it did to a `<name>_events` table so the spend report can show it.
 6. Add tests, and document it in [the reference](reference.md) and [Skills, tools and hooks](skills-tools-and-hooks.md).
 
@@ -193,7 +193,7 @@ tokenomics/
 
 There's nothing to do by hand: **every pull request to `main` carries its own version, and merging it publishes the release** once the tests pass.
 
-Users install from `main`. The marketplace entry (`.claude-plugin/marketplace.json`), `install.sh`, `install.ps1` and `tokenomics update` all fetch it, and each merge is a release, so `main` is always the latest version.
+Users install from `main`. The marketplace entry (`.claude-plugin/marketplace.json`), `install.sh`, `install.ps1` and `agentarium update` all fetch it, and each merge is a release, so `main` is always the latest version.
 
 - **The bump happens in the pull request.** [version.yml](../.github/workflows/version.yml) works out the next patch (1.3.0 → 1.3.1) and commits `Release v1.3.1` to your branch, raising `version` in both `.claude-plugin/plugin.json` and `plugin.json`. The version matters: Claude Code only sends plugin users an update when it changes.
 - **Merging publishes it.** [release.yml](../.github/workflows/release.yml) runs the tests on `main`, tags `v1.3.1` and publishes the release with generated notes and the installers attached.

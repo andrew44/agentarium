@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / doggybag: pack up the session's leftovers before the prompt cache goes cold.
+ * agentarium / doggybag: pack up the session's leftovers before the prompt cache goes cold.
  *
  * When the cache goes cold, resuming the full session re-writes the whole context to the cache at a
  * premium (1.25x input price). A doggybag is a small, deterministic digest (recent prompts, last
@@ -23,19 +23,19 @@
  *   doggybag.ts write  [source]  Pack one now (manual use; prints its path).
  * Internal: doggybag.ts watch <jobfile> <token>
  *
- * Env (the older TOKENOMICS_HANDOFF_* names still work):
- *   TOKENOMICS_DOGGYBAG          on (default) | off
- *   TOKENOMICS_DOGGYBAG_LEAD     seconds before expiry to pack (default 60)
- *   TOKENOMICS_DOGGYBAG_DIR      folder name inside the project (default .doggybag); an absolute path
+ * Env (the older AGENTARIUM_HANDOFF_* names still work):
+ *   AGENTARIUM_DOGGYBAG          on (default) | off
+ *   AGENTARIUM_DOGGYBAG_LEAD     seconds before expiry to pack (default 60)
+ *   AGENTARIUM_DOGGYBAG_DIR      folder name inside the project (default .doggybag); an absolute path
  *                                puts every project's doggybags there instead
- *   TOKENOMICS_DOGGYBAG_INJECT   1 (default) = a new session or /clear loads the latest doggybag as
+ *   AGENTARIUM_DOGGYBAG_INJECT   1 (default) = a new session or /clear loads the latest doggybag as
  *                                context; 0 = only say it exists
- *   TOKENOMICS_DOGGYBAG_COLD     warn (default) | block (pause the first cold prompt once) | off
- *   TOKENOMICS_DOGGYBAG_COLD_MIN_TOKENS  only speak up on a cold prompt above this context (default 20000)
- *   TOKENOMICS_DOGGYBAG_MAX_AGE_H  hours a doggybag is offered for (default 24)
- *   TOKENOMICS_DOGGYBAG_KEEP     doggybags kept per folder (default 10)
- *   TOKENOMICS_CACHE_TTL         cache lifetime in seconds (default: detected, 300 or 3600)
- *   TOKENOMICS_DB                SQLite path shared with spendlens (default ~/.tokenomics/spendlens.db)
+ *   AGENTARIUM_DOGGYBAG_COLD     warn (default) | block (pause the first cold prompt once) | off
+ *   AGENTARIUM_DOGGYBAG_COLD_MIN_TOKENS  only speak up on a cold prompt above this context (default 20000)
+ *   AGENTARIUM_DOGGYBAG_MAX_AGE_H  hours a doggybag is offered for (default 24)
+ *   AGENTARIUM_DOGGYBAG_KEEP     doggybags kept per folder (default 10)
+ *   AGENTARIUM_CACHE_TTL         cache lifetime in seconds (default: detected, 300 or 3600)
+ *   AGENTARIUM_DB                SQLite path shared with till (default ~/.agentarium/till.db)
  *
  * Errors go to <db>.err, never on screen.
  */
@@ -49,22 +49,22 @@ import { homedir } from 'node:os'
 import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb, type Db } from '../tokenomics/engine/db.ts'
-import * as lessons from '../tokenomics/engine/lessons.ts'
-import { anonSessionId, errText, fmt, int, isMain, isObj, logErr, now, parseTs, readStdin, sha1, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb, type Db } from '../agentarium/engine/db.ts'
+import * as lessons from '../agentarium/engine/lessons.ts'
+import { anonSessionId, errText, fmt, int, isMain, isObj, logErr, now, parseTs, readStdin, sha1, type Obj } from '../agentarium/util.ts'
 import { currency, formatMoney, loadCfg, usageCostUsd } from './statusline.ts'
 
 const HOME = homedir()
-const FALLBACK_DIR = join(HOME, '.tokenomics', 'doggybags')     // when the project folder is unknown or read-only
+const FALLBACK_DIR = join(HOME, '.agentarium', 'doggybags')     // when the project folder is unknown or read-only
 const LATEST = 'latest.md'
 const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit'])
 const TAIL_BYTES = 1_000_000
 const SELF = fileURLToPath(import.meta.url)
 
-/** TOKENOMICS_DOGGYBAG<name>, falling back to the old TOKENOMICS_HANDOFF<name>. */
+/** AGENTARIUM_DOGGYBAG<name>, falling back to the old AGENTARIUM_HANDOFF<name>. */
 function setting(name: string, fallback: string): string {
-  for (const key of ['TOKENOMICS_DOGGYBAG' + name, 'TOKENOMICS_HANDOFF' + name]) {
+  for (const key of ['AGENTARIUM_DOGGYBAG' + name, 'AGENTARIUM_HANDOFF' + name]) {
     const v = process.env[key]
     if (v !== undefined && v !== '') return v
   }
@@ -82,7 +82,7 @@ const cfg = {
   lead: () => intSetting(setting('_LEAD', ''), 60),
   keep: () => intSetting(setting('_KEEP', ''), 10),
   maxAgeH: () => intSetting(setting('_MAX_AGE_H', ''), 24),
-  ttlOverride: () => intSetting(process.env.TOKENOMICS_CACHE_TTL, 0),
+  ttlOverride: () => intSetting(process.env.AGENTARIUM_CACHE_TTL, 0),
   inject: () => !['0', 'off', 'no', 'false'].includes(setting('_INJECT', '1').trim().toLowerCase()),
   coldMode: () => setting('_COLD', 'warn').trim().toLowerCase(),
   coldMinTokens: () => intSetting(setting('_COLD_MIN_TOKENS', ''), 20000),
@@ -133,7 +133,7 @@ export function bagDir(cwd: string | null | undefined, create = false): string {
     try {
       mkdirSync(d, { recursive: true })
       const ign = join(d, '.gitignore')
-      if (!existsSync(ign)) writeFileSync(ign, '# tokenomics doggybags: local session notes, never committed\n*\n', 'utf8')
+      if (!existsSync(ign)) writeFileSync(ign, '# agentarium doggybags: local session notes, never committed\n*\n', 'utf8')
     } catch (e) {
       if (d === FALLBACK_DIR) throw e
       return isAbsolute(s) ? d : bagDir(null, true)
@@ -360,7 +360,7 @@ function build(d: Obj, path: string, sid: string, reason: string): [string, Dige
     `This file is about ${fmt(textEst)} tokens.`, '')
   lines.push(...body)
   lines.push('## How to carry on',
-    '- Cheap: `/clear` (or start a new session) in this folder; tokenomics loads this doggybag for you. ' +
+    '- Cheap: `/clear` (or start a new session) in this folder; agentarium loads this doggybag for you. ' +
     `Or say: Continue from @${show(join(bagDir(cwd), LATEST), cwd)}`,
     `- Full: \`claude --resume ${sid}\` (re-reads the whole context; the cache is cold or about to be)`, '')
   return [lines.join('\n'), r, textEst]
@@ -537,7 +537,7 @@ function afterCompact(d: Obj): Obj | null {
   const m = currentMeta(sessionId(d), cwd)
   if (!m || !String(m.reason).endsWith('compact') || nowS() - (m.written || 0) > COMPACT_FRESH_S || !isFile(m.path)) return null
   if (!cfg.inject()) return { systemMessage: `doggybag: the note packed before compacting is in ${show(m.path, cwd)}.` }
-  const ctx = '[tokenomics doggybag] This note was packed just before the conversation was compacted. Use it for file ' +
+  const ctx = '[agentarium doggybag] This note was packed just before the conversation was compacted. Use it for file ' +
     "names, tasks and decisions the summary may have dropped; don't repeat finished work.\n\n" + readFileSync(m.path, 'utf8')
   return { hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: ctx } }
 }
@@ -552,7 +552,7 @@ export function start(d: Obj): Obj | null {
   const where = show(best.path, cwd)
   const sizes = `about ${n(best.handoff_tokens)} tokens vs ${n(best.ctx_tokens)} to resume it in full`
   if (cfg.inject()) {
-    const ctx = '[tokenomics doggybag] The previous session in this folder left this note of where it got to. ' +
+    const ctx = '[agentarium doggybag] The previous session in this folder left this note of where it got to. ' +
       "Use it to carry on; don't repeat finished work, and re-read files before editing them.\n\n" + readFileSync(best.path, 'utf8')
     return { systemMessage: `doggybag: carried on from ${where} (${sizes}).`,
       hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: ctx } }

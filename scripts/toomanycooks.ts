@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * tokenomics / too-many-cooks: catch a subagent before it is sent to do work already being done.
+ * agentarium / too-many-cooks: catch a subagent before it is sent to do work already being done.
  *
  * Every subagent starts cold: it loads its own system prompt and tool definitions and re-reads the
  * files it needs. sherlock finds the waste afterwards; this hook catches it as the agent is sent:
  *
  *   overlap   the brief shares at least half its words with a subagent already sent in this session
  *   lookup    a short brief for a one-step lookup that a single Read or Grep would do
- *   fan_out   more subagents in one turn than TOKENOMICS_TOOMANYCOOKS_FANOUT (default 5)
+ *   fan_out   more subagents in one turn than AGENTARIUM_TOOMANYCOOKS_FANOUT (default 5)
  *
- * Rules shared with sherlock: tokenomics/engine/forensics.ts. Each finding is priced at what a
+ * Rules shared with sherlock: agentarium/engine/forensics.ts. Each finding is priced at what a
  * subagent has cost you on average (measured at SubagentStop), or an estimate until there are some.
  * Briefs are compared in memory and never stored.
  *
@@ -17,21 +17,21 @@
  *   toomanycooks.ts record [source]  SubagentStop: what the subagent really cost, from its transcript
  *   toomanycooks.ts report [--days 30] [--json]   what subagents cost, by type
  *
- * Env: TOKENOMICS_TOOMANYCOOKS          warn (default: tell you) | ask (confirm first) |
+ * Env: AGENTARIUM_TOOMANYCOOKS          warn (default: tell you) | ask (confirm first) |
  *                                      block (refuse; the agent does the work itself or uses the earlier result) | off
- *      TOKENOMICS_TOOMANYCOOKS_FANOUT   subagents allowed in one turn before it speaks up (default 5)
+ *      AGENTARIUM_TOOMANYCOOKS_FANOUT   subagents allowed in one turn before it speaks up (default 5)
  * Each rule speaks once per session. Always exits 0; a crash never blocks a call.
  */
 import { existsSync } from 'node:fs'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import { brief, briefOverlap, lookupBrief, OVERLAP, subagentOverheadUsd } from '../tokenomics/engine/forensics.ts'
-import * as lessons from '../tokenomics/engine/lessons.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { CostEngine, PolicyEngine } from '../tokenomics/services/index.ts'
-import { errText, first, isMain, isObj, logErr, readPayload, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import { brief, briefOverlap, lookupBrief, OVERLAP, subagentOverheadUsd } from '../agentarium/engine/forensics.ts'
+import * as lessons from '../agentarium/engine/lessons.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { CostEngine, PolicyEngine } from '../agentarium/services/index.ts'
+import { errText, first, isMain, isObj, logErr, readPayload, type Obj } from '../agentarium/util.ts'
 import { money2, period, write } from './common.ts'
 
 const TAIL_BYTES = 3 * 1024 * 1024
@@ -39,7 +39,7 @@ const MIN_MEASURED = 3              // measured subagents needed before their av
 
 export type Finding = { rule: 'overlap' | 'lookup' | 'fan_out', detail: string }
 
-const fanOut = () => PolicyEngine.threshold('TOKENOMICS_TOOMANYCOOKS_FANOUT', 5, { min: 1 })
+const fanOut = () => PolicyEngine.threshold('AGENTARIUM_TOOMANYCOOKS_FANOUT', 5, { min: 1 })
 
 /** Judge a Task/Agent call about to be made, against what the session already sent. */
 export function judge(t: trace.Trace, input: Obj, limit = fanOut()): Finding | null {
@@ -86,7 +86,7 @@ function said(dbPath: string, sid: string, rule: string): boolean {
 }
 
 function guard(source: string): void {
-  const mode = PolicyEngine.mode('TOKENOMICS_TOOMANYCOOKS', 'warn', ['warn', 'ask', 'block', 'off'])
+  const mode = PolicyEngine.mode('AGENTARIUM_TOOMANYCOOKS', 'warn', ['warn', 'ask', 'block', 'off'])
   if (mode === 'off') return
   const dbPath = defaultDbPath()
   try {

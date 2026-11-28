@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * tokenomics / cold-snap: why did the prompt cache go cold, and what did each time cost?
+ * agentarium / cold-snap: why did the prompt cache go cold, and what did each time cost?
  *
  * A warm cache makes re-sending the conversation cost a tenth of the input price. Every time it goes
  * cold, the whole context is written to the cache again at 1.25x (or 2x) the input price. cold-snap
- * finds every rebuild in your sessions and names its cause (rules: tokenomics/engine/coldcache.ts):
+ * finds every rebuild in your sessions and names its cause (rules: agentarium/engine/coldcache.ts):
  *
  *   idle            a break longer than the cache lives (5 minutes, or 1 hour)
  *   model switch    a different model mid-conversation (each model has its own cache)
@@ -20,10 +20,10 @@
  *   add --currency USD to either. Read-only. --json gives money in US dollars, to two decimal places.
  */
 import { findTranscript } from './coach.ts'
-import { analyse, merge, type Cause, type ColdCache } from '../tokenomics/engine/coldcache.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { CostEngine } from '../tokenomics/services/index.ts'
-import { argValue, isMain, type Obj } from '../tokenomics/util.ts'
+import { analyse, merge, type Cause, type ColdCache } from '../agentarium/engine/coldcache.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { CostEngine } from '../agentarium/services/index.ts'
+import { argValue, isMain, type Obj } from '../agentarium/util.ts'
 import { money2, numArg, recentTranscripts, useCurrency, write } from './common.ts'
 
 const LABELS: Record<Cause, string> = {

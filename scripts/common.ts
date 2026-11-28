@@ -4,9 +4,9 @@ import { readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-import { currencyCode } from '../tokenomics/services/cost.ts'
-import { argValue, today } from '../tokenomics/util.ts'
-import { shiftDay } from '../tokenomics/engine/ledger.ts'
+import { currencyCode } from '../agentarium/services/cost.ts'
+import { argValue, today } from '../agentarium/util.ts'
+import { shiftDay } from '../agentarium/engine/ledger.ts'
 
 /** --currency USD|EUR|GBP for this run. False (and a message) for an unknown currency. */
 export function useCurrency(args: string[]): boolean {
@@ -17,7 +17,7 @@ export function useCurrency(args: string[]): boolean {
     process.stderr.write(`unknown currency ${JSON.stringify(cur)}: use GBP, USD or EUR\n`)
     return false
   }
-  process.env.TOKENOMICS_CURRENCY = c
+  process.env.AGENTARIUM_CURRENCY = c
   return true
 }
 

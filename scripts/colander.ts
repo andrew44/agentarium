@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * tokenomics / colander: drain the noise out of test, build and install output before the model reads it.
+ * agentarium / colander: drain the noise out of test, build and install output before the model reads it.
  *
  * Post-tool hook (Claude Code: PostToolUse on Bash; Copilot CLI: postToolUse). When a test run, build, type
  * check, lint or package install succeeds, most of what it printed is passing tests, progress bars and
  * download chatter, and the model would re-read all of it at every later step. colander saves the full
- * output to ~/.tokenomics/colander/ (readable only by you, kept for a day), then shows the model the first
+ * output to ~/.agentarium/colander/ (readable only by you, kept for a day), then shows the model the first
  * and last lines, every warning and failure, and a footer saying what it left out and where the rest is.
  * The model greps that file when it needs more, instead of running the command again.
- * Rules: tokenomics/engine/colander.ts.
+ * Rules: agentarium/engine/colander.ts.
  *
  * Successful calls only. Claude Code sends a command that exits non-zero to PostToolUseFailure, which can't
  * replace output, so a failing run reaches the model whole. VS Code's hooks can't replace output at all.
@@ -20,9 +20,9 @@
  *   colander.ts report [--days N] [--json]   what colander strained, and the tokens it kept out, by program
  *
  * Env:
- *   TOKENOMICS_COLANDER            on (default) | off
- *   TOKENOMICS_COLANDER_MAX_LINES  lines shown at most, failures aside (default 60)
- *   TOKENOMICS_COLANDER_COMMANDS   more programs to strain, comma separated (e.g. ci.sh,just)
+ *   AGENTARIUM_COLANDER            on (default) | off
+ *   AGENTARIUM_COLANDER_MAX_LINES  lines shown at most, failures aside (default 60)
+ *   AGENTARIUM_COLANDER_COMMANDS   more programs to strain, comma separated (e.g. ci.sh,just)
  * Bypass for one command: append `# colander-off`. Each strain is logged in colander_events with the
  * program's name and token counts, never the command or what it printed.
  * Always exits 0; a crash leaves the output as it was (errors go to <db>.err).
@@ -32,26 +32,26 @@ import { mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'nod
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as colander from '../tokenomics/engine/colander.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import { BILLING_ANTHROPIC_TOKENS, TOOL_SHELL } from '../tokenomics/engine/evidence.ts'
-import { ratesFor } from '../tokenomics/engine/pricing.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import type { PlatformAdapter, ToolOutput } from '../tokenomics/platform/adapter.ts'
-import { Capability } from '../tokenomics/platform/capabilities.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { CostEngine, PolicyEngine } from '../tokenomics/services/index.ts'
-import { argValue, errText, first, fmt, isMain, isObj, logErr, now, readPayload, readStdin, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as colander from '../agentarium/engine/colander.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import { BILLING_ANTHROPIC_TOKENS, TOOL_SHELL } from '../agentarium/engine/evidence.ts'
+import { ratesFor } from '../agentarium/engine/pricing.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import type { PlatformAdapter, ToolOutput } from '../agentarium/platform/adapter.ts'
+import { Capability } from '../agentarium/platform/capabilities.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { CostEngine, PolicyEngine } from '../agentarium/services/index.ts'
+import { argValue, errText, first, fmt, isMain, isObj, logErr, now, readPayload, readStdin, type Obj } from '../agentarium/util.ts'
 import { money2, period, write } from './common.ts'
 
 const KEEP_MS = 24 * 3_600_000
 const KEEP_FILES = 30
 const TAIL_BYTES = 1_000_000                // the last request's model is all that is needed
 
-export const logDir = () => join(process.env.TOKENOMICS_HOME || join(homedir(), '.tokenomics'), 'colander')
-const maxLines = () => PolicyEngine.threshold('TOKENOMICS_COLANDER_MAX_LINES', colander.MAX_LINES, { min: 10, max: 2000 })
-const extra = () => (process.env.TOKENOMICS_COLANDER_COMMANDS ?? '').split(/[,\s]+/).filter(Boolean)
+export const logDir = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'colander')
+const maxLines = () => PolicyEngine.threshold('AGENTARIUM_COLANDER_MAX_LINES', colander.MAX_LINES, { min: 10, max: 2000 })
+const extra = () => (process.env.AGENTARIUM_COLANDER_COMMANDS ?? '').split(/[,\s]+/).filter(Boolean)
 
 /** Drop logs older than a day, and all but the newest few, so command output never piles up. */
 function prune(dir: string): void {
@@ -144,7 +144,7 @@ function savedUsd(adapter: PlatformAdapter, payload: Obj, tokens: number): numbe
 }
 
 function hook(source: string): void {
-  if (PolicyEngine.mode('TOKENOMICS_COLANDER', 'on', ['on', 'off']) === 'off') return
+  if (PolicyEngine.mode('AGENTARIUM_COLANDER', 'on', ['on', 'off']) === 'off') return
   const payload = readPayload()
   const adapter = getAdapter(source)
   if (!adapter.supports(Capability.TOOL_OUTPUT_INTERCEPTION)) return
@@ -174,7 +174,7 @@ function strainCmd(args: string[]): number {
     const prog = colander.program(cmd, extra())
     write(prog ? `colander strains \`${cmd}\` (as ${prog}) when it succeeds and prints more than about 1,000 tokens.`
       : `colander leaves \`${cmd}\` alone: not a test, build, lint or install command it knows, or its output is already ` +
-        'piped. Add the program to TOKENOMICS_COLANDER_COMMANDS to strain it.')
+        'piped. Add the program to AGENTARIUM_COLANDER_COMMANDS to strain it.')
   }
   const raw = readStdin()
   if (!raw) return cmd !== null ? 0 : 2

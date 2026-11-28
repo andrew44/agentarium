@@ -14,14 +14,14 @@ import * as deadwood from '../scripts/deadwood.ts'
 import * as pennywise from '../scripts/pennywise.ts'
 import * as splitthebill from '../scripts/splitthebill.ts'
 import { GATE_FAILS } from '../scripts/tastetest.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as ledger from '../tokenomics/engine/ledger.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { CostEngine, InsightsEngine, OutcomeEngine, PolicyEngine, TelemetryEngine } from '../tokenomics/services/index.ts'
-import * as value from '../tokenomics/services/value.ts'
-import { now, today } from '../tokenomics/util.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as ledger from '../agentarium/engine/ledger.ts'
+import * as store from '../agentarium/engine/store.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { CostEngine, InsightsEngine, OutcomeEngine, PolicyEngine, TelemetryEngine } from '../agentarium/services/index.ts'
+import * as value from '../agentarium/services/value.ts'
+import { now, today } from '../agentarium/util.ts'
 
 const SONNET = 'claude-sonnet-5-5'
 
@@ -173,7 +173,7 @@ describe('TelemetryEngine: one event format for both platforms', () => {
     for (const e of [cc, cp]) {
       assert.equal(e.tool_kind, 'shell')
       assert.equal(e.command_kind, 'test')
-      assert.equal(e.project, 'tokenomics')
+      assert.equal(e.project, 'agentarium')
       assert.ok(!JSON.stringify(e).includes('secret'))
     }
     assert.equal(cp.ok, false)
@@ -188,7 +188,7 @@ describe('TelemetryEngine: one event format for both platforms', () => {
     assert.equal(e.path, 'scripts/cli.ts')
   })
 
-  test('spendlens stores the shared event on every hook run, silently; TOKENOMICS_TELEMETRY=off stops it', (c) => {
+  test('till stores the shared event on every hook run, silently; AGENTARIUM_TELEMETRY=off stops it', (c) => {
     const t = useTemp(c)
     for (const [mode, payload] of [['prompt', { sessionId: 'cp', cwd: '/w', prompt: 'add a flag' }],
       ['tool', { sessionId: 'cp', cwd: '/w', toolName: 'edit', toolArgs: { path: '/w/a.py' }, toolResult: { resultType: 'success' } }],
@@ -200,7 +200,7 @@ describe('TelemetryEngine: one event format for both platforms', () => {
     const rows = t.rows('SELECT type, tool_kind, path, ok FROM telemetry_events WHERE session_id=? ORDER BY id', 'cp')
     assert.deepEqual(rows.map((r) => r.type), ['prompt', 'tool_result', 'session_end'])
     assert.deepEqual([rows[1].tool_kind, rows[1].path, rows[1].ok], ['code_edit', 'a.py', 1])
-    t.hook('prompt', 'copilot', { sessionId: 'off', prompt: 'x' }, { TOKENOMICS_TELEMETRY: 'off' })
+    t.hook('prompt', 'copilot', { sessionId: 'off', prompt: 'x' }, { AGENTARIUM_TELEMETRY: 'off' })
     assert.equal(t.rows("SELECT COUNT(*) AS n FROM telemetry_events WHERE session_id='off'")[0].n, 0)
   })
 
@@ -437,7 +437,7 @@ describe('splitthebill', () => {
     for (const [mode, payload] of [['prompt', { sessionId: 'cp1', cwd: '/w', prompt: 'add a flag' }],
       ['tool', { sessionId: 'cp1', cwd: '/w', toolName: 'edit', toolArgs: { path: '/w/a.py' }, toolResult: { resultType: 'success' } }],
       ['tool', { sessionId: 'cp1', cwd: '/w', toolName: 'bash', toolArgs: { command: 'git commit -am x' }, toolResult: { resultType: 'success' } }]] as const) {
-      b.hook(mode, 'copilot', payload, { TOKENOMICS_DEVELOPER: 'bob' })
+      b.hook(mode, 'copilot', payload, { AGENTARIUM_DEVELOPER: 'bob' })
     }
     const r = splitthebill.build(['--days', '0'], [a.db, b.db])
     assert.equal(r.sessions, 6)
@@ -555,9 +555,9 @@ describe('blinkers', () => {
     const out = JSON.parse(run('guard', { sessionId: 'c1', cwd: '/w', toolName: 'edit', toolArgs: { path: '/w/package.json' } }).stdout)
     assert.equal(out.permissionDecision, 'deny')
     assert.match(out.permissionDecisionReason, /dependencies/)
-    assert.equal(run('guard', { sessionId: 'c1', cwd: '/w', toolName: 'edit', toolArgs: { path: '/w/Dockerfile' } }, { TOKENOMICS_BLINKERS: 'warn' }).stdout, '',
+    assert.equal(run('guard', { sessionId: 'c1', cwd: '/w', toolName: 'edit', toolArgs: { path: '/w/Dockerfile' } }, { AGENTARIUM_BLINKERS: 'warn' }).stdout, '',
       'Copilot cannot show a notice, so warn prints nothing')
-    assert.equal(run('guard', { sessionId: 'c1', cwd: '/w', toolName: 'edit', toolArgs: { path: '/w/docs/x.md' } }, { TOKENOMICS_BLINKERS: 'off' }).stdout, '')
+    assert.equal(run('guard', { sessionId: 'c1', cwd: '/w', toolName: 'edit', toolArgs: { path: '/w/docs/x.md' } }, { AGENTARIUM_BLINKERS: 'off' }).stdout, '')
     assert.equal(run('guard', { sessionId: 'unknown', cwd: '/w', toolName: 'edit', toolArgs: { path: '/w/README.md' } }).stdout, '')
     run('prompt', { sessionId: 'c1', prompt: 'blinkers off' })
     assert.equal(run('guard', { sessionId: 'c1', cwd: '/w', toolName: 'edit', toolArgs: { path: '/w/README.md' } }).stdout, '')

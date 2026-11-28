@@ -15,11 +15,11 @@ Run the analyser (read-only). It finds the newest transcript for the current dir
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" coach.ts --json
 ```
 
-- If `CLAUDE_PLUGIN_ROOT` is empty, locate it: `find ~/.claude/plugins ./ -name coach.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty, locate it: `find ~/.claude/plugins ./ -name coach.ts -path "*agentarium*" 2>/dev/null | head -1`.
 - For another session use `--session <id>` or `--transcript <file.jsonl>`.
 - If it reports no transcript (e.g. Copilot sessions have none), say so and review only the prompts visible in this conversation.
-- Optionally, if `~/.tokenomics/spendlens.db` exists, compare against recent sessions:
-  `sqlite3 ~/.tokenomics/spendlens.db "select label, count(*), sum(input_tokens+output_tokens), sum(cache_read_tokens), sum(cache_creation_tokens) from sessions group by label;"`
+- Optionally, if `~/.agentarium/till.db` exists, compare against recent sessions:
+  `sqlite3 ~/.agentarium/till.db "select label, count(*), sum(input_tokens+output_tokens), sum(cache_read_tokens), sum(cache_creation_tokens) from sessions group by label;"`
 
 ## 2. Interpret it
 
@@ -47,6 +47,6 @@ Also comment on what is going well (a high hit ratio, specific prompts), so the 
 2. **What's costing you** (max 3 items, biggest first): evidence, then fix.
 3. **A rewrite**: pick the weakest prompt (quote it) and show a better version.
 4. **What's working** (1-2 items).
-5. Offer to dig deeper (another session, or trends from the spendlens database). Do not modify any files unless asked.
+5. Offer to dig deeper (another session, or trends from the till database). Do not modify any files unless asked.
 
 Cache facts to rely on: cache reads are far cheaper than fresh input; the default cache lifetime is about 5 minutes and is refreshed each time it is hit; the cache matches an exact prefix, so any change early in the context (system prompt, tools, CLAUDE.md, model) invalidates everything after it.

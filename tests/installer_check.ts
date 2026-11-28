@@ -8,7 +8,7 @@
  * It checks what the installer left behind, then runs every Claude Code hook *the way Claude Code
  * does*: the command string from hooks/hooks.json through bash (Git Bash on Windows) with
  * CLAUDE_PLUGIN_ROOT set. On Windows it also runs the Copilot PowerShell hook strings. Finally it
- * exercises the `tokenomics` command and uninstalls. Exits non-zero on the first failure.
+ * exercises the `agentarium` command and uninstalls. Exits non-zero on the first failure.
  * Self-contained (Node.js built-ins only), so CI can download and run this one file.
  */
 import { spawnSync } from 'node:child_process'
@@ -19,7 +19,7 @@ import type { DatabaseSync } from 'node:sqlite'
 
 const WINDOWS = process.platform === 'win32'
 const HOME = homedir()
-const TK = process.env.TOKENOMICS_HOME || join(HOME, '.tokenomics')
+const TK = process.env.AGENTARIUM_HOME || join(HOME, '.agentarium')
 const APP = join(TK, 'app')
 const CLAUDE_SETTINGS = join(process.env.CLAUDE_CONFIG_DIR || join(HOME, '.claude'), 'settings.json')
 let step = 0
@@ -48,9 +48,9 @@ function bash(): string | null {
   return which('bash')
 }
 
-function tokenomics(...args: string[]) {
-  const launcher = which('tokenomics')
-  if (launcher === null) ok(false, "'tokenomics' command is on PATH", process.env.PATH ?? '')
+function agentarium(...args: string[]) {
+  const launcher = which('agentarium')
+  if (launcher === null) ok(false, "'agentarium' command is on PATH", process.env.PATH ?? '')
   return spawnSync(launcher!, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120_000, shell: WINDOWS })
 }
 
@@ -58,7 +58,7 @@ const sqlite = () => process.getBuiltinModule('node:sqlite') as typeof import('n
 
 async function main(args: string[]): Promise<void> {
   // 1. What the installer left behind
-  ok(isFile(join(APP, 'scripts', 'cli.ts')), 'tokenomics downloaded to ~/.tokenomics/app')
+  ok(isFile(join(APP, 'scripts', 'cli.ts')), 'agentarium downloaded to ~/.agentarium/app')
   const cached = isFile(join(TK, 'node')) ? readFileSync(join(TK, 'node'), 'utf8').trim() : ''
   ok(cached && isFile(cached), 'installer recorded a working Node.js', cached)
   if (args.includes('--expect-private-node')) ok(cached.replaceAll('\\', '/').includes('runtime'), 'the private Node.js was used', cached)
@@ -71,7 +71,7 @@ async function main(args: string[]): Promise<void> {
   const logArg = args.indexOf('--expect-plugin-log')
   if (logArg >= 0) {
     const log = readFileSync(args[logArg + 1], 'utf8')
-    ok(log.includes('plugin install tokenomics@tokenomics'), 'the installer added the Claude Code plugin', log)
+    ok(log.includes('plugin install agentarium@agentarium'), 'the installer added the Claude Code plugin', log)
   }
 
   // 2. The statusline renders through the exact command written to settings.json
@@ -96,8 +96,8 @@ async function main(args: string[]): Promise<void> {
       }
     }
   }
-  const dbPath = join(TK, 'spendlens.db')
-  ok(isFile(dbPath), 'spendlens recorded to ~/.tokenomics/spendlens.db')
+  const dbPath = join(TK, 'till.db')
+  ok(isFile(dbPath), 'till recorded to ~/.agentarium/till.db')
   const db: DatabaseSync = new (sqlite().DatabaseSync)(dbPath)
   const n = (db.prepare('SELECT COUNT(*) AS n FROM sessions WHERE session_id=?').get(sid) as { n: number }).n
   db.close()
@@ -112,21 +112,21 @@ async function main(args: string[]): Promise<void> {
     ok(p.status === 0, 'Copilot PowerShell hook runs', p.stdout + p.stderr)
   }
 
-  // 5. The `tokenomics` command
-  let r = tokenomics()
-  ok(r.status === 0 && r.stdout.includes('Claude Code'), '`tokenomics` shows status', r.stdout + r.stderr)
-  r = tokenomics('dashboard', '--demo', '--no-open', '--port', '8791')
-  ok(r.status === 0 && r.stdout.includes('running on'), '`tokenomics dashboard` starts', r.stdout + r.stderr)
+  // 5. The `agentarium` command
+  let r = agentarium()
+  ok(r.status === 0 && r.stdout.includes('Claude Code'), '`agentarium` shows status', r.stdout + r.stderr)
+  r = agentarium('dashboard', '--demo', '--no-open', '--port', '8791')
+  ok(r.status === 0 && r.stdout.includes('running on'), '`agentarium dashboard` starts', r.stdout + r.stderr)
   const resp = await fetch('http://127.0.0.1:8791/api/data?days=30', { signal: AbortSignal.timeout(10_000) })
   ok(resp.status === 200, 'dashboard serves data')
-  r = tokenomics('dashboard', '--stop')
-  ok(r.stdout.includes('Stopped'), '`tokenomics dashboard --stop`', r.stdout + r.stderr)
-  r = tokenomics('report')
-  ok(r.status === 0 && r.stdout.includes('tokenomics report'), '`tokenomics report`', r.stdout + r.stderr)
+  r = agentarium('dashboard', '--stop')
+  ok(r.stdout.includes('Stopped'), '`agentarium dashboard --stop`', r.stdout + r.stderr)
+  r = agentarium('report')
+  ok(r.status === 0 && r.stdout.includes('agentarium report'), '`agentarium report`', r.stdout + r.stderr)
 
   // 6. Uninstall
-  r = tokenomics('uninstall')
-  ok(r.status === 0, '`tokenomics uninstall`', r.stdout + r.stderr)
+  r = agentarium('uninstall')
+  ok(r.status === 0, '`agentarium uninstall`', r.stdout + r.stderr)
   const after = JSON.parse(readFileSync(CLAUDE_SETTINGS, 'utf8'))
   ok(!('statusLine' in after), 'uninstall removed the statusline', JSON.stringify(after))
   ok(!existsSync(join(APP, 'scripts')), 'uninstall removed the app')

@@ -67,7 +67,7 @@ Many newer tools mix these: you can give a text model a screenshot and ask it qu
 
 ### Where the cost comes from
 
-Every time generative AI reads your request and writes its answer, it does a lot of computing. Text tools measure that work in **tokens** (small chunks of text), and that is what you pay for. A long request, a long answer, or a long conversation all cost more. [How tokens work](how-tokens-work.md) explains this in five minutes; tokenomics exists to show you where those tokens go.
+Every time generative AI reads your request and writes its answer, it does a lot of computing. Text tools measure that work in **tokens** (small chunks of text), and that is what you pay for. A long request, a long answer, or a long conversation all cost more. [How tokens work](how-tokens-work.md) explains this in five minutes; agentarium exists to show you where those tokens go.
 
 That's all you need for the big picture. If you want the machinery, read on, or go straight to [What is an LLM?](what-is-an-llm.md).
 
@@ -128,7 +128,7 @@ The output length is not known in advance, which is why output tokens are both t
 - **Sensitivity to the prompt.** Small wording changes can shift the output, because they shift the conditional distribution.
 - **Bias.** Patterns in the training data, including unwanted ones, are learnt along with the useful ones.
 
-The practical answer is the same in each case: **measure the result, don't assume it.** That is the idea behind tokenomics' [taste-test](reference.md#taste-test), which compares two runs on your real tests, linter and type checker rather than on how the output looks.
+The practical answer is the same in each case: **measure the result, don't assume it.** That is the idea behind agentarium's [taste-test](reference.md#taste-test), which compares two runs on your real tests, linter and type checker rather than on how the output looks.
 
 ### 2.6 Where tokens and cost come in
 

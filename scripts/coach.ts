@@ -13,8 +13,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-import { score as opexCapexScore } from '../tokenomics/engine/classifier.ts'   // the shared opex/capex scorer
-import { argValue, fmt, int, isMain, isObj, parseTs, type Obj } from '../tokenomics/util.ts'
+import { score as opexCapexScore } from '../agentarium/engine/classifier.ts'   // the shared opex/capex scorer
+import { argValue, fmt, int, isMain, isObj, parseTs, type Obj } from '../agentarium/util.ts'
 
 const CACHE_TTL_S = 300          // default 5-minute prompt-cache TTL
 const BIG_CTX = 100_000          // tokens: context size worth a /compact or /clear

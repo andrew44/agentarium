@@ -19,7 +19,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" ratemyprompt.ts --last --json   # no p
 ```
 
 - Read-only. The prompt is scored in memory and never stored.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name ratemyprompt.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name ratemyprompt.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 

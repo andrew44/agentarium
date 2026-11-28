@@ -14,7 +14,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" ballast.ts check --json
 ```
 
 - Newest session in this folder by default; `--session <id>` or `--transcript <file>` for another.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name ballast.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name ballast.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 
@@ -22,4 +22,4 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" ballast.ts check --json
 2. **Task switches** (`task_switches`): for each, the prompt preview, tokens carried, steps and cost; `carried_usd` in total. A switch is judged from the prompt's words, so ask the user whether any of them really needed the earlier context.
 3. **What to do next time**: `/clear` when the new task doesn't need the old one (the doggybag hook keeps a resume note), or `/compact <what to keep>` when part of it matters. Nothing to switch? Say so plainly.
 
-Settings: `TOKENOMICS_BALLAST=warn|block|off`, `TOKENOMICS_BALLAST_MIN_TOKENS` (default 60000). Never run `/clear` or `/compact` for the user.
+Settings: `AGENTARIUM_BALLAST=warn|block|off`, `AGENTARIUM_BALLAST_MIN_TOKENS` (default 60000). Never run `/clear` or `/compact` for the user.

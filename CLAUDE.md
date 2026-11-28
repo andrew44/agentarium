@@ -1,4 +1,4 @@
-# tokenomics
+# agentarium
 
 The shared rules for every AI assistant live in one file, so Claude and Copilot never drift apart:
 

@@ -26,7 +26,7 @@
       { "matcher": "idle_prompt|permission_prompt|agent_needs_input", "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" kettle.ts claude-code", "timeout": 10 } ] }
     ],
     "Stop": [
-      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" spendlens.ts finalize claude-code", "timeout": 20 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" till.ts finalize claude-code", "timeout": 20 } ] },
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" doggybag.ts arm claude-code", "timeout": 10 } ] },
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" statusline.ts --message", "timeout": 10 } ] },
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" bangforbuck.ts record claude-code", "timeout": 20 } ] },
@@ -39,7 +39,7 @@
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" pennywise.ts ensure", "timeout": 10 } ] }
     ],
     "SessionEnd": [
-      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" spendlens.ts finalize claude-code", "timeout": 20 } ] },
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" till.ts finalize claude-code", "timeout": 20 } ] },
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" doggybag.ts end claude-code", "timeout": 20 } ] },
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" bangforbuck.ts record claude-code", "timeout": 20 } ] },
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" sherlock.ts log claude-code", "timeout": 20 } ] },

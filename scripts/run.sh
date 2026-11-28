@@ -1,18 +1,18 @@
 #!/bin/sh
-# Run a tokenomics script with a working Node.js 22.18+, on macOS, Linux and Windows (Git Bash).
+# Run an agentarium script with a working Node.js 22.18+, on macOS, Linux and Windows (Git Bash).
 #
-#   sh scripts/run.sh spendlens.ts prompt claude-code
+#   sh scripts/run.sh till.ts prompt claude-code
 #
-# tokenomics is TypeScript that Node.js runs directly (22.18+ strips the types itself; no build
+# agentarium is TypeScript that Node.js runs directly (22.18+ strips the types itself; no build
 # step, no packages). Claude Code runs hooks through bash, including on Windows. So: use the Node.js
-# cached in ~/.tokenomics/node (written by the installer, or by the first successful probe here),
-# else a private copy in ~/.tokenomics/runtime, then `node` on PATH, keeping the first that really
+# cached in ~/.agentarium/node (written by the installer, or by the first successful probe here),
+# else a private copy in ~/.agentarium/runtime, then `node` on PATH, keeping the first that really
 # is 22.18 or newer. stdin, stdout and the exit code pass straight through (hooks depend on all three).
 
 here=$(cd "$(dirname "$0")" && pwd)
 script="$here/$1"
 shift
-tk="${TOKENOMICS_HOME:-$HOME/.tokenomics}"
+tk="${AGENTARIUM_HOME:-$HOME/.agentarium}"
 cache="$tk/node"
 flags="--disable-warning=ExperimentalWarning"   # node:sqlite still says it is experimental on Node 22
 
@@ -41,6 +41,6 @@ if command -v node >/dev/null 2>&1 && node -e "$ok" </dev/null >/dev/null 2>&1; 
     exec node $flags "$script" "$@"
 fi
 
-echo "tokenomics: Node.js 22.18+ not found. Run the installer to get a private copy:" \
-     "curl -fsSL https://raw.githubusercontent.com/andrew44/tokenomics/main/install.sh | sh" >&2
+echo "agentarium: Node.js 22.18+ not found. Run the installer to get a private copy:" \
+     "curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh | sh" >&2
 exit 0   # never block the assistant because Node.js is missing

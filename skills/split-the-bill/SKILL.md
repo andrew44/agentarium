@@ -15,9 +15,9 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" splitthebill.ts --json --days 30
 
 - Period: `--days N` or a calendar month `--month 2026-11`. Currency on request: `--currency USD|EUR|GBP`.
 - One dimension only: `--by project` (also `developer`, `agent`, `category`, `model`, `provider`, `status`, `worktype`; comma-separate several).
-- A team view from several people's databases: `--db alice.db --db bob.db` (each person copies their `~/.tokenomics/spendlens.db`; ask before reading files outside this project).
+- A team view from several people's databases: `--db alice.db --db bob.db` (each person copies their `~/.agentarium/till.db`; ask before reading files outside this project).
 - For a spreadsheet: `splitthebill.ts --csv --month 2026-11 > ai-spend-2026-11.csv` (one row per session). Offer it when the user mentions finance, budgets or chargeback.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name splitthebill.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name splitthebill.ts -path "*agentarium*" 2>/dev/null | head -1`.
 - If `sessions` is 0 the ledger is empty: it fills in at each turn end; offer `bangforbuck.ts ingest ~/.claude/projects` to backfill (ask first).
 
 ## 2. Reply format
@@ -27,4 +27,4 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" splitthebill.ts --json --days 30
 3. **What stands out**: the biggest share, the steepest `change_pct`, and any group with a high `dead_usd` (point to the `deadwood` skill) or a poor cost per success (point to `bang-for-buck`).
 4. **Copilot**: if `copilot` is present, say its sessions and prompts (premium requests) are counted but not priced.
 
-Developer names are local user names or `TOKENOMICS_DEVELOPER`; never present them as a performance ranking unless the user asks for one.
+Developer names are local user names or `AGENTARIUM_DEVELOPER`; never present them as a performance ranking unless the user asks for one.

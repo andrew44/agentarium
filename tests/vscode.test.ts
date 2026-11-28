@@ -11,15 +11,15 @@ import { statusVsix, vscodeHooks, zip } from '../scripts/cli.ts'
 import { copilotStatus } from '../scripts/statusline.ts'
 import { stepsFor } from '../scripts/controller.ts'
 import { decide } from '../scripts/premium.ts'
-import { settings } from '../tokenomics/config.ts'
-import { TOOL_CODE_EDIT, TOOL_READ, TOOL_SHELL } from '../tokenomics/engine/evidence.ts'
-import * as session from '../tokenomics/engine/session.ts'
-import { ALL_CAPABILITIES, BILLING_COPILOT_PREMIUM_REQUESTS, Capability } from '../tokenomics/platform/capabilities.ts'
-import { getAdapter, premiumBilled } from '../tokenomics/platform/registry.ts'
-import { TelemetryEngine } from '../tokenomics/services/index.ts'
-import { events } from '../tokenomics/services/telemetry.ts'
-import { eventSessions } from '../tokenomics/services/value.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
+import { settings } from '../agentarium/config.ts'
+import { TOOL_CODE_EDIT, TOOL_READ, TOOL_SHELL } from '../agentarium/engine/evidence.ts'
+import * as session from '../agentarium/engine/session.ts'
+import { ALL_CAPABILITIES, BILLING_COPILOT_PREMIUM_REQUESTS, Capability } from '../agentarium/platform/capabilities.ts'
+import { getAdapter, premiumBilled } from '../agentarium/platform/registry.ts'
+import { TelemetryEngine } from '../agentarium/services/index.ts'
+import { events } from '../agentarium/services/telemetry.ts'
+import { eventSessions } from '../agentarium/services/value.ts'
+import { withDb } from '../agentarium/engine/db.ts'
 
 const vs = () => getAdapter('vscode')
 
@@ -103,7 +103,7 @@ describe('vscode sessions', () => {
   test('the premium guard can pause a VS Code prompt', async (c) => {
     const t = useTemp(c)
     for (const sid of ['a', 'b']) TelemetryEngine.ingest(vs(), { sessionId: sid, hookEventName: 'UserPromptSubmit', prompt: 'p' }, 'prompt', t.db)
-    const out = await withEnv({ TOKENOMICS_DB: t.db, TOKENOMICS_COPILOT_ALLOWANCE: '1', TOKENOMICS_PREMIUM: undefined },
+    const out = await withEnv({ AGENTARIUM_DB: t.db, AGENTARIUM_COPILOT_ALLOWANCE: '1', AGENTARIUM_PREMIUM: undefined },
       () => decide({ sessionId: 'b', prompt: 'p' }, vs(), t.db))
     assert.equal(out?.continue, false)
   })
@@ -111,7 +111,7 @@ describe('vscode sessions', () => {
 
 describe('vscode hooks', () => {
   test('the controller runs the steps that work without a transcript', () => {
-    assert.deepEqual(stepsFor('vscode').map((s) => s.name), ['spendlens', 'premium', 'holdup', 'blinkers'])
+    assert.deepEqual(stepsFor('vscode').map((s) => s.name), ['till', 'premium', 'holdup', 'blinkers'])
   })
 
   test('every hook goes through the launcher, as vscode, with this install path', () => {
@@ -150,26 +150,26 @@ describe('Copilot in VS Code\'s status bar and the Copilot app\'s window', () =>
     const t = useTemp(c)
     prompt(t, 'a')
     prompt(t, 'b')
-    return withEnv({ TOKENOMICS_DB: t.db, TOKENOMICS_COPILOT_ALLOWANCE: undefined, TOKENOMICS_BAND: undefined }, () => {
+    return withEnv({ AGENTARIUM_DB: t.db, AGENTARIUM_COPILOT_ALLOWANCE: undefined, AGENTARIUM_BAND: undefined }, () => {
       const b = copilotStatus()
       assert.ok(b.show)
       assert.equal(b.short, '2 prompts today')
       assert.equal(b.premium, null)
-      assert.match(b.hint!, /TOKENOMICS_COPILOT_ALLOWANCE/)
+      assert.match(b.hint!, /AGENTARIUM_COPILOT_ALLOWANCE/)
     })
   })
 
   test('with an allowance: requests left, and amber or red as it runs short', (c) => {
     const t = useTemp(c)
     for (const sid of ['a', 'b', 'c']) prompt(t, sid)
-    return withEnv({ TOKENOMICS_DB: t.db, TOKENOMICS_COPILOT_MULTIPLIER: '1', TOKENOMICS_BAND: undefined }, async () => {
-      const roomy = await withEnv({ TOKENOMICS_COPILOT_ALLOWANCE: '100000' }, () => copilotStatus())
+    return withEnv({ AGENTARIUM_DB: t.db, AGENTARIUM_COPILOT_MULTIPLIER: '1', AGENTARIUM_BAND: undefined }, async () => {
+      const roomy = await withEnv({ AGENTARIUM_COPILOT_ALLOWANCE: '100000' }, () => copilotStatus())
       assert.ok(roomy.show && roomy.premium)
       assert.equal(roomy.level, 'green')
       assert.match(roomy.short, /^99997\/100000 premium left/)
       assert.match(roomy.text, /premium requests left this month/)
       assert.ok(!roomy.text.includes('\x1b'))
-      const over = await withEnv({ TOKENOMICS_COPILOT_ALLOWANCE: '2' }, () => copilotStatus())
+      const over = await withEnv({ AGENTARIUM_COPILOT_ALLOWANCE: '2' }, () => copilotStatus())
       assert.ok(over.show)
       assert.equal(over.level, 'red')
       assert.equal(over.short, '3/2 premium · over')
@@ -177,12 +177,12 @@ describe('Copilot in VS Code\'s status bar and the Copilot app\'s window', () =>
   })
 
   test('--band-off hides it everywhere', () =>
-    withEnv({ TOKENOMICS_BAND: 'off' }, () => assert.deepEqual(copilotStatus(), { show: false })))
+    withEnv({ AGENTARIUM_BAND: 'off' }, () => assert.deepEqual(copilotStatus(), { show: false })))
 
   test('statusline.ts --copilot --json gives the same numbers', (c) => {
     const t = useTemp(c)
     prompt(t, 'a')
-    const r = runScript('statusline.ts', ['--copilot', '--json'], { env: { ...process.env, TOKENOMICS_DB: t.db, TOKENOMICS_COPILOT_ALLOWANCE: '300' } })
+    const r = runScript('statusline.ts', ['--copilot', '--json'], { env: { ...process.env, AGENTARIUM_DB: t.db, AGENTARIUM_COPILOT_ALLOWANCE: '300' } })
     const b = JSON.parse(r.stdout)
     assert.equal(b.platform, 'copilot')
     assert.equal(b.premium.used, 1)
@@ -195,9 +195,9 @@ describe('Copilot in VS Code\'s status bar and the Copilot app\'s window', () =>
     const pkg = JSON.parse(files['extension/package.json'])
     const version = JSON.parse(readFileSync(join(ROOT, 'plugin.json'), 'utf8')).version
     assert.equal(pkg.version, version)
-    assert.match(files['extension.vsixmanifest'], new RegExp(`Id="tokenomics-status" Version="${version}" Publisher="tokenomics"`))
+    assert.match(files['extension.vsixmanifest'], new RegExp(`Id="agentarium-status" Version="${version}" Publisher="agentarium"`))
     assert.ok(files['extension/extension.js'].includes("const ROOT = '/opt/it\\'s tk'"))
-    assert.ok(!files['extension/extension.js'].includes('${TOKENOMICS_ROOT}'))
+    assert.ok(!files['extension/extension.js'].includes('${AGENTARIUM_ROOT}'))
   })
 
   test('zip() writes entries a reader can find, with their CRCs', () => {
@@ -228,7 +228,7 @@ describe('Copilot in VS Code\'s status bar and the Copilot app\'s window', () =>
       assert.match(item.tooltip.value, /Today: 3 prompts/)
       assert.ok(item.shown)
       draw(item, 'spawn node ENOENT', null)
-      assert.equal(item.text, '$(pulse) tokenomics')
+      assert.equal(item.text, '$(pulse) agentarium')
       assert.match(item.tooltip.value, /ENOENT/)
       draw(item, null, { show: false })
       assert.ok(!item.shown)

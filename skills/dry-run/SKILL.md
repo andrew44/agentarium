@@ -18,10 +18,10 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" dryrun.ts mcp --json -- npx -y some-mc
 
 - `mcp --` runs the given command for at most 20 seconds. Ask the user before running a server they haven't run before, as you would before installing it.
 - `--days N` (default 30) sets how much history the monthly figure is based on.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name dryrun.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name dryrun.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 
 1. **Headline**: `every_request_tokens` and `per_month_usd`, with the `basis` (requests and sessions it was priced against).
 2. **The biggest items** for a plugin, and `per_use` for a skill (what loads each time it is used).
-3. **Advice**: install it between sessions, not mid-session (the cache starts again). For an MCP server used rarely, suggest enabling it per project. `tokenomics pack-light` later shows whether it earned its place.
+3. **Advice**: install it between sessions, not mid-session (the cache starts again). For an MCP server used rarely, suggest enabling it per project. `agentarium pack-light` later shows whether it earned its place.

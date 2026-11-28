@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /**
- * tokenomics / split-the-bill: who or what is consuming the budget? AI spend split the way engineering
+ * agentarium / split-the-bill: who or what is consuming the budget? AI spend split the way engineering
  * managers and finance teams ask about it, not just OPEX / CAPEX:
  *
  *   project      the repository (or folder) the work was in
- *   developer    who did it (TOKENOMICS_DEVELOPER, else the computer's user name; never an email)
+ *   developer    who did it (AGENTARIUM_DEVELOPER, else the computer's user name; never an email)
  *   agent        the main agent and each subagent type, from the transcript (a session's cost is split
  *                by what each agent actually spent)
  *   category     feature, bug fix, refactor, tests, docs, ops, research (from the request; only the
  *                category is kept)
  *   model        and provider (Anthropic API, Bedrock, Vertex ...), split by what each model spent
  *   status       succeeded vs failed, discarded, abandoned, unverified, no change (OutcomeEngine)
- *   worktype     OPEX (running things) vs CAPEX (building things), from spendlens
+ *   worktype     OPEX (running things) vs CAPEX (building things), from till
  *
  *   splitthebill.ts [--days 30 | --month 2026-11] [--by project,developer,agent,...] [--json] [--currency USD]
  *   splitthebill.ts --csv [--days 30]          one row per session, for a spreadsheet or the finance team
@@ -23,12 +23,12 @@
 import { existsSync } from 'node:fs'
 import { basename } from 'node:path'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as ledger from '../tokenomics/engine/ledger.ts'
-import { CostEngine, InsightsEngine } from '../tokenomics/services/index.ts'
-import { eventSessions, type EventSession } from '../tokenomics/services/value.ts'
-import { argValue, isMain, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as ledger from '../agentarium/engine/ledger.ts'
+import { CostEngine, InsightsEngine } from '../agentarium/services/index.ts'
+import { eventSessions, type EventSession } from '../agentarium/services/value.ts'
+import { argValue, isMain, type Obj } from '../agentarium/util.ts'
 import { allArgs, period, previous, round2, useCurrency, write } from './common.ts'
 
 export const DIMENSIONS = ['project', 'developer', 'agent', 'category', 'model', 'provider', 'status', 'worktype'] as const

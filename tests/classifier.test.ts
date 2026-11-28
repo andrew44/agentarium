@@ -1,8 +1,8 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { classify, clean, labelFor, score, scoreCommand, scoreTool } from '../tokenomics/engine/classifier.ts'
-import { prompt, sessionEvidence, TOOL_CODE_EDIT, TOOL_OTHER, TOOL_SHELL, toolCall } from '../tokenomics/engine/evidence.ts'
+import { classify, clean, labelFor, score, scoreCommand, scoreTool } from '../agentarium/engine/classifier.ts'
+import { prompt, sessionEvidence, TOOL_CODE_EDIT, TOOL_OTHER, TOOL_SHELL, toolCall } from '../agentarium/engine/evidence.ts'
 import { HOLDOUT_PROMPTS, LABELLED_COMMANDS, LABELLED_PROMPTS } from './fixtures_classifier.ts'
 
 function side([o, c]: [number, number]): 'opex' | 'capex' | null {

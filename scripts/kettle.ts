@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / kettle: when the assistant stops to wait for you, say how long the cache stays warm.
+ * agentarium / kettle: when the assistant stops to wait for you, say how long the cache stays warm.
  *
  * The prompt cache keeps the conversation for 5 minutes after the last request (an hour on the 1-hour
  * cache). Reply inside that and the next prompt re-reads it at a tenth of the input price; reply after
@@ -18,26 +18,26 @@
  *
  *   kettle.ts [source]       hook (stdin: hook JSON)
  *
- * Env: TOKENOMICS_KETTLE            on (default: terminal notification) | desktop (also a system
+ * Env: AGENTARIUM_KETTLE            on (default: terminal notification) | desktop (also a system
  *                                   notification: macOS and Linux) | off
- *      TOKENOMICS_KETTLE_MIN_TOKENS stay quiet below this context size (default 20000)
- *      TOKENOMICS_CACHE_TTL         cache lifetime in seconds (default: detected, 300 or 3600)
+ *      AGENTARIUM_KETTLE_MIN_TOKENS stay quiet below this context size (default 20000)
+ *      AGENTARIUM_CACHE_TTL         cache lifetime in seconds (default: detected, 300 or 3600)
  * Always exits 0.
  */
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import { ttlFor } from '../tokenomics/engine/coldcache.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import { rebuildCost } from '../tokenomics/engine/prefix.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
-import { CostEngine, PolicyEngine } from '../tokenomics/services/index.ts'
-import { errText, first, isMain, logErr, readPayload, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import { ttlFor } from '../agentarium/engine/coldcache.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import { rebuildCost } from '../agentarium/engine/prefix.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
+import { CostEngine, PolicyEngine } from '../agentarium/services/index.ts'
+import { errText, first, isMain, logErr, readPayload, type Obj } from '../agentarium/util.ts'
 
 const TAIL_BYTES = 1_000_000
-const minTokens = () => PolicyEngine.threshold('TOKENOMICS_KETTLE_MIN_TOKENS', 20_000, { min: 0 })
+const minTokens = () => PolicyEngine.threshold('AGENTARIUM_KETTLE_MIN_TOKENS', 20_000, { min: 0 })
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
 
 export type Kettle = { ctx: number, usd: number, secondsLeft: number, turn: string }
@@ -60,14 +60,14 @@ export function message(k: Kettle): string {
 /** OSC 9 (iTerm2, Windows Terminal, kitty, WezTerm, Ghostty) and OSC 777 (rxvt, foot, some others). */
 export function terminalSequence(text: string): string {
   const clean = text.replace(/[\u0000-\u001f\u007f]/g, ' ')
-  return `\u001b]9;${clean}\u0007\u001b]777;notify;tokenomics;${clean.replaceAll(';', ',')}\u0007`
+  return `\u001b]9;${clean}\u0007\u001b]777;notify;agentarium;${clean.replaceAll(';', ',')}\u0007`
 }
 
 function desktop(text: string): void {
   try {
     const cmd = process.platform === 'darwin'
-      ? ['osascript', '-e', `display notification ${JSON.stringify(text)} with title "tokenomics"`]
-      : process.platform === 'linux' ? ['notify-send', 'tokenomics', text] : null
+      ? ['osascript', '-e', `display notification ${JSON.stringify(text)} with title "agentarium"`]
+      : process.platform === 'linux' ? ['notify-send', 'agentarium', text] : null
     if (cmd) spawn(cmd[0], cmd.slice(1), { stdio: 'ignore', detached: true, windowsHide: true }).on('error', () => {}).unref()
   } catch {
     // the terminal notification still went out
@@ -84,7 +84,7 @@ function said(dbPath: string, sid: string, turn: string): boolean {
 }
 
 function hook(source: string): void {
-  const mode = PolicyEngine.mode('TOKENOMICS_KETTLE', 'on', ['on', 'desktop', 'off'])
+  const mode = PolicyEngine.mode('AGENTARIUM_KETTLE', 'on', ['on', 'desktop', 'off'])
   if (mode === 'off') return
   const dbPath = defaultDbPath()
   try {

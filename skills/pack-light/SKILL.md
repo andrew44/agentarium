@@ -14,7 +14,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" packlight.ts --json
 ```
 
 - Default: the last 30 days of Claude Code sessions. `--days 7` for a shorter window; `--dir <project>` to check another project's `.mcp.json`. Read-only.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name packlight.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name packlight.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 

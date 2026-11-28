@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tokenomics</title>
+<title>Agentarium</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -72,7 +72,7 @@ a.kpi{color:inherit;text-decoration:none}
 a.kpi:hover{background:var(--grid)}
 .kpi.save .v{color:var(--save)}
 
-/* what tokenomics did */
+/* what agentarium did */
 .did-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin:2px 0 14px}
 .did-head .n{font-size:40px;font-weight:800;letter-spacing:-.03em;color:var(--save);line-height:1}
 .did-head .w{font-size:14px;color:var(--ink2)}
@@ -150,7 +150,7 @@ tr:last-child td{border-bottom:0}
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>Tokenomics</h1><span id="dbinfo"></span></div>
+    <div class="brand"><h1>Agentarium</h1><span id="dbinfo"></span></div>
     <div class="controls">
       <div class="seg" role="group" aria-label="Measure" id="metricSeg">
         <button data-m="spend" aria-pressed="false">Spend</button>
@@ -182,7 +182,7 @@ tr:last-child td{border-bottom:0}
     <section class="kpis" id="kpis"></section>
 
     <section class="panel" id="did" aria-labelledby="didTitle">
-      <div class="ph"><div><h2 id="didTitle">What tokenomics did</h2><p class="sub" id="didSub"></p></div></div>
+      <div class="ph"><div><h2 id="didTitle">What agentarium did</h2><p class="sub" id="didSub"></p></div></div>
       <div id="didBody"></div>
     </section>
 
@@ -223,7 +223,7 @@ const $ = s => document.querySelector(s);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const colour = l => `var(--${l})`;
 const METRIC_NAME = {spend:"spend", tokens:"tokens", sessions:"sessions", prompts:"prompts"};
-const DOCS = "https://github.com/andrew44/tokenomics/blob/main/docs/reference.md#";
+const DOCS = "https://github.com/andrew44/agentarium/blob/main/docs/reference.md#";
 const HELPERS = {
   "pennywise":["💰","pennywise"], "cache-buster":["💥","cache-buster"], "diet":["🥗","diet"], "groundhog":["🦫","groundhog"],
   "blinkers":["🐴","blinkers"], "too-many-cooks":["🧑‍🍳","too-many-cooks"], "ballast":["⚓","ballast"], "budget":["💳","budget"],
@@ -283,7 +283,7 @@ function render(){
   $("#dbinfo").textContent = d.db_path || "";
   if (d.empty){
     const msg = d.reason === "no-database" || d.reason === "no-table"
-      ? `No spendlens database found at <code>${esc(d.db_path)}</code>. Install the tokenomics plugin and use Claude Code or Copilot for a session, or point to another file with <code>--db</code>.`
+      ? `No till database found at <code>${esc(d.db_path)}</code>. Install the agentarium plugin and use Claude Code or Copilot for a session, or point to another file with <code>--db</code>.`
       : `No sessions logged in this date range. Try a wider range, or run with <code>--demo</code> to preview.`;
     return showEmpty("Nothing to chart yet", msg);
   }
@@ -316,7 +316,7 @@ function kpis(d){
   const off = spent + act.saved_usd ? act.saved_usd/(spent + act.saved_usd)*100 : 0;
   const items = [
     ["Spend", usd(spent), spent ? `${fmt(all.sessions)} sessions · estimated at list prices` : "no token-billed sessions"],
-    ["Saved by tokenomics", usd(act.saved_usd), act.stepped_in ? `${off.toFixed(0)}% off the bill · stepped in ${times(act.stepped_in,"time","times")}` : "nothing to count yet", "save", "#did"],
+    ["Saved by agentarium", usd(act.saved_usd), act.stepped_in ? `${off.toFixed(0)}% off the bill · stepped in ${times(act.stepped_in,"time","times")}` : "nothing to count yet", "save", "#did"],
     ["Tokens", fmt(all.tokens), `${fmt(all.input)} in · ${fmt(all.output)} out · ${fmt(all.prompts)} prompts`],
     ["Cache hit rate", hit.toFixed(0)+"%", `${fmt(all.cache_read)} tokens read from cache`],
   ];
@@ -326,7 +326,7 @@ function kpis(d){
   }).join("");
 }
 
-/* ---------- what tokenomics did ---------- */
+/* ---------- what agentarium did ---------- */
 function sentence(h){
   const n = h.stopped + h.flagged, more = h.flagged ? `, and warned about ${fmt(h.flagged)} more` : "";
   switch (h.helper){
@@ -378,7 +378,7 @@ function did(d){
   $("#didSub").textContent = `Each helper that stepped in, ${when}. Saved counts only spend a helper stopped and could price; the rest is what it caught and what was at stake.`;
   const without = spent + act.saved_usd, w = without ? spent/without*100 : 0;
   const head = `<div class="did-head"><span class="n">${usd(act.saved_usd)}</span><span class="w">saved, stepping in ${times(act.stepped_in,"time","times")}</span></div>` +
-    (spent && act.saved_usd >= 0.005 ? `<div class="compare" role="img" aria-label="Spent ${usd(spent)}; about ${usd(without)} without tokenomics">
+    (spent && act.saved_usd >= 0.005 ? `<div class="compare" role="img" aria-label="Spent ${usd(spent)}; about ${usd(without)} without agentarium">
       <span>Without it</span><div class="track"><div style="flex:1;background:var(--unknown)"></div></div><span class="amt">${usd(without)}</span>
       <span>Spent</span><div class="track"><div style="width:${w.toFixed(1)}%;background:var(--ink)"></div><div style="flex:1;background:var(--save);opacity:.35"></div></div><span class="amt">${usd(spent)}</span>
     </div>` : "");

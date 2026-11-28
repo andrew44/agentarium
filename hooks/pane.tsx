@@ -1,4 +1,4 @@
-// The tokenomics pane: the session's numbers and what to do about them, in a pane beside the chat
+// The agentarium pane: the session's numbers and what to do about them, in a pane beside the chat
 // (a mod: see https://code.claude.com/docs/en/plugins/mods/interface#build-a-pane-with-tabs).
 // Three tabs, hotkeys 1-3 once the pane has the keys:
 //   * Now: model, context fill, tokens, spend and the cache countdown.
@@ -10,14 +10,14 @@
 // the band and the CLI statusline always agree. band.tsx, the plugin's one hooks module, calls
 // registerPane and startPane.
 // Usage:
-//   /tokenomics-pane         open it, in any surface, the terminal included
-// Opens by itself in the desktop and mobile apps, until you close it by hand; /tokenomics-pane
+//   /agentarium-pane         open it, in any surface, the terminal included
+// Opens by itself in the desktop and mobile apps, until you close it by hand; /agentarium-pane
 // brings it back for good. The apps start the session through the SDK and attach a moment later,
 // so session.start sees no surface there: the pane opens when the app attaches (session.attach).
 // The app decides whether it draws a pane, and an app that doesn't report its layout to Claude
-// Code never does: then /tokenomics-pane says why, and so does one transcript line if a pane it
+// Code never does: then /agentarium-pane says why, and so does one transcript line if a pane it
 // opened unasked is still undrawn after 10s (the band has the same numbers meanwhile).
-// TOKENOMICS_BAND=off (or --band-off) turns the numbers off for the pane too, since statusline.ts
+// AGENTARIUM_BAND=off (or --band-off) turns the numbers off for the pane too, since statusline.ts
 // makes them.
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, On } from 'claude-code'
@@ -26,13 +26,13 @@ import type { Line, PaneTab } from '../types'
 import { budgetLevel, budgetText, THEME, timer, tipAction } from './lens'
 import type { Level, Timer } from './lens'
 
-const PANE = 'tokenomics'
-const TITLE = 'Tokenomics'
-const COMMAND = 'tokenomics-pane'
+const PANE = 'agentarium'
+const TITLE = 'Agentarium'
+const COMMAND = 'agentarium-pane'
 const CLOSED = 'pane.closed'      // $.store: the person closed it, so don't open it unasked again
 
-const line = atom({ plugin: 'tokenomics', key: 'line' } as const, null)
-const tab = atom({ plugin: 'tokenomics', key: 'paneTab' } as const, 'now')
+const line = atom({ plugin: 'agentarium', key: 'line' } as const, null)
+const tab = atom({ plugin: 'agentarium', key: 'paneTab' } as const, 'now')
 
 const TABS: { id: PaneTab, label: string, hotkey: string }[] = [
   { id: 'now', label: 'Now', hotkey: '1' },
@@ -86,7 +86,7 @@ export function advise(b: Line, t: Timer): Advice[] {
     const tone = budgetLevel(o)
     if (tone === 'red') {
       out.push({ level: 'red', title: 'Over budget',
-        detail: `${bt.figure} (${bt.caption}). tokenomics profile frugal routes down harder.` })
+        detail: `${bt.figure} (${bt.caption}). agentarium profile frugal routes down harder.` })
     } else if (tone === 'yellow') {
       out.push({ level: 'yellow', title: 'Budget running low',
         detail: `${bt.figure}, ${bt.caption.replace(/^budget /, '')}, against ~${o.forecast} for the next ${o.steps} steps.` })
@@ -122,12 +122,12 @@ export async function startPane($: EngineInterface, surface: string | null) {
 async function openUnasked($: EngineInterface, surface: string) {
   if (isOpen || (surface !== 'desktop' && surface !== 'mobile')) return
   if (await $.store.get(CLOSED)) {
-    $.ui.log(`tokenomics pane: closed by hand before, so not opened unasked (/${COMMAND} brings it back)`, { to: 'debug' })
+    $.ui.log(`agentarium pane: closed by hand before, so not opened unasked (/${COMMAND} brings it back)`, { to: 'debug' })
     return
   }
   const placed = await open($)
   if (!placed.isPlaced) {
-    $.ui.log(`tokenomics pane: opened, not drawn yet: ${placed.reason}`, { to: 'debug' })
+    $.ui.log(`agentarium pane: opened, not drawn yet: ${placed.reason}`, { to: 'debug' })
     waiting = { since: await $.clock.now(), reason: placed.reason }
   }
 }
@@ -140,7 +140,7 @@ async function tellIfUndrawn($: EngineInterface) {
   const pane = (await $.ui.panes()).find(one => one.id === PANE)
   if (!pane || pane.isPlaced || toldWaiting) return
   toldWaiting = true
-  $.ui.log(`tokenomics: the pane is open but this app isn't drawing it (${reason}). ` +
+  $.ui.log(`agentarium: the pane is open but this app isn't drawing it (${reason}). ` +
     `The band above the prompt box shows the same numbers; an update of the app may bring the pane.`)
 }
 
@@ -160,15 +160,15 @@ export function registerPane(on: On) {
     await $.store.delete(CLOSED)
     const placed = await open($)
     waiting = null                 // asked: this reply says it, the timer needn't
-    if (placed.isPlaced) return { text: 'Tokenomics pane opened.' }
-    return { text: `Tokenomics pane opened, but nothing here draws it yet: ${placed.reason}. ` +
+    if (placed.isPlaced) return { text: 'Agentarium pane opened.' }
+    return { text: `Agentarium pane opened, but nothing here draws it yet: ${placed.reason}. ` +
       'The band above the prompt box (the statusline in a terminal) shows the same numbers.' }
   })
 
   // the desktop and mobile apps attach after session.start, which saw no surface
   on('session.attach', async ($, e, next) => {
     const attached = await next(e)
-    void openUnasked($, e.surface).catch(err => $.ui.log(`tokenomics pane: ${String(err)}`, { to: 'debug' }))
+    void openUnasked($, e.surface).catch(err => $.ui.log(`agentarium pane: ${String(err)}`, { to: 'debug' }))
     return attached
   })
 
@@ -206,7 +206,7 @@ export function registerPane(on: On) {
       return (
         <Box flexDirection="column" padding="sm" gap="xs">
           <Text>The numbers are off.</Text>
-          {muted('tokenomics statusline --band-on (or TOKENOMICS_BAND=on) brings them back.')}
+          {muted('agentarium statusline --band-on (or AGENTARIUM_BAND=on) brings them back.')}
         </Box>
       )
     }
@@ -283,7 +283,7 @@ export function registerPane(on: On) {
             <Progress label="Budget used" value={Math.min(100, o.budget.used_pct)} max={100}
               valueText={`${Math.round(o.budget.used_pct)}% used`} color={tone ? THEME[tone] : THEME.green} />)}
           {!o.budget && card('budget', 'budget', figure('none set'),
-            muted('Set TOKENOMICS_BUDGET_SESSION or _DAILY (e.g. 5) to count one down here.'))}
+            muted('Set AGENTARIUM_BUDGET_SESSION or _DAILY (e.g. 5) to count one down here.'))}
           <Box flexDirection="row" flexWrap="wrap" gap="sm">
             {o.at_risk && card('risk', o.cold ? 'cache cold · next prompt' : 'if the cache goes cold',
               figure(o.cold ? `+${o.at_risk}` : o.at_risk, o.cold ? THEME.red : colour(t.level)))}

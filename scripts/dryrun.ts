@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / dry-run: what a skill, plugin or MCP server will cost before you install it.
+ * agentarium / dry-run: what a skill, plugin or MCP server will cost before you install it.
  *
  * Everything installed adds to the fixed load every request carries: a skill its line in the skill
  * listing, an MCP server its tool definitions. pack-light measures that load afterwards; dry-run prices
@@ -24,9 +24,9 @@ import { spawn } from 'node:child_process'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 
-import { approxTokens } from '../tokenomics/engine/trace.ts'
-import { CostEngine } from '../tokenomics/services/index.ts'
-import { argValue, frontmatterDescription, isMain, isObj, type Obj } from '../tokenomics/util.ts'
+import { approxTokens } from '../agentarium/engine/trace.ts'
+import { CostEngine } from '../agentarium/services/index.ts'
+import { argValue, frontmatterDescription, isMain, isObj, type Obj } from '../agentarium/util.ts'
 import { money2, numArg, useCurrency, write } from './common.ts'
 import { listingTokens, monthlyRate } from './packlight.ts'
 
@@ -135,7 +135,7 @@ export function listTools(cmd: string[], timeoutMs = MCP_TIMEOUT_MS): Promise<Ob
       }
     })
     send({ id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {},
-      clientInfo: { name: 'tokenomics-dry-run', version: '1' } } })
+      clientInfo: { name: 'agentarium-dry-run', version: '1' } } })
   })
 }
 

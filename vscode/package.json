@@ -1,18 +1,18 @@
 {
-  "name": "tokenomics-status",
-  "publisher": "tokenomics",
-  "displayName": "tokenomics: Copilot premium requests",
+  "name": "agentarium-status",
+  "publisher": "agentarium",
+  "displayName": "agentarium: Copilot premium requests",
   "description": "Copilot's premium requests in the status bar: left this month, the pace and the day they run out at it.",
   "version": "0.0.0",
   "license": "Apache-2.0",
-  "repository": { "type": "git", "url": "https://github.com/andrew44/tokenomics" },
+  "repository": { "type": "git", "url": "https://github.com/andrew44/agentarium" },
   "engines": { "vscode": "^1.85.0" },
   "main": "./extension.js",
   "activationEvents": ["onStartupFinished"],
   "contributes": {
     "commands": [
-      { "command": "tokenomics.status.refresh", "title": "tokenomics: Refresh the status bar" },
-      { "command": "tokenomics.status.dashboard", "title": "tokenomics: Open the dashboard" }
+      { "command": "agentarium.status.refresh", "title": "agentarium: Refresh the status bar" },
+      { "command": "agentarium.status.dashboard", "title": "agentarium: Open the dashboard" }
     ]
   }
 }

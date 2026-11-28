@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * tokenomics / dashboard: a local web UI over the spendlens SQLite database.
+ * agentarium / dashboard: a local web UI over the till SQLite database.
  *
  *   node scripts/dashboard.ts                 # serve http://127.0.0.1:8765
- *   node scripts/dashboard.ts --port 9000 --db /path/to/spendlens.db
+ *   node scripts/dashboard.ts --port 9000 --db /path/to/till.db
  *   node scripts/dashboard.ts --demo          # seeded fake data, to preview the UI
  *   node scripts/dashboard.ts --background    # start it in the background and return
  *   node scripts/dashboard.ts --stop          # stop a background dashboard
@@ -15,9 +15,9 @@
  * statusline.ts's (copilotStatus), so it shows what VS Code's status bar and the CLI show.
  *
  * Shows tokens, sessions, prompts and spend (estimated, token-billed sessions only: Copilot's
- * premium requests are never priced) split OPEX / CAPEX by day and project, and what tokenomics
+ * premium requests are never priced) split OPEX / CAPEX by day and project, and what agentarium
  * did: what pennywise and each guard stopped or flagged and what that saved (PolicyEngine.activity).
- * Money is in the display currency (TOKENOMICS_CURRENCY or the statusline's saved choice).
+ * Money is in the display currency (AGENTARIUM_CURRENCY or the statusline's saved choice).
  *
  * Read-only: the DB is opened read-only and never written to (except --demo, which uses a
  * temp file). Binds to 127.0.0.1 only.
@@ -30,18 +30,18 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as budget from '../tokenomics/engine/budget.ts'
-import * as contract from '../tokenomics/engine/contract.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import { withDb, type Row } from '../tokenomics/engine/db.ts'
-import * as events from '../tokenomics/engine/events.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import { PolicyEngine } from '../tokenomics/services/index.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as budget from '../agentarium/engine/budget.ts'
+import * as contract from '../agentarium/engine/contract.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import { withDb, type Row } from '../agentarium/engine/db.ts'
+import * as events from '../agentarium/engine/events.ts'
+import * as store from '../agentarium/engine/store.ts'
+import { PolicyEngine } from '../agentarium/services/index.ts'
 import { ensureHandoffs } from './doggybag.ts'
 import { ensureLog as ensurePennywiseLog } from './pennywise.ts'
 import { copilotStatus } from './statusline.ts'
-import { argValue, isMain, today, type Obj } from '../tokenomics/util.ts'
+import { argValue, isMain, today, type Obj } from '../agentarium/util.ts'
 
 const HERE = import.meta.dirname
 const INDEX = join(HERE, '..', 'dashboard', 'index.html')
@@ -239,7 +239,7 @@ export function seedDemo(path: string): void {
   }
 }
 
-/** What pennywise and the guards would have logged in those sessions, so the demo shows "What tokenomics did". */
+/** What pennywise and the guards would have logged in those sessions, so the demo shows "What agentarium did". */
 function seedActivity(db: store.Db, sessions: { sid: string, ts: Date, source: string, cwd: string, prompts: number, ctx: number, usd: number }[],
   stamp: (ts: Date) => string): void {
   const rnd = rng(11)
@@ -375,7 +375,7 @@ export function serve(dbPath: string, port: number, onListening?: () => void) {
   return srv
 }
 
-const PID_FILE = join(process.env.TOKENOMICS_HOME || join(homedir(), '.tokenomics'), 'dashboard.pid')
+const PID_FILE = join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'dashboard.pid')
 
 export function portBusy(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -431,7 +431,7 @@ async function background(port: number, demo: boolean, noOpen: boolean, argv: st
   const url = `http://127.0.0.1:${port}/${win ? 'copilot' : ''}`
   const show = () => (win ? openWindow(url, noOpen) : openBrowser(url, noOpen))
   if (await portBusy(port)) {
-    process.stdout.write(`tokenomics ${win ? 'Copilot window' : 'dashboard'} is already running on ${url}\n`)
+    process.stdout.write(`agentarium ${win ? 'Copilot window' : 'dashboard'} is already running on ${url}\n`)
     show()
     return 0
   }
@@ -460,8 +460,8 @@ async function background(port: number, demo: boolean, noOpen: boolean, argv: st
     }
     await sleep(100)
   }
-  process.stdout.write(`tokenomics ${win ? 'Copilot window' : 'dashboard'} running on ${url}${demo ? '  (demo data)' : ''}\n` +
-    `  stop it with: tokenomics ${win ? 'copilot --window' : 'dashboard'} --stop\n`)
+  process.stdout.write(`agentarium ${win ? 'Copilot window' : 'dashboard'} running on ${url}${demo ? '  (demo data)' : ''}\n` +
+    `  stop it with: agentarium ${win ? 'copilot --window' : 'dashboard'} --stop\n`)
   show()
   return 0
 }
@@ -501,18 +501,18 @@ async function main(argv: string[]): Promise<number> {
   if (argv.includes('--background')) return background(port, demo, noOpen, argv)
   let dbPath = argValue(argv, '--db') ?? defaultDbPath()
   if (demo) {
-    dbPath = join(mkdtempSync(join(tmpdir(), 'tokenomics-demo-')), 'spendlens.db')
+    dbPath = join(mkdtempSync(join(tmpdir(), 'agentarium-demo-')), 'till.db')
     seedDemo(dbPath)
   }
   const win = argv.includes('--copilot')
   const url = `http://127.0.0.1:${port}/${win ? 'copilot' : ''}`
-  process.env.TOKENOMICS_DB = dbPath                    // the Copilot window reads the same database as the dashboard
+  process.env.AGENTARIUM_DB = dbPath                    // the Copilot window reads the same database as the dashboard
   serve(dbPath, port, () => {
-    process.stdout.write(`tokenomics dashboard on ${url}\n  db: ${dbPath}${demo ? '  (demo data)' : ''}\n  Ctrl+C to stop\n`)
+    process.stdout.write(`agentarium dashboard on ${url}\n  db: ${dbPath}${demo ? '  (demo data)' : ''}\n  Ctrl+C to stop\n`)
     if (win) openWindow(url, noOpen)
     else openBrowser(url, noOpen)
   }).on('error', (e) => {
-    process.stderr.write(`tokenomics dashboard: ${e.message}\n`)
+    process.stderr.write(`agentarium dashboard: ${e.message}\n`)
     process.exitCode = 1
   })
   return 0

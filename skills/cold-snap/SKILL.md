@@ -15,7 +15,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" coldsnap.ts --days 7 --json     # ever
 ```
 
 - `--session <id>` or `--transcript <file>` for one session. Read-only.
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name coldsnap.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name coldsnap.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format
 

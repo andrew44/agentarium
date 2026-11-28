@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tokenomics / haggle: agree a price before the work starts. Every substantial task gets a quote
+ * agentarium / haggle: agree a price before the work starts. Every substantial task gets a quote
  * (input, output and tool costs, from your own history) and a contract: a target and a maximum.
  * No more finding out afterwards that a simple change cost £5.
  *
@@ -22,22 +22,22 @@
  *   haggle.ts status [--json]                                           recent contracts: quoted vs actual
  *
  * Env:
- *   TOKENOMICS_HAGGLE         quote (default: quotes, warns, enforces only prices you set) | strict
+ *   AGENTARIUM_HAGGLE         quote (default: quotes, warns, enforces only prices you set) | strict
  *                             (enforce every quote's cap) | off
- *   TOKENOMICS_HAGGLE_MIN     smallest estimate worth a contract, in your currency (default 0.50)
- *   TOKENOMICS_HAGGLE_CAP_X   cap = this x the estimate (default 2)
+ *   AGENTARIUM_HAGGLE_MIN     smallest estimate worth a contract, in your currency (default 0.50)
+ *   AGENTARIUM_HAGGLE_CAP_X   cap = this x the estimate (default 2)
  * Hooks always exit 0; a crash never blocks anything (errors go to <db>.err).
  */
 import { score as complexity } from './pennywise.ts'
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as contract from '../tokenomics/engine/contract.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import * as lessons from '../tokenomics/engine/lessons.ts'
-import { withDb, type Db, type Row } from '../tokenomics/engine/db.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import { getAdapter, premiumBilled } from '../tokenomics/platform/registry.ts'
-import { argValue, errText, first, isMain, logErr, readPayload, readStdin, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as contract from '../agentarium/engine/contract.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import * as lessons from '../agentarium/engine/lessons.ts'
+import { withDb, type Db, type Row } from '../agentarium/engine/db.ts'
+import * as store from '../agentarium/engine/store.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import { getAdapter, premiumBilled } from '../agentarium/platform/registry.ts'
+import { argValue, errText, first, isMain, logErr, readPayload, readStdin, type Obj } from '../agentarium/util.ts'
 
 const PRICE_RE = /^\s*(?:haggle|cap|budget)\s*([£$€])?\s*(\d+(?:\.\d+)?)\s*([£$€])?\s*:/i
 const RAISE_RE = /^\s*(?:haggle\s*\+|(?:haggle\s+)?approve\b)\s*([£$€])?\s*(\d+(?:\.\d+)?)?/i
@@ -46,7 +46,7 @@ const FOLLOW_UP_RE = /^\s*(yes|yeah|yep|no|nope|ok(ay)?|sure|thanks|thank you|co
 const TAIL = 512 * 1024
 const BIG = ['COMPLEX', 'REASONING']
 
-const mode = () => (process.env.TOKENOMICS_HAGGLE ?? 'quote').trim().toLowerCase()
+const mode = () => (process.env.AGENTARIUM_HAGGLE ?? 'quote').trim().toLowerCase()
 
 function envNum(name: string, d: number): number {
   const v = Number((process.env[name] ?? '').replace(/^[£$€]/, ''))
@@ -114,10 +114,10 @@ function onPrompt(source: string): void {
       if (!price && (words < 6 || FOLLOW_UP_RE.test(prompt))) return       // a follow-up: same task, same contract
       const c = where(path ? String(path) : null)
       const e = quote(db, prompt.replace(PRICE_RE, ''), c)
-      const minUsd = envNum('TOKENOMICS_HAGGLE_MIN', 0.5) / rate
+      const minUsd = envNum('AGENTARIUM_HAGGLE_MIN', 0.5) / rate
       if (!price && !BIG.includes(e.tier) && e.mid < minUsd) return
       const explicit = Boolean(price)
-      const cap = explicit ? Number(price![2]) / rate : e.mid * envNum('TOKENOMICS_HAGGLE_CAP_X', 2)
+      const cap = explicit ? Number(price![2]) / rate : e.mid * envNum('AGENTARIUM_HAGGLE_CAP_X', 2)
       const target = Math.min(e.mid, cap)
       contract.start(db, sid, e, target, cap, explicit, path ? String(path) : null, c.offset)
       const b = e.breakdown
@@ -128,7 +128,7 @@ function onPrompt(source: string): void {
       if (explicit && e.mid > cap) msg += ` Your price is under the estimate, so expect to be asked to approve more.`
       if (!explicit) msg += ` Set your own price with 'haggle £X: ...'.` + lessons.teach(dbPath, 'big-task', { sessionId: sid, source: adapter.name })
       out = merge(adapter.notify(msg), adapter.addContext(
-        `Task contract (tokenomics haggle): this task is estimated at ${money(e.mid)} (range ${range}); ` +
+        `Task contract (agentarium haggle): this task is estimated at ${money(e.mid)} (range ${range}); ` +
         `${hard ? 'the user has agreed a hard cap of' : 'the cap is'} ${money(cap)}. Work economically: read only what you need, ` +
         'avoid repeating calls, keep tool output small. If it looks like the task will cost more than the cap, stop, report ' +
         'what is done and what is left, and ask the user to approve more.'))

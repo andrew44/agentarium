@@ -8,16 +8,16 @@ import { assistant, ROOT, runScript, SCRIPTS, useTemp, user, withEnv, writeTrans
 
 import * as report from '../scripts/report.ts'
 import * as statusline from '../scripts/statusline.ts'
-import { settings } from '../tokenomics/config.ts'
-import * as allowance from '../tokenomics/engine/allowance.ts'
-import * as budget from '../tokenomics/engine/budget.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import * as diet from '../tokenomics/engine/diet.ts'
-import { TOOL_READ, TOOL_SHELL, tokenUsage, toolCall } from '../tokenomics/engine/evidence.ts'
-import * as pricing from '../tokenomics/engine/pricing.ts'
-import * as session from '../tokenomics/engine/session.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import { getAdapter } from '../tokenomics/platform/registry.ts'
+import { settings } from '../agentarium/config.ts'
+import * as allowance from '../agentarium/engine/allowance.ts'
+import * as budget from '../agentarium/engine/budget.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import * as diet from '../agentarium/engine/diet.ts'
+import { TOOL_READ, TOOL_SHELL, tokenUsage, toolCall } from '../agentarium/engine/evidence.ts'
+import * as pricing from '../agentarium/engine/pricing.ts'
+import * as session from '../agentarium/engine/session.ts'
+import * as store from '../agentarium/engine/store.ts'
+import { getAdapter } from '../agentarium/platform/registry.ts'
 
 const SONNET = { input_tokens: 1_000_000, output_tokens: 100_000, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }
 const close = (a: number, b: number, msg?: string) => assert.ok(Math.abs(a - b) < 1e-7, msg ?? `${a} != ${b}`)
@@ -93,7 +93,7 @@ describe('pricing', () => {
 })
 
 describe('currency', () => {
-  const clean: Env = { TOKENOMICS_HOME: '/nonexistent', TOKENOMICS_CURRENCY: undefined, TOKENOMICS_USD_GBP: undefined, TOKENOMICS_USD_EUR: undefined }
+  const clean: Env = { AGENTARIUM_HOME: '/nonexistent', AGENTARIUM_CURRENCY: undefined, AGENTARIUM_USD_GBP: undefined, AGENTARIUM_USD_EUR: undefined }
 
   test('the block matches the statusline copy', () => {
     const block = (path: string) => {
@@ -101,7 +101,7 @@ describe('currency', () => {
       const start = text.indexOf('\n', text.indexOf('// BEGIN CURRENCY')) + 1
       return text.slice(start, text.indexOf('// END CURRENCY'))
     }
-    assert.equal(block(join(ROOT, 'tokenomics', 'engine', 'currency.ts')), block(join(SCRIPTS, 'statusline.ts')))
+    assert.equal(block(join(ROOT, 'agentarium', 'engine', 'currency.ts')), block(join(SCRIPTS, 'statusline.ts')))
   })
 
   test('choice and aliases', () => withEnv(clean, () => {
@@ -116,7 +116,7 @@ describe('currency', () => {
   }))
 
   test('env beats config, and rates', () => withEnv(clean, async () => {
-    await withEnv({ TOKENOMICS_CURRENCY: 'EUR', TOKENOMICS_USD_EUR: '0.9' }, () => {
+    await withEnv({ AGENTARIUM_CURRENCY: 'EUR', AGENTARIUM_USD_EUR: '0.9' }, () => {
       assert.deepEqual(currency.current({ currency: 'USD', usd_eur: 0.8 }), ['EUR', '€', 0.9])
     })
     assert.deepEqual(currency.current({ currency: 'EUR', usd_eur: 0.8 }), ['EUR', '€', 0.8])
@@ -142,7 +142,7 @@ describe('currency', () => {
 
   test('statusline flags', (c) => {
     const t = useTemp(c)
-    const env = t.env({ TOKENOMICS_HOME: t.home })
+    const env = t.env({ AGENTARIUM_HOME: t.home })
     const run = (...a: string[]) => runScript('statusline.ts', ['--no-color', ...a], { input: JSON.stringify({ cost: { total_cost_usd: 1.0 } }), env })
     assert.ok(run('--currency', 'usd').stdout.includes('$1.00'))
     assert.ok(run().stdout.includes('£0.76'))
@@ -160,7 +160,7 @@ describe('currency', () => {
     const tx = writeTranscript(t.home, 's1', [user('hi'), sonnetMsg('m1')])
     const payload = JSON.stringify({ session_id: 's1', transcript_path: tx, hook_event_name: 'Stop' })
     const run = (entry: string, args: string[], extra: Env = {}) => runScript('statusline.ts', args, { input: payload,
-      env: t.env({ TOKENOMICS_HOME: join(t.home, '.tokenomics'), CLAUDE_CONFIG_DIR: claudeDir, CLAUDE_CODE_ENTRYPOINT: entry, ...extra }) })
+      env: t.env({ AGENTARIUM_HOME: join(t.home, '.agentarium'), CLAUDE_CONFIG_DIR: claudeDir, CLAUDE_CODE_ENTRYPOINT: entry, ...extra }) })
 
     for (const entry of ['claude-desktop', 'claude-vscode', 'jetbrains']) {
       const p = run(entry, ['--message'])
@@ -172,7 +172,7 @@ describe('currency', () => {
     }
     assert.equal(run('cli', ['--message']).stdout, '')         // the terminal has the CLI statusline
     assert.equal(run('', ['--message']).stdout, '')
-    assert.equal(run('claude-desktop', ['--message'], { TOKENOMICS_BAND: 'off' }).stdout, '')
+    assert.equal(run('claude-desktop', ['--message'], { AGENTARIUM_BAND: 'off' }).stdout, '')
 
     // someone else's CLI status line doesn't matter to the apps
     mkdirSync(claudeDir, { recursive: true })
@@ -183,7 +183,7 @@ describe('currency', () => {
     assert.ok(run('cli', ['--band-off']).stdout.includes('now off'))
     assert.equal(run('claude-desktop', ['--message']).stdout, '')
     assert.ok(run('cli', ['--status']).stdout.includes('band (desktop app): off'))
-    assert.ok(run('claude-desktop', ['--message'], { TOKENOMICS_BAND: 'on' }).stdout.includes('systemMessage'))
+    assert.ok(run('claude-desktop', ['--message'], { AGENTARIUM_BAND: 'on' }).stdout.includes('systemMessage'))
     run('cli', ['--band-on'])
     assert.ok(run('claude-desktop', ['--message']).stdout.includes('systemMessage'))
   })
@@ -194,7 +194,7 @@ describe('currency', () => {
     const claudeDir = join(t.home, '.claude')
     const tx = writeTranscript(t.home, 's2', [user('hi'), sonnetMsg('m1')])
     const payload = JSON.stringify({ session_id: 's2', transcript_path: tx })
-    const base = { TOKENOMICS_HOME: join(t.home, '.tokenomics'), CLAUDE_CONFIG_DIR: claudeDir }
+    const base = { AGENTARIUM_HOME: join(t.home, '.agentarium'), CLAUDE_CONFIG_DIR: claudeDir }
     const run = (args: string[], extra: Env = {}) => runScript('statusline.ts', args, { input: payload,
       env: t.env({ ...base, CLAUDE_CODE_ENTRYPOINT: 'claude-desktop', ...extra }) })
 
@@ -206,7 +206,7 @@ describe('currency', () => {
     assert.equal([...line.gauge].length, 12)
     assert.equal(line.ttl, 300)
     assert.equal(run(['--message']).stdout, '')                         // the band shows it instead
-    assert.deepEqual(JSON.parse(run(['--json', '--band', 's2'], { TOKENOMICS_BAND: 'off' }).stdout), { show: false })
+    assert.deepEqual(JSON.parse(run(['--json', '--band', 's2'], { AGENTARIUM_BAND: 'off' }).stdout), { show: false })
     // the band passes the engine's own figures ($.session.usage): exact cost, its context %
     const exact = runScript('statusline.ts', ['--json'], { env: t.env(base), input: JSON.stringify({
       transcript_path: tx, model: { id: 'claude-opus-5-5' }, cost: { total_cost_usd: 2.0 },
@@ -229,9 +229,9 @@ describe('the band outlook: prevention, not a receipt', () => {
     model: 'Opus 5.5', total: 4e6, cost: 1.46, symbol: '£', estimated: false, pct: 79.5, ttl: 300, remaining: 250, ...extra,
     raw: { modelId: 'claude-opus-5-5', ctx: 159_000, window: 200_000, requests: 40, output: 60_000, rate: 0.76, ...raw },
   })
-  const noBudget = { TOKENOMICS_BUDGET_DAILY: undefined, TOKENOMICS_BUDGET_SESSION: undefined, TOKENOMICS_BUDGET_MODE: undefined,
-    TOKENOMICS_BUDGET_MONTHLY: undefined, TOKENOMICS_BUDGET_RESET_DAY: undefined, TOKENOMICS_BUDGET_WORKDAYS: undefined,
-    TOKENOMICS_BUDGET_DAYS_OFF: undefined }
+  const noBudget = { AGENTARIUM_BUDGET_DAILY: undefined, AGENTARIUM_BUDGET_SESSION: undefined, AGENTARIUM_BUDGET_MODE: undefined,
+    AGENTARIUM_BUDGET_MONTHLY: undefined, AGENTARIUM_BUDGET_RESET_DAY: undefined, AGENTARIUM_BUDGET_WORKDAYS: undefined,
+    AGENTARIUM_BUDGET_DAYS_OFF: undefined }
 
   test('forecasts the next steps and what a cold cache would add', async () => {
     await withEnv(noBudget, () => {
@@ -267,7 +267,7 @@ describe('the band outlook: prevention, not a receipt', () => {
   })
 
   test('budget left: the tighter limit, in steps', async () => {
-    await withEnv({ ...noBudget, TOKENOMICS_BUDGET_DAILY: '£5', TOKENOMICS_BUDGET_SESSION: '3' }, () => {
+    await withEnv({ ...noBudget, AGENTARIUM_BUDGET_DAILY: '£5', AGENTARIUM_BUDGET_SESSION: '3' }, () => {
       const o = statusline.outlook(info(), cfg, { daySpentUsd: 6.2 })!
       assert.equal(o.budget?.kind, 'daily')                // £0.29 left today beats £1.54 left this session
       close(o.budget!.left, 5 - 6.2 * 0.76)
@@ -278,13 +278,13 @@ describe('the band outlook: prevention, not a receipt', () => {
       assert.equal(s.budget?.kind, 'session')
       close(s.budget!.left, 3 - 1.46)
     })
-    await withEnv({ ...noBudget, TOKENOMICS_BUDGET_SESSION: '1', TOKENOMICS_BUDGET_MODE: 'off' }, () => {
+    await withEnv({ ...noBudget, AGENTARIUM_BUDGET_SESSION: '1', AGENTARIUM_BUDGET_MODE: 'off' }, () => {
       assert.equal(statusline.outlook(info(), cfg)!.budget, null)
     })
   })
 
   test('a tight budget on a pricey model suggests a cheaper one, when switching pays', async () => {
-    await withEnv({ ...noBudget, TOKENOMICS_BUDGET_SESSION: '1.6' }, () => {
+    await withEnv({ ...noBudget, AGENTARIUM_BUDGET_SESSION: '1.6' }, () => {
       // a small context: re-caching it on Sonnet is cheap, so the switch saves money
       const o = statusline.outlook(info({ cost: 1.5, pct: 5 }, { ctx: 10_000, requests: 10, output: 40_000 }), cfg)!
       assert.ok(o.budget!.steps_left! < 10)
@@ -297,7 +297,7 @@ describe('the band outlook: prevention, not a receipt', () => {
 
   test('the terminal statusline shows the forecast row under the line', async (c) => {
     const style = new statusline.Style('dark', false)
-    await withEnv({ ...noBudget, TOKENOMICS_BUDGET_DAILY: '£5' }, () => {
+    await withEnv({ ...noBudget, AGENTARIUM_BUDGET_DAILY: '£5' }, () => {
       const i = info({ remaining: 100 })
       const row = statusline.renderOutlook(statusline.outlook(i, cfg, { daySpentUsd: 6.2 }), i, style)
       assert.match(row, /^↳ £\d+\.\d\d next 10 steps/)
@@ -314,18 +314,18 @@ describe('the band outlook: prevention, not a receipt', () => {
     const tx = writeTranscript(t.home, 's4', [user('hi'), sonnetMsg('m1')])
     const run = (extra: Record<string, string> = {}) => runScript('statusline.ts', ['--no-color'], {
       input: JSON.stringify({ session_id: 's4', transcript_path: tx }),
-      env: t.env({ TOKENOMICS_HOME: join(t.home, '.tokenomics'), ...extra }) }).stdout.split('\n')
+      env: t.env({ AGENTARIUM_HOME: join(t.home, '.agentarium'), ...extra }) }).stdout.split('\n')
     const lines = run()
     assert.equal(lines.length, 2)
     assert.match(lines[1], /next 10 steps/)
-    assert.equal(run({ TOKENOMICS_OUTLOOK: 'off' }).length, 1)
+    assert.equal(run({ AGENTARIUM_OUTLOOK: 'off' }).length, 1)
   })
 
   test('--json carries the outlook to the band', (c) => {
     const t = useTemp(c)
     const tx = writeTranscript(t.home, 's3', [user('hi'), sonnetMsg('m1')])
     const out = runScript('statusline.ts', ['--json'], { input: JSON.stringify({ session_id: 's3', transcript_path: tx }),
-      env: t.env({ TOKENOMICS_HOME: join(t.home, '.tokenomics'), TOKENOMICS_BUDGET_SESSION: '10' }) })
+      env: t.env({ AGENTARIUM_HOME: join(t.home, '.agentarium'), AGENTARIUM_BUDGET_SESSION: '10' }) })
     const o = JSON.parse(out.stdout).outlook
     assert.equal(o.steps, 10)
     assert.match(o.forecast, /^£\d/)
@@ -433,7 +433,7 @@ describe('diet rules', () => {
     assert.equal(read(join(t.home, 'app.py')), null)                     // big but hand-written: Claude caps it
     assert.equal(read(join(t.home, 'small.lock')), null)
     assert.equal(read(join(t.home, 'nope.min.js')), null)
-    await withEnv({ TOKENOMICS_DIET_MAX_KB: '1000' }, () => assert.equal(read(join(t.home, 'package-lock.json')), null))
+    await withEnv({ AGENTARIUM_DIET_MAX_KB: '1000' }, () => assert.equal(read(join(t.home, 'package-lock.json')), null))
   })
 
   test('adapters map reads', () => {
@@ -473,8 +473,8 @@ describe('diet hook', () => {
   test('modes and bad input', (c) => {
     const t = useTemp(c)
     const bad = { session_id: 's', tool_name: 'Bash', tool_input: { command: 'git log' } }
-    assert.deepEqual(Object.keys(runHook(t, 'claude-code', bad, { TOKENOMICS_DIET: 'warn' })), ['systemMessage'])
-    assert.equal(runHook(t, 'claude-code', bad, { TOKENOMICS_DIET: 'off' }), null)
+    assert.deepEqual(Object.keys(runHook(t, 'claude-code', bad, { AGENTARIUM_DIET: 'warn' })), ['systemMessage'])
+    assert.equal(runHook(t, 'claude-code', bad, { AGENTARIUM_DIET: 'off' }), null)
     assert.equal(runHook(t, 'claude-code', { tool_name: 'Bash', tool_input: { command: 'ls' } }), null)
     for (const payload of ['', 'nope', '[1]', '{}']) {
       for (const src of ['claude-code', 'copilot', 'other']) assert.equal(runHook(t, src, payload), null)
@@ -494,7 +494,7 @@ describe('budget', () => {
     const check = (sid: string, prompt: string, l: Partial<budget.Limits>) => budget.check(db, sid, prompt, budget.limits(l))
     return { t, db, spend, check }
   }
-  const envs = (t: ReturnType<typeof useTemp>, extra: Env = {}) => ({ TOKENOMICS_USD_GBP: '1', TOKENOMICS_HOME: t.home, TOKENOMICS_CURRENCY: undefined, ...extra })
+  const envs = (t: ReturnType<typeof useTemp>, extra: Env = {}) => ({ AGENTARIUM_USD_GBP: '1', AGENTARIUM_HOME: t.home, AGENTARIUM_CURRENCY: undefined, ...extra })
 
   test('inactive without limits', (c) => {
     const { spend, check } = setup(c)
@@ -543,16 +543,16 @@ describe('budget', () => {
     const { t, spend, check } = setup(c)
     return withEnv(envs(t), async () => {
       spend('a', 10)                                                       // $10 spent
-      const d = await withEnv({ TOKENOMICS_CURRENCY: 'EUR', TOKENOMICS_USD_EUR: '0.9' }, () => check('a', 'hi', { daily: 8 }))!  // €9 > €8
+      const d = await withEnv({ AGENTARIUM_CURRENCY: 'EUR', AGENTARIUM_USD_EUR: '0.9' }, () => check('a', 'hi', { daily: 8 }))!  // €9 > €8
       assert.equal(d!.action, 'blocked')
       assert.ok(d!.message.includes('€9.00, over the €8.00 limit'))
       const row = t.rows("SELECT spent, limit_amount, currency FROM budget_events WHERE action='blocked'")[0]
       assert.deepEqual([Math.round(row.spent * 100) / 100, row.limit_amount, row.currency], [9, 8, 'EUR'])
-      await withEnv({ TOKENOMICS_CURRENCY: 'USD' }, () => assert.equal(check('b', 'hi', { daily: 12 })!.action, 'warned'))   // $10 of $12
+      await withEnv({ AGENTARIUM_CURRENCY: 'USD' }, () => assert.equal(check('b', 'hi', { daily: 12 })!.action, 'warned'))   // $10 of $12
     })
   })
 
-  test('limit values accept symbols', () => withEnv({ TOKENOMICS_BUDGET_DAILY: '€1,500', TOKENOMICS_BUDGET_SESSION: '$5' }, () => {
+  test('limit values accept symbols', () => withEnv({ AGENTARIUM_BUDGET_DAILY: '€1,500', AGENTARIUM_BUDGET_SESSION: '$5' }, () => {
     const lim = budget.loadLimits()
     assert.deepEqual([lim.daily, lim.session], [1500, 5])
   }))
@@ -594,11 +594,11 @@ describe('budget', () => {
     const { t, spend } = setup(c)
     spend('a', 50)
     const payload = JSON.stringify({ session_id: 'a', prompt: 'hi' })
-    const run = (src: string, e: Env = {}) => runScript('budget.ts', [src], { input: payload, env: t.env({ TOKENOMICS_USD_GBP: '1', ...e }) })
+    const run = (src: string, e: Env = {}) => runScript('budget.ts', [src], { input: payload, env: t.env({ AGENTARIUM_USD_GBP: '1', ...e }) })
     assert.equal(run('claude-code').stdout, '')                          // no limit set
-    assert.equal(JSON.parse(run('claude-code', { TOKENOMICS_BUDGET_DAILY: '10' }).stdout).decision, 'block')
-    assert.equal(run('copilot', { TOKENOMICS_BUDGET_DAILY: '10' }).stdout, '')   // cannot block there
-    assert.ok(runScript('budget.ts', ['status'], { env: t.env({ TOKENOMICS_USD_GBP: '1' }) }).stdout.includes('Spent today: £50 (GBP)'))
+    assert.equal(JSON.parse(run('claude-code', { AGENTARIUM_BUDGET_DAILY: '10' }).stdout).decision, 'block')
+    assert.equal(run('copilot', { AGENTARIUM_BUDGET_DAILY: '10' }).stdout, '')   // cannot block there
+    assert.ok(runScript('budget.ts', ['status'], { env: t.env({ AGENTARIUM_USD_GBP: '1' }) }).stdout.includes('Spent today: £50 (GBP)'))
   })
 })
 
@@ -697,7 +697,7 @@ describe('monthly allowance', () => {
     assert.equal(allowance.workingDaysLeft(day('2026-11-23'), c), 6)
     close(allowance.dailyShare(500, 380, 6), 20)
     // holidays come off what's left; today counts even on a Saturday
-    assert.equal(allowance.workingDaysLeft(day('2026-11-23'), cal({ TOKENOMICS_BUDGET_DAYS_OFF: '2026-11-26..2026-11-27' })), 4)
+    assert.equal(allowance.workingDaysLeft(day('2026-11-23'), cal({ AGENTARIUM_BUDGET_DAYS_OFF: '2026-11-26..2026-11-27' })), 4)
     assert.equal(allowance.workingDaysLeft(day('2026-11-28'), c), 2)
     assert.equal(allowance.dailyShare(500, 600, 3), 0)                      // over the allowance: nothing left
   })
@@ -721,10 +721,10 @@ describe('monthly allowance', () => {
   })
 
   test('the statusline agrees with the engine', async () => {
-    const envs = [{}, { TOKENOMICS_BUDGET_RESET_DAY: '31', TOKENOMICS_BUDGET_WORKDAYS: 'sun-thu' },
-      { TOKENOMICS_BUDGET_RESET_DAY: '15', TOKENOMICS_BUDGET_DAYS_OFF: '2026-12-20..2027-01-02,2027-02-01' }]
+    const envs = [{}, { AGENTARIUM_BUDGET_RESET_DAY: '31', AGENTARIUM_BUDGET_WORKDAYS: 'sun-thu' },
+      { AGENTARIUM_BUDGET_RESET_DAY: '15', AGENTARIUM_BUDGET_DAYS_OFF: '2026-12-20..2027-01-02,2027-02-01' }]
     for (const e of envs) {
-      await withEnv({ TOKENOMICS_BUDGET_RESET_DAY: undefined, TOKENOMICS_BUDGET_WORKDAYS: undefined, TOKENOMICS_BUDGET_DAYS_OFF: undefined, ...e }, () => {
+      await withEnv({ AGENTARIUM_BUDGET_RESET_DAY: undefined, AGENTARIUM_BUDGET_WORKDAYS: undefined, AGENTARIUM_BUDGET_DAYS_OFF: undefined, ...e }, () => {
         const a = allowance.calendar(), b = statusline.allowanceCalendar()
         assert.deepEqual(b, a)
         for (let x = day('2026-11-01'); x < day('2027-04-01'); x.setDate(x.getDate() + 3)) {
@@ -735,9 +735,9 @@ describe('monthly allowance', () => {
     }
   })
 
-  test('the statusline shows what is left of today\'s share', () => withEnv({ TOKENOMICS_BUDGET_DAILY: undefined,
-    TOKENOMICS_BUDGET_SESSION: undefined, TOKENOMICS_BUDGET_MODE: undefined, TOKENOMICS_BUDGET_MONTHLY: '500',
-    TOKENOMICS_BUDGET_RESET_DAY: undefined, TOKENOMICS_BUDGET_WORKDAYS: undefined, TOKENOMICS_BUDGET_DAYS_OFF: undefined }, () => {
+  test('the statusline shows what is left of today\'s share', () => withEnv({ AGENTARIUM_BUDGET_DAILY: undefined,
+    AGENTARIUM_BUDGET_SESSION: undefined, AGENTARIUM_BUDGET_MODE: undefined, AGENTARIUM_BUDGET_MONTHLY: '500',
+    AGENTARIUM_BUDGET_RESET_DAY: undefined, AGENTARIUM_BUDGET_WORKDAYS: undefined, AGENTARIUM_BUDGET_DAYS_OFF: undefined }, () => {
     const b = statusline.budgetLeft(0, 1, 1, 10, 100, day('2026-11-23'))!
     assert.equal(b.kind, 'daily')
     close(b.limit, 400 / 6)

@@ -62,14 +62,14 @@ So one request from you ("fix the failing test") might become thirty or more tri
 - wandering off to tidy things you never asked about;
 - using the most expensive model for simple steps.
 
-tokenomics is built for exactly this. **groundhog** spots the agent going round in circles, **blinkers** catches it straying beyond what you asked, and **sherlock** shows you, step by step, which actions bought nothing.
+agentarium is built for exactly this. **groundhog** spots the agent going round in circles, **blinkers** catches it straying beyond what you asked, and **sherlock** shows you, step by step, which actions bought nothing.
 
 ### Keeping an agent safe and useful
 
 - **Be clear about the goal**, and what "done" looks like ("the tests pass", "only change this folder").
 - **Keep the approvals on for risky actions.** Good agents ask before deleting things, pushing code or spending money.
 - **Check the result**, not just the summary. Agents can be confidently wrong, just like the LLM inside them.
-- **Watch the cost.** The tokenomics statusline shows it live, and **budget** can stop a task before it overspends.
+- **Watch the cost.** The agentarium statusline shows it live, and **budget** can stop a task before it overspends.
 
 That's the big picture. If you want the machinery, read on.
 
@@ -118,7 +118,7 @@ return final response
 
 This pattern is often called **ReAct** (reason + act): the model reasons, emits an action, observes the result, and repeats. Modern models are trained specifically to work well in this loop.
 
-Real agents add more around it: permission checks before risky tools, limits on the number of turns, hooks that can inspect or block a call (this is where tokenomics plugs in), and context management for long runs.
+Real agents add more around it: permission checks before risky tools, limits on the number of turns, hooks that can inspect or block a call (this is where agentarium plugs in), and context management for long runs.
 
 ### 2.3 Tool calling
 
@@ -146,7 +146,7 @@ Put the loop and the stateless API together:
 - Step *n* re-sends everything from steps 1 to *n − 1*, including every tool result.
 - Total input therefore grows roughly with the **square** of the number of steps ([How tokens work, 2.3](how-tokens-work.md#23-input-tokens)).
 
-The prompt cache softens this a great deal (re-sent history is billed at about a tenth of the input price while the cache is warm), but the shape stays the same: long agent runs with big tool outputs are where most spend goes. The common failure patterns, and the tokenomics helper that targets each, are:
+The prompt cache softens this a great deal (re-sent history is billed at about a tenth of the input price while the cache is warm), but the shape stays the same: long agent runs with big tool outputs are where most spend goes. The common failure patterns, and the agentarium helper that targets each, are:
 
 | Pattern | What happens | Helper |
 |---|---|---|
@@ -175,7 +175,7 @@ Because the context window is finite and every token in it is re-sent, long-runn
 - **Compaction**: summarising older history into a shorter note and continuing from that.
 - **Context editing**: dropping old tool results that are no longer needed.
 - **External memory**: writing notes to files (a to-do list, a `CLAUDE.md`, a progress log) and reading them back when needed.
-- **Fresh sessions with a hand-over note**: tokenomics' **doggybag** packs a short summary just before the cache goes cold, so the next session can start small instead of reloading a long, cold history.
+- **Fresh sessions with a hand-over note**: agentarium's **doggybag** packs a short summary just before the cache goes cold, so the next session can start small instead of reloading a long, cold history.
 
 ### 2.7 Measuring whether an agent was worth it
 
@@ -185,7 +185,7 @@ Token counts say what an agent *cost*. They don't say whether it *worked*. For a
 - was the change accepted, reverted or refused;
 - did a cheaper setup (smaller model, less context) reach the same result?
 
-That is the focus of tokenomics' signature helpers: [bang-for-buck](reference.md#bang-for-buck) (cost per successful result), [sherlock](reference.md#sherlock) (the cost of every wasted step) and [taste-test](reference.md#taste-test) (proof that a cheaper run didn't lose quality).
+That is the focus of agentarium's signature helpers: [bang-for-buck](reference.md#bang-for-buck) (cost per successful result), [sherlock](reference.md#sherlock) (the cost of every wasted step) and [taste-test](reference.md#taste-test) (proof that a cheaper run didn't lose quality).
 
 ### 2.8 Risks and guard-rails
 

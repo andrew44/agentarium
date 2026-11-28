@@ -1,5 +1,5 @@
 {
-  "name": "tokenomics",
+  "name": "agentarium",
   "private": true,
   "description": "Make every AI token earn its keep: automated prevention for the whole AI coding session, in Claude Code and GitHub Copilot CLI: stop the spend before it happens, and prove the saving held up.",
   "license": "Apache-2.0",

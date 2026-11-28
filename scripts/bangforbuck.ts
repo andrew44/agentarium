@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * tokenomics / bang-for-buck: what useful work costs. Stop measuring tokens saved; measure the cost
+ * agentarium / bang-for-buck: what useful work costs. Stop measuring tokens saved; measure the cost
  * of getting a result. The cheapest model isn't the best value if it needs three goes.
  *
  * Every turn end (Claude Code: Stop hook) it reads the session's transcript and writes one ledger
  * row: cost, tokens, tool calls, and the outcomes the agent actually achieved: completed features,
  * bugs fixed, passing test suites, commits, pull requests, successful subagent tasks (see
- * tokenomics/engine/outcomes.ts). Only numbers and tool names are stored, never prompts or code.
+ * agentarium/engine/outcomes.ts). Only numbers and tool names are stored, never prompts or code.
  *
  *   bangforbuck.ts record [source]          hook: update this session's ledger row (stdin: hook JSON)
  *   bangforbuck.ts report [--days 30]       cost per outcome, per model, vs the previous period
@@ -17,34 +17,34 @@
  *                                           record an outcome by hand (kind: feature, bug_fix, ...)
  *   bangforbuck.ts ingest <file-or-dir>...  backfill the ledger from old transcripts
  *
- * Env: TOKENOMICS_BANGFORBUCK=off turns the hook off. The hook always exits 0 and prints nothing.
+ * Env: AGENTARIUM_BANGFORBUCK=off turns the hook off. The hook always exits 0 and prints nothing.
  */
 import { basename, join } from 'node:path'
 import { existsSync, readdirSync, statSync } from 'node:fs'
 
 import { findTranscript } from './coach.ts'
-import { defaultDbPath } from '../tokenomics/config.ts'
-import * as currency from '../tokenomics/engine/currency.ts'
-import { withDb } from '../tokenomics/engine/db.ts'
-import * as ledger from '../tokenomics/engine/ledger.ts'
-import { KINDS, LABELS, total } from '../tokenomics/engine/outcomes.ts'
-import * as store from '../tokenomics/engine/store.ts'
-import * as trace from '../tokenomics/engine/trace.ts'
-import * as value from '../tokenomics/services/value.ts'
-import { premiumBilled } from '../tokenomics/platform/registry.ts'
-import { argValue, errText, first, isMain, logErr, readPayload, today, type Obj } from '../tokenomics/util.ts'
+import { defaultDbPath } from '../agentarium/config.ts'
+import * as currency from '../agentarium/engine/currency.ts'
+import { withDb } from '../agentarium/engine/db.ts'
+import * as ledger from '../agentarium/engine/ledger.ts'
+import { KINDS, LABELS, total } from '../agentarium/engine/outcomes.ts'
+import * as store from '../agentarium/engine/store.ts'
+import * as trace from '../agentarium/engine/trace.ts'
+import * as value from '../agentarium/services/value.ts'
+import { premiumBilled } from '../agentarium/platform/registry.ts'
+import { argValue, errText, first, isMain, logErr, readPayload, today, type Obj } from '../agentarium/util.ts'
 
 const round2 = (v: number) => Math.round(v * 100) / 100
 const pct = (a: number, b: number) => (b ? Math.round((a - b) / b * 1000) / 10 : null)
 
 /** Parse one transcript and write its ledger row (enriched by the shared services: attribution,
- *  status, dead work; see tokenomics/services/value.ts). */
+ *  status, dead work; see agentarium/services/value.ts). */
 export function recordTranscript(dbPath: string, path: string, sessionId?: string | null): ledger.LedgerRow {
   return value.recordTranscript(dbPath, path, sessionId)
 }
 
 function hook(source: string): void {
-  if ((process.env.TOKENOMICS_BANGFORBUCK ?? '').trim().toLowerCase() === 'off') return
+  if ((process.env.AGENTARIUM_BANGFORBUCK ?? '').trim().toLowerCase() === 'off') return
   try {
     if (premiumBilled(source)) return                      // no transcript and no prices: nothing to measure
     const payload = readPayload()
@@ -194,7 +194,7 @@ function money(args: string[]): boolean {
     process.stderr.write(`unknown currency ${JSON.stringify(cur)}: use GBP, USD or EUR\n`)
     return false
   }
-  process.env.TOKENOMICS_CURRENCY = c
+  process.env.AGENTARIUM_CURRENCY = c
   return true
 }
 

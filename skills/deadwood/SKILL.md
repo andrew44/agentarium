@@ -16,7 +16,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" deadwood.ts --json
 - Default: this calendar month. `--month 2026-10` for another, or `--days 30`. Add `--merged` to count how many committed sessions made it onto the main branch (accepted changes; it runs git).
 - One session: `deadwood.ts session --json` (newest in this folder) or `--session <id>`.
 - When the user knows better than the heuristics ("that one was thrown away", "we shipped that"): `deadwood.ts mark discarded --session <id>` or `mark accepted` (also `abandoned`, `failed`).
-- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name deadwood.ts -path "*tokenomics*" 2>/dev/null | head -1`.
+- If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name deadwood.ts -path "*agentarium*" 2>/dev/null | head -1`.
 - `empty` true: the ledger has nothing yet; offer `bangforbuck.ts ingest ~/.claude/projects` (ask first).
 
 ## 2. Reply format

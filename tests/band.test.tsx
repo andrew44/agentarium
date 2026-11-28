@@ -9,7 +9,7 @@ function seed(on: On, values: { line?: unknown, now?: number }) {
 }
 
 const BAND = {
-  plugin: 'tokenomics',
+  plugin: 'agentarium',
   component: 'AbovePrompt',
   props: {
     hasSurvey: false, isCollapsed: false, isWorking: false, maxRows: 10, bodyColumns: 100,
