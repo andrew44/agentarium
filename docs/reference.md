@@ -1199,6 +1199,7 @@ The same figures in the **Claude desktop app** (the mobile app too) and **VS Cod
 - **On with the plugin.** It doesn't depend on the status line: the row shows even if your terminal has another status line, or none.
 - **Exact.** It uses the same figures Claude Code gives the terminal's status line, so the cost has no `~`. The countdown ticks every second, and the numbers update as replies and tool results land.
 - **VS Code** gets the row in its band too, and the same line pinned as the plugin's own status line entry, under the prompt box.
+- **On Windows** the row runs `statusline.ts` through Git Bash: the one `CLAUDE_CODE_GIT_BASH_PATH` names, else Git's usual install folders, and only then `sh` or `bash` on your PATH. A `bash` on the PATH is often WSL's (`C:\Windows\System32\bash.exe`), which can't open a Windows path. When no shell can run it, the row shows Claude Code's own figures (no cache timer, cost in $) and says why once in the transcript.
 - **Where mods can't run** (an older Claude Code, or mods turned off), the desktop app and VS Code get the line as a short message after each reply instead, e.g. `✦ Opus 5.5  ·  ━━━━━━━╸──── 64% ctx  ·  1.7M tok  ·  ~£0.81  ·  ● 04:58 cache (cold at 12:37)`. It's a snapshot, so the countdown also tells you the clock time the cache goes cold.
 
 #### The outlook: what's coming, and what to do

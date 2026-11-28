@@ -30,8 +30,11 @@ const REFRESH_MS = 3000          // mid-turn: at most one statusline.ts run per 
 
 // $.process.run starts argv[0] itself (no shell), on the app's own PATH: on Windows that has no
 // `sh` (hooks.json's commands get Git Bash from Claude Code; this doesn't), so try these in turn.
+// Windows tries Git Bash before the PATH: `bash` there is often C:\Windows\System32\bash.exe, WSL's,
+// which can't see a C:\ path and answers 127.
 const SHELLS = ['sh', 'bash']
-const WINDOWS_SHELLS = ['C:/Program Files/Git/bin/bash.exe', 'C:/Program Files (x86)/Git/bin/bash.exe']
+const GIT_BASHES = ['C:/Program Files/Git/bin/bash.exe', 'C:/Program Files (x86)/Git/bin/bash.exe']
+const NOT_RUN = [126, 127]       // the shell started but couldn't find or run run.sh: try the next
 
 let lastRun = 0
 let seenMtime = 0
@@ -62,16 +65,36 @@ function fallbackLine(model: string, usage: { context: { percent?: number | null
   }
 }
 
-/** Runs `run.sh args`, through the first shell that starts. */
+/** The shells to try on Windows: the Git Bash Claude Code is told to use, the usual installs, then
+ *  the PATH. */
+async function windowsShells($: EngineInterface) {
+  const [configured, local] = await Promise.all([
+    $.env.get('CLAUDE_CODE_GIT_BASH_PATH').catch(() => undefined),
+    $.env.get('LOCALAPPDATA').catch(() => undefined),
+  ])
+  const found = [configured, ...GIT_BASHES, local && `${local}/Programs/Git/bin/bash.exe`, ...SHELLS]
+    .filter((s): s is string => !!s)
+    .map(s => s.replaceAll('\\', '/'))
+  return [...new Set(found)]
+}
+
+/** Runs `run.sh args`, through the first shell that starts and finds it. */
 async function runScript($: EngineInterface, args: string[], stdin: string) {
   const { platform } = await $.session.info()
-  const shells = shell ? [shell] : platform === 'windows' ? [...SHELLS, ...WINDOWS_SHELLS] : SHELLS
+  const windows = platform === 'windows'
+  const shells = shell ? [shell] : windows ? await windowsShells($) : SHELLS
+  // C:\Users\... reaches a shell as C:Users...: forward slashes work in Git Bash and sh alike
+  const script = `${windows ? $.plugin.root.replaceAll('\\', '/') : $.plugin.root}/scripts/run.sh`
   let lastError: unknown
-  for (const sh of shells) {
+  for (const [i, sh] of shells.entries()) {
     try {
-      const result = await $.process.run([sh, `${$.plugin.root}/scripts/run.sh`, ...args], {
+      const result = await $.process.run([sh, script, ...args], {
         stdin, env: await $.process.hookEnv(), timeoutMs: 10000 })
-      shell = sh
+      if (NOT_RUN.includes(result.exitCode) && i < shells.length - 1) {
+        lastError = `${sh} exited ${result.exitCode}: ${result.stderr.trim()}`
+        continue
+      }
+      if (!NOT_RUN.includes(result.exitCode)) shell = sh
       return result
     } catch (err) {
       lastError = err                             // couldn't start (or timed out): try the next

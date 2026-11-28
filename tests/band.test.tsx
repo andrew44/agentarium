@@ -84,8 +84,9 @@ test('nothing cached yet reads --:--', async ($, on) => {
 // The engine beneath the band's timer and refresh: a session on `surfaces`, statusline.ts
 // answering `stdout`. Records each run and each status line.
 type Run = { argv: readonly string[], stdin?: string }
+type Ran = { exitCode?: number, stdout?: string, stderr?: string }
 function engine(on: On, surfaces: ('terminal' | 'desktop' | 'vscode' | 'mobile')[], stdout: string,
-  opts: { platform?: string, run?: (argv: readonly string[]) => void, state?: boolean } = {}) {
+  opts: { platform?: string, run?: (argv: readonly string[]) => Ran | void, state?: boolean } = {}) {
   const runs: Run[] = []
   const status: (string | undefined)[] = []
   on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -98,8 +99,8 @@ function engine(on: On, surfaces: ('terminal' | 'desktop' | 'vscode' | 'mobile')
   on('process.hookEnv', () => ({ value: {} }))
   on('process.run', (_, e) => {
     runs.push({ argv: e.argv, stdin: e.init?.stdin })
-    opts.run?.(e.argv)                              // throws: the command couldn't start
-    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    const ran = opts.run?.(e.argv)                  // throws: the command couldn't start
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false, ...ran } }
   })
   on('fs.stat', () => ({ value: { kind: 'file', size: 1, mtimeMs: 1, isLink: false } }))
   on('ui.status', (_, e) => { status.push(e.text); return { value: undefined } })
@@ -131,15 +132,71 @@ test('in the terminal alone the timer does nothing: the CLI status line has it',
   expect(status).toEqual([])
 })
 
-test('on Windows, with no sh on the PATH, the band runs the script through Git Bash', async ($, on) => {
+const GIT_BASH = 'C:/Program Files/Git/bin/bash.exe'
+const WSL = { exitCode: 127, stdout: '', stderr: '/bin/bash: C:Usersmeplugins/scripts/run.sh: No such file or directory' }
+
+test('on Windows the band runs the script through Git Bash, before any bash on the PATH (WSL)', async ($, on) => {
   const clock = mock.clock(on, { now: 1_000_000 * 1000 })
+  mock.env(on, {})
   const { runs } = engine(on, ['desktop'], JSON.stringify(LINE), { platform: 'windows',
-    run: argv => { if (!argv[0]?.endsWith('bash.exe')) throw new Error(`spawn ${argv[0]} ENOENT`) } })
+    run: argv => (argv[0] === 'bash' ? WSL : undefined) })
 
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   await clock.advance(1000)
 
-  expect(runs.map(r => r.argv[0])).toEqual(['sh', 'bash', 'C:/Program Files/Git/bin/bash.exe'])
+  expect(runs[0]?.argv[0]).toBe(GIT_BASH)
+  expect(runs.some(r => r.argv[0] === 'bash')).toBe(false)
+  expect(runs[0]?.argv[1]).toMatch(/^[^\\]*\/scripts\/run\.sh$/)    // forward slashes only
+})
+
+test('on Windows the Git Bash Claude Code is told to use comes first', async ($, on) => {
+  const clock = mock.clock(on, { now: 1_000_000 * 1000 })
+  mock.env(on, { CLAUDE_CODE_GIT_BASH_PATH: 'D:\\Tools\\Git\\bin\\bash.exe' })
+  const { runs } = engine(on, ['desktop'], JSON.stringify(LINE), { platform: 'windows' })
+
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await clock.advance(1000)
+
+  expect(runs[0]?.argv[0]).toBe('D:/Tools/Git/bin/bash.exe')
+})
+
+test('a shell that starts but cannot find run.sh (exit 127) is passed over, not kept', async ($, on) => {
+  const clock = mock.clock(on, { now: 1_000_000 * 1000 })
+  mock.env(on, {})
+  const { runs } = engine(on, ['desktop'], JSON.stringify(LINE), { platform: 'windows',
+    run: argv => {
+      if (argv[0]?.endsWith('bash.exe')) throw new Error(`spawn ${argv[0]} ENOENT`)  // no Git Bash
+      return argv[0] === 'sh' ? WSL : undefined
+    } })
+  let stored: unknown
+  on('state.get', () => ({ value: { value: stored, version: 1 } }))
+  on('state.set', (_, e) => { stored = e.value; return { value: { isSet: true, version: 2 } } })
+
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await clock.advance(1000)
+
+  expect(runs.slice(-2).map(r => r.argv[0])).toEqual(['sh', 'bash'])
+  expect(stored).toMatchObject({ model: 'claude-opus-5-5', tokens: '4.1M' })        // bash's numbers
+})
+
+test('with only WSL bash, the band says why, after trying Git Bash', async ($, on) => {
+  const clock = mock.clock(on, { now: 1_000_000 * 1000 })
+  mock.env(on, {})
+  const { runs } = engine(on, ['desktop'], JSON.stringify(LINE), { platform: 'windows',
+    run: argv => {
+      if (argv[0] !== 'bash') throw new Error(`spawn ${argv[0]} ENOENT`)
+      return WSL
+    } })
+  const logs: string[] = []
+  on('ui.log', (_, e) => { if (e.to !== 'debug') logs.push(e.text); return { value: undefined } })
+
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await clock.advance(1000)
+
+  expect(logs.length).toBe(1)
+  expect(logs[0]).toContain('exit 127')
+  expect(logs[0]).toContain('No such file or directory')
+  expect(runs.map(r => r.argv[0])).toEqual([GIT_BASH, 'C:/Program Files (x86)/Git/bin/bash.exe', 'sh', 'bash'])
 })
 
 test('when statusline.ts gives nothing (no Node.js), the band draws the engine figures and says why', async ($, on) => {
