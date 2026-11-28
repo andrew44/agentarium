@@ -1,10 +1,10 @@
 /** End-to-end through the real hook command, as each platform runs it. */
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test } from 'node:test'
 
-import { assistant, ROOT, useTemp, user, writeTranscript, type TempEnv } from './helpers.ts'
+import { assistant, ROOT, runScript, useTemp, user, writeTranscript, type TempEnv } from './helpers.ts'
 
 function runOk(t: TempEnv, mode: string, source: string, payload: unknown, env = {}) {
   const p = t.hook(mode, source, payload, env)
@@ -73,6 +73,19 @@ describe('hook runs', () => {
   })
 })
 
+describe('the data folder', () => {
+  test('AGENTARIUM_HOME moves the database too, unless AGENTARIUM_DB says otherwise', (c) => {
+    const t = useTemp(c)
+    const home = join(t.home, 'elsewhere')
+    const env = t.env({ AGENTARIUM_HOME: home })
+    delete env.AGENTARIUM_DB
+    const p = runScript('till.ts', ['prompt', 'claude-code'], { input: JSON.stringify({ session_id: 's', cwd: '/x', prompt: 'fix the login bug' }), env })
+    assert.equal(p.status, 0, p.stderr)
+    assert.ok(existsSync(join(home, 'till.db')), 'the hook wrote to $AGENTARIUM_HOME/till.db')
+    assert.ok(runScript('cli.ts', [], { env }).stdout.includes(join(home, 'till.db')), 'and the overview finds it there')
+  })
+})
+
 describe('hook config', () => {
   test('hook files use known modes', () => {
     const modes = new Set(['prompt', 'tool', 'finalize'])
@@ -80,13 +93,13 @@ describe('hook config', () => {
     const cp = JSON.parse(readFileSync(join(ROOT, 'copilot-hooks.json'), 'utf8'))
     const cmds: string[] = Object.values(cc.hooks).flatMap((arms: any) => arms.flatMap((g: any) => g.hooks.map((h: any) => h.command)))
     cmds.push(...Object.values(cp.hooks).flatMap((arms: any) => arms.map((h: any) => h.bash)))
-    const lens = cmds.filter((c) => c.includes('till.ts'))
-    assert.ok(lens.length)
-    for (const c of lens) {
+    const till = cmds.filter((c) => c.includes('till.ts'))
+    assert.ok(till.length)
+    for (const c of till) {
       const parts = c.replaceAll('"', '').split(/\s+/)
       const i = parts.findIndex((x) => x.endsWith('till.ts'))
       assert.ok(modes.has(parts[i + 1]), c)
     }
-    assert.ok(lens.some((c) => c.includes(' tool copilot')), 'copilot postToolUse not wired')
+    assert.ok(till.some((c) => c.includes(' tool copilot')), 'copilot postToolUse not wired')
   })
 })

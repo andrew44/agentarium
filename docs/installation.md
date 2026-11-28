@@ -15,6 +15,7 @@ Everything you need to get agentarium running, from the one-minute install to te
 - [Copilot in VS Code](#copilot-in-vs-code)
 - [Requirements](#requirements)
 - [Update, remove or check](#update-remove-or-check)
+- [Moving from tokenomics](#moving-from-tokenomics)
 - [Other ways to install](#other-ways-to-install-for-developers)
 - [Troubleshooting](#troubleshooting)
 
@@ -131,6 +132,7 @@ It's safe to run again: it repairs and updates what's there. Want to look before
 | `agentarium update` | Downloads the latest version and updates the plugins and statusline |
 | `agentarium uninstall` | Removes the plugins, statusline and command (keeps your data; `--purge` deletes it too) |
 | `agentarium --version` | The version installed |
+| `agentarium import` | Brings a tokenomics install's history and settings over (`--dry-run` first; see [Moving from tokenomics](#moving-from-tokenomics)) |
 | `agentarium bang-for-buck`, `split-the-bill` ... | Runs a helper by name. Each also answers to its name as one word, the way its setting spells it (`bangforbuck`, `splitthebill`, `coldsnap` ...) |
 
 > **Windows:** the commands below work as they are in PowerShell, as long as `node` is on your PATH (the installer's private copy isn't; use the `agentarium` command instead).
@@ -334,6 +336,26 @@ Reload the window afterwards. If `code` isn't on your PATH, the command leaves `
 | Update or remove the statusline | It updates itself with the plugin (or `agentarium update`). `agentarium statusline --uninstall claude` or `/agentarium:statusline uninstall` removes it; `agentarium statusline --status` shows where it's installed. |
 | Update or remove skills installed with `npx` | `npx skills update` or `npx skills remove coach`. `npx skills list` shows what's installed. |
 | Install for a whole team | See [For a team](#for-a-team). |
+
+## Moving from tokenomics
+
+agentarium is what tokenomics became, renamed and started again at 0.0.1. Your history and settings come with you:
+
+1. **Install agentarium** as above. With the one-line installer, `agentarium setup` brings tokenomics's history and settings over by itself the first time it runs.
+2. **Bring the history over** otherwise: `agentarium import` (`--dry-run` shows what it would do first). Without the command, run the same thing from the plugin: `sh "<plugin folder>/scripts/run.sh" import.ts`; the first session start after installing prints that path for you.
+3. **Remove tokenomics**: `/plugin uninstall tokenomics@tokenomics` (or `tokenomics uninstall` if you used its installer, without `--purge` if you want to keep its folder). With both installed, both run every hook, and every prompt is checked twice.
+
+What comes over, into `~/.agentarium`, with tokenomics's own files left exactly as they are:
+
+| From `~/.tokenomics` | To `~/.agentarium` |
+|---|---|
+| `spendlens.db`: every session, cost and guard event | `till.db`, as one consistent copy (safe while tokenomics is running). Only into an agentarium that has recorded nothing yet; `--force` replaces its history, keeping it as `till.db.bak`. |
+| `config.json`: the profile, per-folder profiles and settings | merged into `config.json`, with `TOKENOMICS_` names as `AGENTARIUM_` ones; a value agentarium already has is kept |
+| `statusline.json`, `router.json`, `providers.json`, `plans.json` and pennywise's learned thresholds and eval misses | merged the same way |
+| `TOKENOMICS_*` settings in your shell or in Claude Code's `settings.json` `"env"` | `config.json` `"settings"`, where agentarium reads them (agentarium doesn't read `TOKENOMICS_` variables; an `AGENTARIUM_` one still wins over the file) |
+| the statusline, if it runs tokenomics's copy | agentarium's copy (also done by itself at the first session start) |
+
+The names that changed: the plugin is `agentarium@agentarium` from `andrew44/agentarium`, the command is `agentarium`, settings start `AGENTARIUM_`, the data folder is `~/.agentarium`, **spendlens** is now **till** (its database `till.db`), the pane is `/agentarium-pane` and the VS Code hook file `.github/hooks/agentarium.json` (run `agentarium vscode` again in each workspace, and `agentarium vscode --status-bar` for the status bar item). A waistline baseline keeps working under its old file name; `--baseline` takes any path.
 
 ### Update isn't showing up
 

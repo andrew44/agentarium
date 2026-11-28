@@ -56,7 +56,7 @@ import { anonSessionId, errText, fmt, int, isMain, isObj, logErr, now, parseTs, 
 import { currency, formatMoney, loadCfg, usageCostUsd } from './statusline.ts'
 
 const HOME = homedir()
-const FALLBACK_DIR = join(HOME, '.agentarium', 'doggybags')     // when the project folder is unknown or read-only
+const FALLBACK_DIR = join(process.env.AGENTARIUM_HOME || join(HOME, '.agentarium'), 'doggybags')   // when the project folder is unknown or read-only
 const LATEST = 'latest.md'
 const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit'])
 const TAIL_BYTES = 1_000_000

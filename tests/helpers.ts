@@ -1,6 +1,7 @@
 /**
  * Shared test helpers. Importing this first gives the whole test process a throwaway HOME,
- * AGENTARIUM_HOME and AGENTARIUM_DB, so no test ever touches the real ~/.agentarium.
+ * AGENTARIUM_HOME and AGENTARIUM_DB, so no test ever touches the real ~/.agentarium, and drops any
+ * TOKENOMICS_* settings (import.ts reads them), so a tokenomics install never leaks in either.
  */
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
@@ -13,7 +14,8 @@ export const ROOT = join(import.meta.dirname, '..')
 export const SCRIPTS = join(ROOT, 'scripts')
 
 const sandbox = mkdtempSync(join(tmpdir(), 'agentarium-test-'))
-for (const k of Object.keys(process.env)) if (k.startsWith('AGENTARIUM_')) delete process.env[k]
+const ours = (k: string) => k.startsWith('AGENTARIUM_') || k.startsWith('TOKENOMICS_')
+for (const k of Object.keys(process.env)) if (ours(k)) delete process.env[k]
 process.env.HOME = sandbox
 process.env.USERPROFILE = sandbox
 process.env.AGENTARIUM_HOME = join(sandbox, '.agentarium')
@@ -75,7 +77,7 @@ export class TempEnv {
 
   env(extra: Env = {}): Env {
     const e: Env = { ...process.env }
-    for (const k of Object.keys(e)) if (k.startsWith('AGENTARIUM_')) delete e[k]
+    for (const k of Object.keys(e)) if (ours(k)) delete e[k]
     return { ...e, HOME: this.home, USERPROFILE: this.home, AGENTARIUM_DB: this.db, ...extra }
   }
 

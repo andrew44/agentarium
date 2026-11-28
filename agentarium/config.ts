@@ -28,8 +28,12 @@ function loadSkillMap(path: string): Record<string, string> {
   return {}
 }
 
+/** The data folder: AGENTARIUM_HOME, else ~/.agentarium. Everything agentarium keeps lives here. */
+export const dataDir = (): string => process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium')
+
+/** till's database: AGENTARIUM_DB, else till.db in the data folder. */
 export function defaultDbPath(): string {
-  return process.env.AGENTARIUM_DB || join(homedir(), '.agentarium', 'till.db')
+  return process.env.AGENTARIUM_DB || join(dataDir(), 'till.db')
 }
 
 export type Settings = {

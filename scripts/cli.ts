@@ -53,6 +53,8 @@
  *   agentarium update             fetch the latest version and refresh everything
  *   agentarium uninstall [--purge]  remove it all (--purge also deletes your recorded data)
  *   agentarium setup              (re)do the setup the installer does; idempotent
+ *   agentarium import             bring a tokenomics install's history and settings over (--dry-run first;
+ *                                 setup does it by itself the first time)
  *
  * Setup does, for each assistant it finds on this computer:
  *   Claude Code  -> adds the plugin (skills + hooks + the desktop app's band) and the statusline
@@ -68,10 +70,12 @@ import { homedir, tmpdir } from 'node:os'
 import { basename, delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { defaultDbPath } from '../agentarium/config.ts'
 import { VERSION } from '../agentarium/index.ts'
 import { configFile, FILLED, PROFILES, resolve as resolveProfile } from '../agentarium/profile.ts'
 import * as statusline from './statusline.ts'
 import * as controller from './controller.ts'
+import * as importer from './import.ts'
 
 const HERE = import.meta.dirname
 const SELF = fileURLToPath(import.meta.url)
@@ -322,6 +326,14 @@ function setup(args: string[]): number {
       } else {
         say(`  ✓ ${name}: statusline installed`)
       }
+    }
+  }
+  // agentarium was tokenomics until 0.0.1: an install of it comes over once (its own files untouched)
+  if (importer.found() && !importer.imported()) {
+    try {
+      for (const line of importer.summary(importer.bringOver())) say(`  ${line}`)
+    } catch (e) {
+      say(`  ! tokenomics: couldn't bring its history over (${e instanceof Error ? e.message : e}). Try again with: agentarium import`)
     }
   }
   rememberNode()
@@ -663,8 +675,10 @@ function overview(): number {
   say(`  version      ${VERSION}`)
   for (const [cli, name] of [['claude', 'Claude Code'], ['copilot', 'Copilot CLI']]) say(`  ${name.padEnd(12)} ${has(cli) ? 'found' : 'not found'}`)
   script('statusline.ts', '--status')
-  const db = process.env.AGENTARIUM_DB || join(TK_HOME, 'till.db')
+  const db = defaultDbPath()
   say(`  data         ${existsSync(db) ? db : 'nothing recorded yet'}`)
+  if (statusline.tokenomicsPluginOn()) say('  tokenomics   still installed, so every prompt is checked twice: claude plugin uninstall tokenomics@tokenomics')
+  else if (importer.found() && !importer.imported()) say(`  tokenomics   its history is in ${importer.tokenomicsHome()}: agentarium import brings it over`)
   for (const line of controller.latencyLines(controller.latency(db))) say(line)
   say('')
   say('Commands: dashboard [--demo] · report · bang-for-buck · waistline · sherlock · taste-test · haggle · spring-clean · groundhog')
@@ -672,7 +686,7 @@ function overview(): number {
   say('          cold-snap · parrot · all-you-can-eat · fishingrod · cache-buster · too-many-cooks · diet sizes · colander')
   say('          receipt · dry-run · rate-my-prompt (judge)')
   say('          statusline · router (on · off · status · learn · eval) · profile · audit · doggybag · vscode')
-  say('          update · uninstall · setup')
+  say('          update · uninstall · setup · import')
   return 0
 }
 
@@ -764,6 +778,7 @@ export async function main(argv: string[]): Promise<number> {
     return script('pennywise.ts', ...rest)
   }
   if (cmd === 'doggybag') return script('doggybag.ts', 'write', ...rest)
+  if (cmd === 'import') return script('import.ts', ...rest)
   if (cmd === 'audit') return script('audit.ts', ...rest)
   if (cmd === 'copilot') return copilotCmd(rest)
   if (cmd === 'vscode') return vscodeCmd(rest)

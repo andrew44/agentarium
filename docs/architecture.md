@@ -123,6 +123,7 @@ agentarium/
 ├── install.sh / install.ps1        one-line installers (download, then run scripts/cli.ts setup)
 ├── scripts/
 │   ├── cli.ts                      the `agentarium` command: setup, update, uninstall, dashboard, report, vscode
+│   ├── import.ts                   brings a tokenomics install's history and settings over (`agentarium import`)
 │   ├── run.sh                      launcher every hook and skill uses: finds Node.js 22.18+ on any OS
 │   ├── till.ts                     the OPEX/CAPEX hook runner (calls the engine)
 │   ├── pennywise.ts                model router: complexity tiers; hook (subagent) or local proxy

@@ -174,7 +174,7 @@ Score thresholds go in `~/.agentarium/router.json` as `"thresholds": {"MEDIUM": 
 
 | Setting | Default | What it does |
 |---|---|---|
-| `AGENTARIUM_DB` | `~/.agentarium/till.db` | Where the database file lives. Point it at a shared location to collect several machines' data. |
+| `AGENTARIUM_DB` | `till.db` in `AGENTARIUM_HOME` | Where the database file lives. Point it at a shared location to collect several machines' data. |
 | `AGENTARIUM_STORE_PROMPT` | off | Set to `1` to keep a 200-character excerpt of each prompt. Off by default for privacy. |
 | `AGENTARIUM_SKILL_MAP` | none | Path to a JSON file that tells till which side a skill belongs to, e.g. `{"our-grafana-skill": "opex", "pdf": "capex"}`. This always wins over the built-in guessing. |
 
@@ -207,7 +207,8 @@ Score thresholds go in `~/.agentarium/router.json` as `"thresholds": {"MEDIUM": 
 | `AGENTARIUM_COPILOT_MULTIPLIER` | `1` | Premium requests one prompt costs on a Copilot model that `AGENTARIUM_COPILOT_MULTIPLIERS` doesn't name, or when the model isn't known. |
 | `AGENTARIUM_COPILOT_MULTIPLIERS` | none | Per-model multipliers, e.g. `claude-haiku-4.5=0.33,gpt-4.1=0,claude-opus=10`. A key matches any model id that contains it; the longest wins. Take the figures from GitHub's page for your plan. Under Copilot Fusion the key for the model it routed to applies. |
 | `AGENTARIUM_COPILOT_HOME` | `COPILOT_HOME`, else `~/.copilot` | Where Copilot CLI keeps `session-state/` and `config.json`, read for the session's model. |
-| `AGENTARIUM_HOME` | `~/.agentarium` | Where the statusline, router, plan, provider and profile settings (`config.json`) live. |
+| `TOKENOMICS_HOME`, `TOKENOMICS_DB` | `~/.tokenomics`, `spendlens.db` in it | Where `agentarium import` looks for a tokenomics install (from the shell or Claude Code's `settings.json` `"env"`). `--from` wins. |
+| `AGENTARIUM_HOME` | `~/.agentarium` | The data folder: the database (unless `AGENTARIUM_DB` says otherwise) and the statusline, router, plan, provider and profile settings (`config.json`). |
 
 ---
 

@@ -71,6 +71,8 @@ const HOME = homedir()
 const CFG_DIR = process.env.AGENTARIUM_HOME || join(HOME, '.agentarium')
 const CFG_FILE = join(CFG_DIR, 'statusline.json')
 const STATE_FILE = join(CFG_DIR, 'statusline-state.json')
+/** till's database: AGENTARIUM_DB, else till.db in the data folder (as agentarium/config.ts has it). */
+const dbPath = () => process.env.AGENTARIUM_DB || join(CFG_DIR, 'till.db')
 const COPY_NAME = 'statusline.mts'
 const SELF = fileURLToPath(import.meta.url)
 const HERE = dirname(SELF)
@@ -791,57 +793,29 @@ export function workingDaysLeft(d: Date, cal: Calendar): number {
 
 /** USD spent on days in [from, to) from till's database (read-only); null if it can't be read. */
 export function rangeCostUsd(from: string, to: string): number | null {
-  const path = process.env.AGENTARIUM_DB || join(HOME, '.agentarium', 'till.db')
-  if (!isFile(path)) return null
-  const emit = process.emitWarning
-  try {
-    process.emitWarning = (() => {}) as typeof process.emitWarning
-    const { DatabaseSync } = process.getBuiltinModule('node:sqlite') as typeof import('node:sqlite')
-    const db = new DatabaseSync(path, { readOnly: true })
-    try {
-      const row = db.prepare('SELECT COALESCE(SUM(usd),0) AS usd FROM cost_events WHERE day>=? AND day<?').get(from, to) as Obj | undefined
-      return Number(row?.usd) || 0
-    } finally {
-      db.close()
-    }
-  } catch {
-    return null
-  } finally {
-    process.emitWarning = emit
-  }
+  return readDb((db) => {
+    const row = db.prepare('SELECT COALESCE(SUM(usd),0) AS usd FROM cost_events WHERE day>=? AND day<?').get(from, to) as Obj | undefined
+    return Number(row?.usd) || 0
+  }, null)
 }
 
 /** USD spent today across sessions, from till's database (read-only); null if it can't be read. */
 export function dayCostUsd(): number | null {
-  const path = process.env.AGENTARIUM_DB || join(HOME, '.agentarium', 'till.db')
-  if (!isFile(path)) return null
-  const emit = process.emitWarning
-  try {
-    process.emitWarning = (() => {}) as typeof process.emitWarning        // node:sqlite's "experimental" notice
-    const { DatabaseSync } = process.getBuiltinModule('node:sqlite') as typeof import('node:sqlite')
-    const db = new DatabaseSync(path, { readOnly: true })
-    try {
-      const d = new Date()
-      const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      const row = db.prepare('SELECT COALESCE(SUM(usd),0) AS usd FROM cost_events WHERE day=?').get(day) as Obj | undefined
-      return Number(row?.usd) || 0
-    } finally {
-      db.close()
-    }
-  } catch {
-    return null
-  } finally {
-    process.emitWarning = emit
-  }
+  const d = new Date()
+  const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return readDb((db) => {
+    const row = db.prepare('SELECT COALESCE(SUM(usd),0) AS usd FROM cost_events WHERE day=?').get(day) as Obj | undefined
+    return Number(row?.usd) || 0
+  }, null)
 }
 
 /** Run `fn` on till's database, read-only and quiet; `fallback` when there's nothing to read. */
 function readDb<T>(fn: (db: import('node:sqlite').DatabaseSync) => T, fallback: T): T {
-  const path = process.env.AGENTARIUM_DB || join(HOME, '.agentarium', 'till.db')
+  const path = dbPath()
   if (!isFile(path)) return fallback
   const emit = process.emitWarning
   try {
-    process.emitWarning = (() => {}) as typeof process.emitWarning
+    process.emitWarning = (() => {}) as typeof process.emitWarning        // node:sqlite's "experimental" notice
     const { DatabaseSync } = process.getBuiltinModule('node:sqlite') as typeof import('node:sqlite')
     const db = new DatabaseSync(path, { readOnly: true })
     try {
@@ -1623,6 +1597,65 @@ const statuslineMode = () => (process.env.AGENTARIUM_STATUSLINE ?? '').trim().to
 const HINT_FILE = join(CFG_DIR, 'statusline-offered')
 const quiet = () => {}
 
+// agentarium was tokenomics until 0.0.1. A status line still running tokenomics's copy is an older
+// install of this one, so migrate() moves it over. tokenomics's own files are left as they are.
+const TOKENOMICS_DIR = process.env.TOKENOMICS_HOME || join(HOME, '.tokenomics')
+const TOLD_FILE = join(CFG_DIR, 'tokenomics-told')
+/** Written by scripts/import.ts once tokenomics's history is in. */
+export const IMPORTED_FILE = join(CFG_DIR, 'tokenomics-import.json')
+
+/** A status line that runs tokenomics's copy of this script. */
+export const isTokenomics = (command: string | null): boolean =>
+  Boolean(command) && command!.includes(TOKENOMICS_DIR) && command!.includes(COPY_NAME)
+
+/** Point a status line that still runs tokenomics's copy at ours. The CLIs moved; never throws. */
+export function migrate(): string[] {
+  const moved: string[] = []
+  for (const t of ['claude', 'copilot']) {
+    try {
+      if (isTokenomics(statusLine(t))) {
+        install(t, { out: quiet })
+        moved.push(t)
+      }
+    } catch {
+      // never in the way
+    }
+  }
+  return moved
+}
+
+/** Claude Code still has the tokenomics plugin on, so its hooks run beside these: every prompt and
+ *  tool call checked twice, and two notices for one problem. */
+export function tokenomicsPluginOn(): boolean {
+  try {
+    const on = (readJson(settingsPath('claude')) as Obj).enabledPlugins
+    return isObj(on) && Object.entries(on).some(([k, v]) => k.startsWith('tokenomics@') && v === true)
+  } catch {
+    return false
+  }
+}
+
+/** What's left to do after a move from tokenomics, said once (null: nothing, or said already). */
+function tokenomicsNote(moved: string[]): string | null {
+  if (existsSync(TOLD_FILE)) return null
+  const parts: string[] = []
+  if (moved.length) parts.push("The statusline is agentarium's now.")
+  if (tokenomicsPluginOn()) parts.push('tokenomics is still installed, so every prompt is checked twice: /plugin uninstall tokenomics@tokenomics removes it.')
+  if (isFile(join(TOKENOMICS_DIR, 'spendlens.db')) && !existsSync(IMPORTED_FILE)) {
+    const where = TOKENOMICS_DIR.startsWith(HOME) ? `~${TOKENOMICS_DIR.slice(HOME.length)}` : TOKENOMICS_DIR
+    parts.push(`tokenomics's history is in ${where}: \`agentarium import\` brings it over and leaves tokenomics's files as ` +
+      `they are (without that command: sh "${join(HERE, 'run.sh')}" import.ts).`)
+  }
+  if (!parts.length) return null
+  try {
+    mkdirSync(CFG_DIR, { recursive: true })
+    writeFileSync(TOLD_FILE, new Date().toISOString(), 'utf8')
+  } catch {
+    // said every session until it can be noted: still better than never
+  }
+  return `agentarium, moving from tokenomics: ${parts.join(' ')}`
+}
+
 /** The command the CLIs run: this Node.js, and the installed copy. */
 function command(): string {
   return `"${process.execPath}" --disable-warning=ExperimentalWarning "${installedCopy()}"`
@@ -1633,11 +1666,14 @@ export function install(target: string, opts: { remove?: boolean, keepExisting?:
   let targets = target === 'both' ? ['claude', 'copilot'] : [target]
   for (const t of targets) settingsPath(t)                   // validate before touching anything
   if (opts.keepExisting) {                                   // never replace someone else's status line
-    for (const t of targets) {
-      const other = statusLine(t)
-      if (other && !isOurs(other)) out(`Skipped ${t}: it already has a status line (${other}). Run --install ${t} to replace it.`)
+    const theirs = (t: string) => {                         // tokenomics's copy is an older one of ours
+      const line = statusLine(t)
+      return line !== null && !isOurs(line) && !isTokenomics(line)
     }
-    targets = targets.filter((t) => !(statusLine(t) && !isOurs(statusLine(t))))
+    for (const t of targets) {
+      if (theirs(t)) out(`Skipped ${t}: it already has a status line (${statusLine(t)}). Run --install ${t} to replace it.`)
+    }
+    targets = targets.filter((t) => !theirs(t))
     if (!targets.length) return
   }
   const dest = opts.remove ? installedCopy() : copyFiles()
@@ -1669,6 +1705,7 @@ function status(): number {
     const cmd = statusLine(t)
     const where = settingsPath(t)
     if (isOurs(cmd)) lines.push(`${t} statusline: installed (${where})`)
+    else if (isTokenomics(cmd)) lines.push(`${t} statusline: tokenomics's copy (agentarium's replaces it at the next session start)`)
     else if (cmd) lines.push(`${t} statusline: another status line is set in ${where}: ${cmd}`)
     else lines.push(`${t} statusline: not installed`)
   }
@@ -1714,31 +1751,31 @@ function outOfDate(): boolean {
  *  * Someone else's status line: leave it alone. */
 function sync(): number {
   readPayload()                                             // the hook payload; not needed
+  const said: string[] = []
   try {
+    const note = tokenomicsNote(migrate())                  // a statusline still on tokenomics's copy moves first
+    if (note) said.push(note)
     const mode = statuslineMode()
     const cmd = statusLine('claude')
     if (isOurs(cmd) || isOurs(statusLine('copilot'))) {
       if (outOfDate()) copyFiles()
-      return 0
-    }
-    if (cmd || mode === 'off') return 0
-    let msg: string
-    if (!['ask', 'tip', 'manual'].includes(mode)) {          // default (unset / auto): install it
+    } else if (cmd || mode === 'off') {
+      // someone else's status line, or none wanted
+    } else if (!['ask', 'tip', 'manual'].includes(mode)) {  // default (unset / auto): install it
       install('claude', { out: quiet })
       const where = inApp() ? 'it shows at the bottom of Claude Code in a terminal; here, in the band above the prompt box'
         : 'restart Claude Code to see it'
-      msg = `agentarium: statusline installed; ${where}. Tip: to get agentarium updates automatically, ` +
-        'open /plugin > Marketplaces > agentarium and turn on auto-update.'
-    } else {
-      if (existsSync(HINT_FILE)) return 0
+      said.unshift(`agentarium: statusline installed; ${where}. Tip: to get agentarium updates automatically, ` +
+        'open /plugin > Marketplaces > agentarium and turn on auto-update.')
+    } else if (!existsSync(HINT_FILE)) {
       mkdirSync(CFG_DIR, { recursive: true })
       writeFileSync(HINT_FILE, new Date().toISOString(), 'utf8')
-      msg = 'agentarium: want the live cost and cache statusline? Run /agentarium:statusline. This tip shows once.'
+      said.unshift('agentarium: want the live cost and cache statusline? Run /agentarium:statusline. This tip shows once.')
     }
-    process.stdout.write(JSON.stringify({ systemMessage: msg }))
   } catch {
     // never in the way
   }
+  if (said.length) process.stdout.write(JSON.stringify({ systemMessage: said.join('\n') }))
   return 0
 }
 

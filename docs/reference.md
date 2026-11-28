@@ -1171,7 +1171,7 @@ Node.js 22.18+, nothing else. With the plugin, in Claude Code:
 /agentarium:statusline uninstall       # to remove
 ```
 
-The plugin switches it on for you at the start of your next session (so does the [one-line installer](installation.md#the-one-line-installer)), as long as no other status line is set (`AGENTARIUM_STATUSLINE=ask` makes it ask first, `off` leaves it off). The plugin keeps the installed copy up to date at each session start. From a terminal:
+The plugin switches it on for you at the start of your next session (so does the [one-line installer](installation.md#the-one-line-installer)), as long as no other status line is set (`AGENTARIUM_STATUSLINE=ask` makes it ask first, `off` leaves it off). The plugin keeps the installed copy up to date at each session start. A status line that still runs tokenomics's copy counts as an older install of this one: the first session start moves it to agentarium's and says, once, what else is left of the move ([Moving from tokenomics](installation.md#moving-from-tokenomics)). From a terminal:
 
 ```bash
 agentarium statusline --install claude     # or: copilot, both

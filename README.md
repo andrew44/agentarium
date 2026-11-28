@@ -190,6 +190,10 @@ After the one-line installer, run `agentarium vscode` in a project folder. It wr
 Plugins can't be installed on the web. Commit the coach to your repo instead: `npx skills@latest add andrew44/agentarium --skill coach --copy`
 </details>
 
+### Moving from tokenomics
+
+agentarium is what tokenomics became. Install it as above, then `agentarium import` brings your history and settings over from `~/.tokenomics` (the one-line installer does it for you) and leaves tokenomics's files as they are. Then remove tokenomics (`/plugin uninstall tokenomics@tokenomics`), or both run every hook. [What comes over, and what changed name →](docs/installation.md#moving-from-tokenomics)
+
 Full details, updating and removing: **[Installation guide](docs/installation.md)**.
 
 ---
