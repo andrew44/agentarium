@@ -609,6 +609,7 @@ flowchart LR
 ## 🔒 Private by default
 
 - **Local only.** Everything is written to one SQLite file at `~/.agentarium/till.db`. The dashboard listens on `127.0.0.1` only.
+- **Kept through every update.** Updates and re-installs never replace or delete `till.db`, and only ever add to it. The first time a new version opens it, a copy of it as it was goes into `~/.agentarium/backups/` (the newest 3, `AGENTARIUM_BACKUPS`).
 - **No prompt text stored** unless you opt in (`AGENTARIUM_STORE_PROMPT=1`).
 - **Strained output kept for a day, for the agent only.** colander saves the full output of a command it strained to `~/.agentarium/colander/` (readable only by you, the newest 30, deleted after 24 hours) so the agent can grep it. The database gets the program's name and token counts, never the command or its output.
 - **Nothing leaves your machine** unless you switch on the optional [AI classifier](docs/reference.md#optional-let-an-ai-model-decide), which redacts first and works with local models.

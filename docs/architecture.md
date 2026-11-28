@@ -104,7 +104,8 @@ agentarium/
 ├── agentarium/
 │   ├── engine/                     shared logic: classifier.ts, llm.ts, store.ts, session.ts, evidence.ts,
 │   │                               pricing.ts, currency.ts, diet.ts, colander.ts (what to keep of a
-│   │                               command's output), budget.ts, events.ts, and for the
+│   │                               command's output), budget.ts, events.ts, backup.ts (a copy of the
+│   │                               database before a new version first opens it), and for the
 │   │                               value helpers: trace.ts (what the agent did, from a transcript),
 │   │                               outcomes.ts, ledger.ts, forensics.ts, loops.ts, contract.ts,
 │   │                               ballast.ts (task switches, carry cost), verbosity.ts (output split),

@@ -230,6 +230,12 @@ function writeIfChanged(path: string, text: string): void {
 /** An app folder this installer made: replacing or deleting anything else would lose someone's files. */
 export const isApp = (dir: string) => isFile(join(dir, 'scripts', 'cli.ts'))
 
+/** True when till's database (AGENTARIUM_DB) sits inside `dir`, which an update or uninstall replaces. */
+export function holdsDb(dir: string, db = defaultDbPath()): boolean {
+  const d = real(dir)
+  return real(db).startsWith(d.endsWith(sep) ? d : d + sep)
+}
+
 /** A folder `--purge` must never delete, whatever AGENTARIUM_HOME says: the home folder, one that
  *  holds it, or the root of a drive. */
 export function unsafeToPurge(dir: string, home = HOME): boolean {
@@ -391,6 +397,7 @@ class CliError extends Error {}
  *  an agentarium app is ever replaced. */
 export async function download(dest: string, url = `https://github.com/${REPO}/archive/${REF}.tar.gz`): Promise<void> {
   if (existsSync(dest) && !isApp(dest)) throw new CliError(`${dest} exists but isn't an agentarium install; move it out of the way and try again.`)
+  if (holdsDb(dest)) throw new CliError(`AGENTARIUM_DB puts the database inside ${dest}, which an update replaces. Move it out first (and point AGENTARIUM_DB at the new place); nothing was changed.`)
   mkdirSync(dirname(dest), { recursive: true })
   for (const f of readdirSync(dirname(dest))) {             // what an earlier run couldn't delete (Windows)
     if (f.startsWith(`${basename(dest)}.old-`) || f.startsWith('.download-')) rmSync(join(dirname(dest), f), { recursive: true, force: true })
@@ -474,7 +481,8 @@ function uninstall(args: string[]): number {
     say(`Deleted ${TK_HOME} (all recorded data).`)
     return 0
   }
-  if (isApp(APP_DIR)) rmSync(APP_DIR, { recursive: true, force: true })
+  if (holdsDb(APP_DIR)) say(`Left ${APP_DIR} alone: AGENTARIUM_DB puts the recorded data inside it.`)
+  else if (isApp(APP_DIR)) rmSync(APP_DIR, { recursive: true, force: true })
   else if (existsSync(APP_DIR)) say(`Left ${APP_DIR} alone: it isn't an agentarium install.`)
   const runtime = join(TK_HOME, 'runtime')                 // the private Node.js, if any
   if (!isDir(join(runtime, 'node'))) {

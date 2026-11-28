@@ -5,9 +5,13 @@
  * agentarium was called tokenomics until 0.0.1. This copies what tokenomics recorded and was told
  * into agentarium's data folder, and leaves tokenomics's own files exactly as they are:
  *
- *   spendlens.db -> till.db  every session, cost and guard event: a consistent copy, safe while
- *                            tokenomics is still running. Only into an agentarium that has recorded
- *                            nothing yet; --force replaces what it has (kept as till.db.bak).
+ *   spendlens.db -> till.db  every session, cost and guard event, added to till.db in one
+ *                            transaction: the file is never replaced, and nothing in it is changed or
+ *                            removed (a session agentarium has already keeps agentarium's row). Read
+ *                            from a consistent copy, so it is safe while tokenomics is running. The
+ *                            first time, the history goes in ahead of what agentarium has recorded
+ *                            since; a later run adds only what tokenomics recorded after the last.
+ *                            A copy of till.db as it was is kept in backups/ first.
  *   config.json              the profile, per-folder profiles and "settings" (TOKENOMICS_ keys become
  *                            AGENTARIUM_ ones), merged key by key: a value agentarium has is kept
  *   statusline.json, router.json, providers.json, plans.json, pennywise_learned.json, pennywise_eval.json
@@ -20,16 +24,17 @@
  * `agentarium setup` runs it by itself when agentarium has recorded nothing yet.
  *
  * Usage:
- *   import.ts [--from DIR] [--force] [--dry-run] [--json]
+ *   import.ts [--from DIR] [--dry-run] [--json]
  *
  * Settings: TOKENOMICS_HOME (where tokenomics kept its data, default ~/.tokenomics; --from wins),
  * AGENTARIUM_HOME and AGENTARIUM_DB (where it goes).
  */
-import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 
 import { dataDir, defaultDbPath } from '../agentarium/config.ts'
+import { snapshot, stamp } from '../agentarium/engine/backup.ts'
 import { Db } from '../agentarium/engine/db.ts'
 import { connect } from '../agentarium/engine/store.ts'
 import { argValue, errText, isMain, isObj, now, type Obj } from '../agentarium/util.ts'
@@ -62,8 +67,8 @@ export type Result = {
   from: string
   /** false: no tokenomics install there, and nothing was done. */
   found: boolean
-  /** kept: agentarium has sessions of its own (or brought these over already: `before`). */
-  db: { action: 'copied' | 'replaced' | 'kept' | 'none', sessions: number, kept: number, path: string, before: string | null }
+  /** merged: rows were added; current: nothing new since the last import; none: no history to bring. */
+  db: { action: 'merged' | 'current' | 'none', sessions: number, added: number, rows: number, already: number, path: string, backup: string | null }
   /** config.json and the MERGED files: what each gained. */
   files: { name: string, keys: number, created: boolean }[]
   /** TOKENOMICS_* settings carried into config.json, as config keys ("budget_daily"). */
@@ -137,31 +142,103 @@ export function envSettings(env: NodeJS.ProcessEnv = process.env, claudeSettings
   return out
 }
 
-/** Copy tokenomics's database to `to` in one consistent snapshot, then bring it up to date. */
-function copyDb(from: string, to: string): void {
-  mkdirSync(dirname(to), { recursive: true })
-  const tmp = `${to}.import`
+/** Read tokenomics's database through a consistent copy (VACUUM INTO from a read-only handle: safe
+ *  while tokenomics writes), with doggybag's table and the controller's first step renamed the way
+ *  agentarium calls them. The caller deletes the copy. */
+function readableCopy(from: string, tmp: string): void {
   rmSync(tmp, { force: true })
+  const src = new Db(from, { readOnly: true })
   try {
-    const src = new Db(from, { readOnly: true })
-    try {
-      src.exec(`VACUUM INTO '${tmp.replaceAll("'", "''")}'`)
-    } finally {
-      src.close()
+    src.exec(`VACUUM INTO '${tmp.replaceAll("'", "''")}'`)
+  } finally {
+    src.close()
+  }
+  const db = new Db(tmp)
+  try {
+    if (db.columns('handoff_events').size && !db.columns('doggybag_events').size) db.exec('ALTER TABLE handoff_events RENAME TO doggybag_events')
+    if (db.columns('controller_events').has('step')) db.run("UPDATE controller_events SET step='till' WHERE step='spendlens'")
+  } finally {
+    db.close()
+  }
+}
+
+const q = (name: string) => `"${name.replaceAll('"', '""')}"`
+
+/** Add table `t` of the attached `src` to main, inside the caller's transaction. Nothing in main is
+ *  changed but ids: on the first import, main's own rows move up to make room, so the older history
+ *  sits before them and "the latest" stays the latest. Returns the rows added. */
+function mergeTable(db: Db, t: string): number {
+  const srcCols = db.all(`PRAGMA src.table_info(${q(t)})`)
+  if (!db.all(`PRAGMA main.table_info(${q(t)})`).length) {
+    db.exec(String(db.get("SELECT sql FROM src.sqlite_master WHERE type='table' AND name=?", t)!.sql))
+  }
+  const have = new Set(db.all(`PRAGMA main.table_info(${q(t)})`).map((c) => String(c.name)))
+  for (const c of srcCols) if (!have.has(c.name)) db.exec(`ALTER TABLE main.${q(t)} ADD COLUMN ${q(c.name)} ${c.type || ''}`)
+  const cols = srcCols.map((c) => String(c.name))
+  const pk = srcCols.filter((c) => c.pk > 0)
+  const before = Number(db.get(`SELECT COUNT(*) AS n FROM main.${q(t)}`)!.n)
+  // a natural key (sessions, ledger, blinkers_scope ...): a row agentarium already has keeps its own
+  if (pk.length && !(pk.length === 1 && String(pk[0].type).toUpperCase() === 'INTEGER')) {
+    db.run(`INSERT OR IGNORE INTO main.${q(t)} (${cols.map(q).join(',')}) SELECT ${cols.map(q).join(',')} FROM src.${q(t)}`)
+    return Number(db.get(`SELECT COUNT(*) AS n FROM main.${q(t)}`)!.n) - before
+  }
+  // an event table, keyed by its row id
+  const name = pk.length ? String(pk[0].name) : 'rowid'
+  const id = pk.length ? q(name) : 'rowid'              // bare: a quoted "rowid" can read as a string
+  const rest = cols.filter((c) => c !== name).map(q).join(',')
+  const done = db.get('SELECT last_id FROM import_progress WHERE source=? AND tbl=?', 'tokenomics', t)
+  if (!done) {
+    const n = Number(db.get(`SELECT COUNT(*) AS n FROM src.${q(t)}`)!.n)
+    if (n && before) {                                   // two steps, so no id ever clashes on the way
+      db.run(`UPDATE main.${q(t)} SET ${id} = -${id}`)
+      db.run(`UPDATE main.${q(t)} SET ${id} = ? - ${id}`, n)
     }
-    const db = new Db(tmp)
+    db.run(`INSERT INTO main.${q(t)} (${id},${rest}) SELECT ROW_NUMBER() OVER (ORDER BY ${id}),${rest} FROM src.${q(t)}`)
+  } else {
+    db.run(`INSERT INTO main.${q(t)} (${rest}) SELECT ${rest} FROM src.${q(t)} WHERE ${id} > ? ORDER BY ${id}`, Number(done.last_id))
+  }
+  const last = db.get(`SELECT MAX(${id}) AS m FROM src.${q(t)}`)!.m
+  db.run('INSERT OR REPLACE INTO import_progress(source, tbl, last_id) VALUES(?,?,?)', 'tokenomics', t, Number(last ?? 0))
+  // AUTOINCREMENT carries on past the highest id now in the table, not the one before the move
+  if (db.get("SELECT 1 AS x FROM main.sqlite_master WHERE name='sqlite_sequence'")) {
+    db.run(`UPDATE main.sqlite_sequence SET seq = (SELECT MAX(${id}) FROM main.${q(t)}) WHERE name = ? AND seq < (SELECT MAX(${id}) FROM main.${q(t)})`, t)
+  }
+  return Number(db.get(`SELECT COUNT(*) AS n FROM main.${q(t)}`)!.n) - before
+}
+
+/** Bring tokenomics's history into till.db (see the top of this file). */
+function mergeDb(from: string, to: string, r: Result): void {
+  const tmp = `${to}.tokenomics.${process.pid}.tmp`
+  mkdirSync(dirname(to), { recursive: true })
+  readableCopy(from, tmp)
+  try {
+    const db = connect(to)                          // the live file: created if need be, never replaced
     try {
-      // doggybag's table had the name it had before it was doggybag; the controller's first step was spendlens
-      if (db.columns('handoff_events').size && !db.columns('doggybag_events').size) db.exec('ALTER TABLE handoff_events RENAME TO doggybag_events')
-      if (db.columns('controller_events').has('step')) db.run("UPDATE controller_events SET step='till' WHERE step='spendlens'")
+      if (r.db.already) r.db.backup = snapshot(db, to, `before-import-${stamp()}`)
+      db.exec('CREATE TABLE IF NOT EXISTS import_progress(source TEXT, tbl TEXT, last_id INTEGER, PRIMARY KEY(source, tbl))')
+      db.run('ATTACH DATABASE ? AS src', tmp)
+      try {
+        const tables = db.all("SELECT name FROM src.sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").map((x) => String(x.name))
+        db.raw.exec('BEGIN IMMEDIATE')
+        try {
+          for (const t of tables) {
+            const added = mergeTable(db, t)
+            r.db.rows += added
+            if (t === 'sessions') r.db.added = added
+          }
+          db.raw.exec('COMMIT')
+        } catch (e) {
+          db.raw.exec('ROLLBACK')
+          throw e
+        }
+      } finally {
+        db.run('DETACH DATABASE src')
+      }
     } finally {
       db.close()
     }
-    connect(tmp).close()                           // any columns tokenomics's schema predates
-    renameSync(tmp, to)
-  } catch (e) {
-    rmSync(tmp, { force: true })                   // a half-made copy never stays behind
-    throw e
+  } finally {
+    rmSync(tmp, { force: true })
   }
 }
 
@@ -172,14 +249,12 @@ export const found = (from = tokenomicsHome()): boolean =>
 /** Brought over already: scripts/import.ts left its record. */
 export const imported = (): boolean => existsSync(statusline.IMPORTED_FILE)
 
-export function bringOver(opts: { from?: string, force?: boolean, dryRun?: boolean } = {}): Result {
+export function bringOver(opts: { from?: string, dryRun?: boolean } = {}): Result {
   const from = opts.from ?? tokenomicsHome()
   const to = dataDir()
   const dbFrom = (!opts.from && tokenomicsEnv('TOKENOMICS_DB')) || join(from, 'spendlens.db')
   const dbTo = defaultDbPath()
-  const before = readObj(statusline.IMPORTED_FILE)
-  const r: Result = { from, found: false, db: { action: 'none', sessions: 0, kept: 0, path: dbTo,
-    before: before && ['copied', 'replaced'].includes(before.db) ? String(before.at ?? '') : null }, files: [], settings: [],
+  const r: Result = { from, found: false, db: { action: 'none', sessions: 0, added: 0, rows: 0, already: 0, path: dbTo, backup: null }, files: [], settings: [],
     statusline: [], tokenomicsPluginOn: statusline.tokenomicsPluginOn(), dryRun: Boolean(opts.dryRun) }
   r.found = existsSync(dbFrom) || found(from)
   if (!r.found) return r
@@ -187,11 +262,12 @@ export function bringOver(opts: { from?: string, force?: boolean, dryRun?: boole
   // the history
   if (existsSync(dbFrom)) {
     r.db.sessions = count(dbFrom)
-    r.db.kept = count(dbTo)
-    r.db.action = !existsSync(dbTo) ? 'copied' : r.db.kept === 0 || opts.force ? 'replaced' : 'kept'
-    if (!opts.dryRun && r.db.action !== 'kept') {
-      if (existsSync(dbTo)) copyFileSync(dbTo, `${dbTo}.bak`)
-      copyDb(dbFrom, dbTo)
+    r.db.already = count(dbTo)
+    if (opts.dryRun) {
+      r.db.action = 'merged'
+    } else {
+      mergeDb(dbFrom, dbTo, r)
+      r.db.action = r.db.rows || !existsSync(statusline.IMPORTED_FILE) ? 'merged' : 'current'
     }
   }
 
@@ -242,9 +318,9 @@ export function bringOver(opts: { from?: string, force?: boolean, dryRun?: boole
     r.statusline = ['claude', 'copilot'].filter((t) => statusline.isTokenomics(statusline.statusLine(t)))
   } else {
     r.statusline = statusline.migrate()
-    if (r.db.action !== 'kept' || !r.db.before) {         // a re-run that changed nothing keeps the first record
+    if (r.db.action !== 'current') {                         // a re-run that added nothing keeps the first record
       mkdirSync(dirname(statusline.IMPORTED_FILE), { recursive: true })
-      writeFileSync(statusline.IMPORTED_FILE, JSON.stringify({ from, at: now(), sessions: r.db.sessions, db: r.db.action }) + '\n')
+      writeFileSync(statusline.IMPORTED_FILE, JSON.stringify({ from, at: now(), sessions: r.db.sessions, added: r.db.added }) + '\n')
     }
   }
   return r
@@ -253,16 +329,17 @@ export function bringOver(opts: { from?: string, force?: boolean, dryRun?: boole
 /** What happened, in words. */
 export function summary(r: Result): string[] {
   if (!r.found) return [`No tokenomics install in ${r.from}: nothing to bring over.`]
-  const changed = ['copied', 'replaced'].includes(r.db.action) || r.files.length > 0 || r.statusline.length > 0
+  const changed = r.db.action === 'merged' || r.files.length > 0 || r.statusline.length > 0
   const L = [changed ? `${r.dryRun ? 'Would bring' : 'Brought'} over from ${r.from} (its own files are left as they are):`
     : `Nothing new to bring over from ${r.from}:`]
   const n = (k: number, one: string) => `${k} ${one}${k === 1 ? '' : 's'}`
-  if (r.db.action === 'kept' && r.db.before) {
-    L.push(`  · history: brought over already (${r.db.before.slice(0, 10)}); --force copies tokenomics's ${n(r.db.sessions, 'session')} again`)
-  } else if (r.db.action === 'kept') {
-    L.push(`  · history: kept agentarium's own ${n(r.db.kept, 'session')}; --force replaces them with tokenomics's ${n(r.db.sessions, 'session')}`)
-  } else if (r.db.action !== 'none') {
-    L.push(`  ✓ history: ${n(r.db.sessions, 'session')}, into ${r.db.path}${r.db.action === 'replaced' && r.db.kept ? ` (agentarium's ${n(r.db.kept, 'session')} kept in ${basename(r.db.path)}.bak)` : ''}`)
+  if (r.db.action === 'current') {
+    L.push(`  · history: nothing new since the last import (${n(r.db.sessions, 'session')} in ${r.db.path})`)
+  } else if (r.db.action === 'merged' && r.dryRun) {
+    L.push(`  ✓ history: ${n(r.db.sessions, 'session')}, added to ${r.db.path}${r.db.already ? `, beside agentarium's own ${n(r.db.already, 'session')}` : ''}`)
+  } else if (r.db.action === 'merged') {
+    L.push(`  ✓ history: ${r.db.added || !r.db.rows ? n(r.db.added, 'session') : n(r.db.rows, 'record')} added to ${r.db.path}${r.db.already ? ` (agentarium's own ${n(r.db.already, 'session')} kept; ` +
+      `a copy from before is in ${r.db.backup ? basename(dirname(r.db.backup)) + '/' + basename(r.db.backup) : 'backups/'})` : ''}`)
   }
   for (const f of r.files) L.push(`  ✓ ${f.name}: ${n(f.keys, 'value')}${f.created ? '' : ' added, yours kept'}`)
   if (r.settings.length) L.push(`  ✓ settings from your environment: ${r.settings.join(', ')}, into config.json (agentarium doesn't read TOKENOMICS_ variables)`)
@@ -274,7 +351,7 @@ export function summary(r: Result): string[] {
 
 export function main(argv: string[] = process.argv.slice(2)): number {
   try {
-    const r = bringOver({ from: argValue(argv, '--from') ?? undefined, force: argv.includes('--force'), dryRun: argv.includes('--dry-run') })
+    const r = bringOver({ from: argValue(argv, '--from') ?? undefined, dryRun: argv.includes('--dry-run') })
     process.stdout.write(argv.includes('--json') ? JSON.stringify(r, null, 2) + '\n' : summary(r).join('\n') + '\n')
     return 0
   } catch (e) {

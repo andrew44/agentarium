@@ -6,6 +6,7 @@
  * platform charges for, and token columns are NULL (not 0) where the platform reports none.
  */
 import { now, today } from '../util.ts'
+import { guardUpgrade } from './backup.ts'
 import type { Classification } from './classifier.ts'
 import { Db, type Row } from './db.ts'
 import { totalTokens, type TokenUsage } from './evidence.ts'
@@ -32,6 +33,7 @@ export const SESSION_COLUMNS: [string, string][] = [
 
 export function connect(dbPath: string): Db {
   const db = new Db(dbPath)
+  guardUpgrade(db, dbPath)             // a new version keeps a copy before it changes anything
   db.transaction(() => migrate(db))
   return db
 }

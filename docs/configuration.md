@@ -174,7 +174,8 @@ Score thresholds go in `~/.agentarium/router.json` as `"thresholds": {"MEDIUM": 
 
 | Setting | Default | What it does |
 |---|---|---|
-| `AGENTARIUM_DB` | `till.db` in `AGENTARIUM_HOME` | Where the database file lives. Point it at a shared location to collect several machines' data. |
+| `AGENTARIUM_DB` | `till.db` in `AGENTARIUM_HOME` | Where the database file lives. Point it at a shared location to collect several machines' data. Keep it outside `~/.agentarium/app`: an update replaces that folder, so `agentarium update` refuses while the database is in it. |
+| `AGENTARIUM_BACKUPS` | `3` | How many copies to keep of the database as each earlier version left it. The first time a new version opens `till.db` it saves one, before changing anything, as `backups/till-before-<version>-<day>.db` beside the database. `0` keeps none. Copies made before an import are never deleted. |
 | `AGENTARIUM_STORE_PROMPT` | off | Set to `1` to keep a 200-character excerpt of each prompt. Off by default for privacy. |
 | `AGENTARIUM_SKILL_MAP` | none | Path to a JSON file that tells till which side a skill belongs to, e.g. `{"our-grafana-skill": "opex", "pdf": "capex"}`. This always wins over the built-in guessing. |
 

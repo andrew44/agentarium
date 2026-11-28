@@ -1,7 +1,7 @@
 /** Moving from tokenomics: `agentarium import` (scripts/import.ts) and the status line hand-over. */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test } from 'node:test'
 
@@ -107,24 +107,53 @@ describe('agentarium import', () => {
     const record = readFileSync(join(ours, 'tokenomics-import.json'), 'utf8')
     const again = run('import.ts', [])
     assert.ok(again.startsWith('Nothing new to bring over'), again)
-    assert.ok(again.includes('brought over already'), again)
+    assert.ok(again.includes('nothing new since the last import'), again)
     assert.equal(readFileSync(join(ours, 'tokenomics-import.json'), 'utf8'), record)
   })
 
-  test("agentarium's own history is kept, unless --force (then it is kept as till.db.bak)", (c) => {
-    const { ours, env, run, rows } = setup(c, { plugin: false })
-    // agentarium recorded a session of its own first
+  test("agentarium's own history stays: tokenomics's goes in beside it, oldest first, and the file is never replaced", (c) => {
+    const { tk, ours, env, run, rows } = setup(c, { plugin: false })
+    // agentarium recorded a session of its own first: a session row and its cost and prompt events
     const p = runScript('till.ts', ['prompt', 'claude-code'], { input: JSON.stringify({ session_id: 'mine', cwd: '/x', prompt: 'fix the login bug' }), env })
     assert.equal(p.status, 0, p.stderr)
+    const db = join(ours, 'till.db')
+    const inode = statSync(db).ino
+    const mine = rows("SELECT * FROM prompt_events WHERE session_id='mine'")
+    const theirs = (sql: string) => {
+      const d = new Db(join(tk, 'spendlens.db'), { readOnly: true })
+      try {
+        return d.all(sql)
+      } finally {
+        d.close()
+      }
+    }
+    const sessions = Number(theirs('SELECT COUNT(*) AS n FROM sessions')[0].n)
+    const events = theirs('SELECT session_id, ts FROM prompt_events ORDER BY id')
 
     const out = run('import.ts', [])
-    assert.ok(out.includes("kept agentarium's own 1 session"), out)
-    assert.deepEqual(rows('SELECT session_id FROM sessions').map((r) => r.session_id), ['mine'])
+    assert.ok(out.includes(`history: ${sessions} sessions added`), out)
+    assert.ok(out.includes("agentarium's own 1 session kept"), out)
+    assert.equal(statSync(db).ino, inode, 'the same file: added to, never replaced')
+    assert.equal(Number(rows('SELECT COUNT(*) AS n FROM sessions')[0].n), sessions + 1)
+    // agentarium's own rows are all there, unchanged but for their ids, and still the newest
+    const after = rows("SELECT * FROM prompt_events WHERE session_id='mine'")
+    assert.deepEqual(after.map(({ id: _, ...r }) => r), mine.map(({ id: _, ...r }) => r))
+    assert.equal(Number(rows('SELECT MAX(id) AS m FROM prompt_events')[0].m), Number(after.at(-1)!.id))
+    // tokenomics's events in their own order, ahead of agentarium's
+    assert.deepEqual(rows(`SELECT session_id, ts FROM prompt_events WHERE session_id != 'mine' ORDER BY id`).map((r) => ({ ...r })),
+      events.map((r) => ({ ...r })))
+    // a copy of till.db as it was before
+    const backups = readdirSync(join(ours, 'backups'))
+    assert.ok(backups.some((f) => /^till-before-import-\d{8}-\d{6}\.db$/.test(f)), backups.join(' '))
+    // and new events after it carry on from the top
+    const again = runScript('till.ts', ['prompt', 'claude-code'], { input: JSON.stringify({ session_id: 'mine', cwd: '/x', prompt: 'and the tests' }), env })
+    assert.equal(again.status, 0, again.stderr)
+    assert.equal(rows('SELECT session_id FROM prompt_events ORDER BY id DESC LIMIT 1')[0].session_id, 'mine')
 
-    const forced = run('import.ts', ['--force'])
-    assert.ok(forced.includes("agentarium's 1 session kept in till.db.bak"), forced)
-    assert.ok(Number(rows('SELECT COUNT(*) AS n FROM sessions')[0].n) > 1)
-    assert.ok(existsSync(join(ours, 'till.db.bak')))
+    // again: nothing is added twice
+    const count = Number(rows('SELECT COUNT(*) AS n FROM prompt_events')[0].n)
+    assert.ok(run('import.ts', []).includes('nothing new since the last import'))
+    assert.equal(Number(rows('SELECT COUNT(*) AS n FROM prompt_events')[0].n), count)
   })
 
   test('setup brings it over by itself, the first time only', { skip: process.platform === 'win32' && 'uses a shell-script stand-in for claude' }, (c) => {

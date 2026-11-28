@@ -331,7 +331,7 @@ Reload the window afterwards. If `code` isn't on your PATH, the command leaves `
 | I want to... | Do this |
 |---|---|
 | Check it's installed | In Claude Code, run `/plugin` and open the **Installed** tab, or run `claude plugin list` in a terminal. `/hooks` shows the hooks. |
-| Update it | Switch on auto-update: `/plugin` → **Marketplaces** → **agentarium**. Or by hand: `/plugin` → **Installed** → **Update now**, or `claude plugin update agentarium@agentarium`. Used the one-liner? `agentarium update` also works. |
+| Update it | Switch on auto-update: `/plugin` → **Marketplaces** → **agentarium**. Or by hand: `/plugin` → **Installed** → **Update now**, or `claude plugin update agentarium@agentarium`. Used the one-liner? `agentarium update` also works. Your recorded data comes through every update: nothing replaces or deletes `till.db`, and the first time a new version opens it, a copy of it as it was goes into `~/.agentarium/backups/` (see [`AGENTARIUM_BACKUPS`](configuration.md#till-and-data)). |
 | Remove it | `/plugin uninstall agentarium@agentarium` (or `claude plugin uninstall agentarium@agentarium`). Used the one-liner? `agentarium uninstall` removes the plugins, status line and command and keeps your data (`--purge` deletes `~/.agentarium` too). |
 | Update or remove the status line | It updates itself with the plugin (or `agentarium update`). `agentarium statusline --uninstall claude` or `/agentarium:statusline uninstall` removes it; `agentarium statusline --status` shows where it's installed. |
 | Update or remove skills installed with `npx` | `npx skills update` or `npx skills remove coach`. `npx skills list` shows what's installed. |
@@ -349,7 +349,7 @@ What comes over, into `~/.agentarium`, with tokenomics's own files left exactly 
 
 | From `~/.tokenomics` | To `~/.agentarium` |
 |---|---|
-| `spendlens.db`: every session, cost and guard event | `till.db`, as one consistent copy (safe while tokenomics is running). Only into an agentarium that has recorded nothing yet; `--force` replaces its history, keeping it as `till.db.bak`. |
+| `spendlens.db`: every session, cost and guard event | added to `till.db` in one transaction, read from a consistent copy (safe while tokenomics is running). The file is never replaced and nothing in it is changed or removed: agentarium's own sessions stay, the older history goes in ahead of them, and running it again adds only what tokenomics recorded since. A copy of `till.db` as it was goes into `backups/` first. |
 | `config.json`: the profile, per-folder profiles and settings | merged into `config.json`, with `TOKENOMICS_` names as `AGENTARIUM_` ones; a value agentarium already has is kept |
 | `statusline.json`, `router.json`, `providers.json`, `plans.json` and pennywise's learned thresholds and eval misses | merged the same way |
 | `TOKENOMICS_*` settings in your shell or in Claude Code's `settings.json` `"env"` | `config.json` `"settings"`, where agentarium reads them (agentarium doesn't read `TOKENOMICS_` variables; an `AGENTARIUM_` one still wins over the file) |
