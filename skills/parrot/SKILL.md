@@ -1,6 +1,6 @@
 ---
 name: parrot
-description: Repeated-instruction audit - finds what the user keeps telling the AI across sessions (standing rules like "always use pnpm", corrections like "no, use the v2 client", whole prompts pasted again and again), what the corrected work cost, and turns each into a CLAUDE.md line or a slash command; explains the parrot hook's notices. Use when asked "what do I keep repeating", "what should go in CLAUDE.md", "why do I keep correcting it", "make my instructions stick", "slash command ideas", "parrot", or after a parrot notice.
+description: Repeated-instruction audit: finds what the user keeps telling the AI across sessions (standing rules like "always use pnpm", corrections like "no, use the v2 client", whole prompts pasted again and again), what the corrected work cost, and turns each into a CLAUDE.md line or a slash command; explains the parrot hook's notices. Use when asked "what do I keep repeating", "what should go in CLAUDE.md", "why do I keep correcting it", "make my instructions stick", "slash command ideas", "parrot" or after a parrot notice.
 ---
 
 # parrot: say it once, not every session

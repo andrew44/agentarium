@@ -310,6 +310,17 @@ describe('InsightsEngine', () => {
     assert.ok(s.names.includes('handleCallback'))
     assert.equal(s.wantsDocs, false)
     assert.equal(InsightsEngine.taskScope('clean up the whole codebase').broad, true)
+    // words joined by a slash are not paths; a folder is
+    assert.deepEqual(InsightsEngine.taskScope('make the bands/mods/statuslines look great, and/or the OPEX/CAPEX split').paths, [])
+    assert.deepEqual(InsightsEngine.taskScope('fix src/auth and lib/').paths, ['src/auth', 'lib/'])
+  })
+
+  test('a scratch file in the temp folder is never scope creep', () => {
+    const s = InsightsEngine.taskScope('fix the redirect in src/auth/login.ts')
+    const j = (path: string) => InsightsEngine.judgeChange(s, { path, created: true, oldText: '', newText: 'x' }, [])?.rule ?? null
+    assert.equal(j('/tmp/claude/scratch/notes.md'), null)
+    assert.equal(j('/var/folders/xy/T/shot.mjs'), null)
+    assert.equal(j('lib/payments/stripe.ts'), 'outside_area')
   })
 
   test('scope rules', () => {

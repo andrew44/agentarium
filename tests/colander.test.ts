@@ -275,6 +275,10 @@ describe('colander: the hook', () => {
     assert.equal(s.status, 0, s.stderr)
     assert.match(s.stdout, /^colander strains `npm test` \(as npm\)[\s\S]*# tests 200[\s\S]*colander: showed \d+ of/)
     assert.match(runScript('colander.ts', ['strain', '--command', 'git diff'], { env: t.env() }).stdout, /leaves `git diff` alone/)
+    // too small to strain: shown as the model gets it, whole, never "17 of 16 tokens"
+    const small = runScript('cli.ts', ['colander', 'strain'], { input: tap(2), env: t.env() }).stdout
+    assert.ok(small.includes('ok 2 '), small)
+    assert.match(small, /Too little to leave out, so the model gets it unchanged/)
   })
 
   test('the dashboard and the weekly report count what it kept out', (c) => {

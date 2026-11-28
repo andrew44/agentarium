@@ -683,6 +683,18 @@ describe('the agentarium command: version and names', () => {
     assert.equal(p.status, 2)
     assert.ok(p.stdout.includes('Unknown command: valuemeter'))
   })
+
+  test('--help is the helper\'s own usage, and never runs it', (c) => {
+    const t = useTemp(c)
+    const cwd = join(t.home, 'proj')
+    mkdirSync(cwd, { recursive: true })
+    const help = spawnSync(process.execPath, [join(SCRIPTS, 'cli.ts'), 'doggybag', '--help'], { cwd, env: t.env(), encoding: 'utf8' })
+    assert.equal(help.status, 0, help.stderr)
+    assert.match(help.stdout, /^agentarium \/ doggybag:/)
+    assert.ok(!existsSync(join(cwd, '.doggybag')), 'help packed no doggybag')
+    assert.match(cli(t.env(), 'sherlock', '-h').stdout, /agentarium sherlock --session ID/)
+    assert.match(cli(t.env(), 'bangforbuck', '--help').stdout, /^agentarium \/ bang-for-buck/)
+  })
 })
 
 describe('installer scripts', () => {

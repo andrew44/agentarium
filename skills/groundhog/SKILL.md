@@ -1,6 +1,6 @@
 ---
 name: groundhog
-description: Checks whether the agent has been going round in circles - repeated identical tool calls, the same command failing again and again, edits made and undone, tokens climbing with no progress - with what each loop cost, and explains the groundhog loop-breaker hook and its settings. Use when asked "is it stuck", "is it going round in circles", "why does it keep doing that", "loop", or "groundhog".
+description: Checks whether the agent has been going round in circles (repeated identical tool calls, the same command failing again and again, edits made and undone, tokens climbing with no progress), with what each loop cost, and explains the groundhog loop-breaker hook and its settings. Use when asked "is it stuck", "is it going round in circles", "why does it keep doing that", "loop" or "groundhog".
 ---
 
 # groundhog: is the AI going round in circles?

@@ -19,7 +19,7 @@ import { basename } from 'node:path'
 import { defaultDbPath } from '../agentarium/config.ts'
 import * as currency from '../agentarium/engine/currency.ts'
 import { withDb } from '../agentarium/engine/db.ts'
-import { argValue, fmt, isMain, today, type Obj } from '../agentarium/util.ts'
+import { argValue, count, fmt, isMain, today, type Obj } from '../agentarium/util.ts'
 
 const LABELS = ['opex', 'capex', 'mixed', 'unknown'] as const
 
@@ -212,7 +212,7 @@ export function markdown(r: Obj): string {
     (n('skipped-overhead') ? `, ${n('skipped-overhead')} not routed because the hand-off would cost more than it saved` : '') + '.' +
     (pw.saved ? ` Saved about ${m(pw.saved)} net of hand-offs` + (pw.extra ? ` (and spent ${m(pw.extra)} more routing hard prompts up)` : '') + '.' : ''))
   const ho = h.doggybag
-  L.push(`- doggybag: ${ho.written} doggybags packed; carrying on from them instead of the full context ` +
+  L.push(`- doggybag: ${count(ho.written, 'doggybag')} packed; carrying on from them instead of the full context ` +
     `avoids up to ${fmt(ho.tokens_avoided_if_used)} tokens of cache writes.`)
   if (h.diet.length) {
     const known = h.diet.reduce((a: number, d: Obj) => a + d.est_tokens, 0)
@@ -229,7 +229,7 @@ export function markdown(r: Obj): string {
   }
   const b = h.budget
   if (Object.keys(b).length) {
-    L.push(`- budget: ${b.warned ?? 0} warnings, ${b.blocked ?? 0} pauses, ${(b.overridden ?? 0) + (b.bypassed ?? 0)} carried on over the limit.`)
+    L.push(`- budget: ${count(b.warned ?? 0, 'warning')}, ${count(b.blocked ?? 0, 'pause')}, ${(b.overridden ?? 0) + (b.bypassed ?? 0)} carried on over the limit.`)
   }
   if (h.bangforbuck?.sessions) {
     const v = h.bangforbuck
@@ -242,11 +242,11 @@ export function markdown(r: Obj): string {
   }
   const gh = h.groundhog ?? {}
   if (Object.keys(gh).length) {
-    L.push(`- groundhog: ${(gh.denied ?? 0) + (gh.interrupted ?? 0)} loops broken, ${gh.warned ?? 0} warnings.`)
+    L.push(`- groundhog: ${count((gh.denied ?? 0) + (gh.interrupted ?? 0), 'loop')} broken, ${count(gh.warned ?? 0, 'warning')}.`)
   }
   if (h.haggle?.contracts) {
-    L.push(`- haggle: ${h.haggle.contracts} tasks quoted at ${m(h.haggle.quoted)} in total; they cost ${m(h.haggle.spent)} ` +
-      `(${h.haggle.over_cap} went over their cap).`)
+    L.push(`- haggle: ${count(h.haggle.contracts, 'task')} quoted at ${m(h.haggle.quoted)} in total; they cost ${m(h.haggle.spent)} ` +
+      `(${h.haggle.over_cap} went over ${h.haggle.over_cap === 1 ? 'its' : 'their'} cap).`)
   }
   const srcs = Object.entries(r.by_source).map(([k, v]: [string, any]) => `${k}: ${v.sessions} sessions / ${v.prompts} prompts`).join(', ')
   L.push('', `Platforms: ${srcs}.`, '')

@@ -184,6 +184,11 @@ export function fmt(n: number, decimals = 0, grouping = true): string {
 }
 
 /** Parse a timestamp (ISO string, epoch seconds or epoch milliseconds) to epoch seconds. */
+/** `n` and the noun that fits it: count(1, 'pause') -> '1 pause', count(3, 'pause') -> '3 pauses'. */
+export function count(n: number, one: string, many = `${one}s`): string {
+  return `${fmt(n)} ${n === 1 ? one : many}`
+}
+
 export function parseTs(s: unknown): number | null {
   if (s === null || s === undefined || s === '' || s === 0) return null
   if (typeof s === 'number') return s > 1e11 ? s / 1000 : s

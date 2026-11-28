@@ -31,7 +31,7 @@ import * as lessons from '../agentarium/engine/lessons.ts'
 import * as trace from '../agentarium/engine/trace.ts'
 import { getAdapter } from '../agentarium/platform/registry.ts'
 import { CostEngine, PolicyEngine } from '../agentarium/services/index.ts'
-import { errText, first, isMain, isObj, logErr, readPayload, type Obj } from '../agentarium/util.ts'
+import { count, errText, first, isMain, isObj, logErr, readPayload, type Obj } from '../agentarium/util.ts'
 import { money2, period, write } from './common.ts'
 
 const TAIL_BYTES = 3 * 1024 * 1024
@@ -161,7 +161,7 @@ function report(args: string[]): number {
     write(`too-many-cooks: no subagents recorded (${p.label}).`)
     return 0
   }
-  write(`too-many-cooks: ${n} subagent(s), ${fmt(total)} in all (${p.label}).`)
+  write(`too-many-cooks: ${count(n, 'subagent')}, ${fmt(total)} in all (${p.label}).`)
   for (const r of data.agents) write(`- ${r.agent}: ${r.n} x about ${fmt(Number(r.avg_usd))} = ${fmt(Number(r.usd))}`)
   if (data.caught.length) write('Caught before they ran: ' + data.caught.map((r) => `${r.rule.replace('_', ' ')} x${r.n}`).join(', ') + '.')
   return 0

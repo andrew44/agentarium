@@ -129,6 +129,13 @@ describe('currency', () => {
     assert.equal(currency.formatMoney(250.4, '£'), '£250')
     assert.equal(currency.formatMoney(25, '£'), '£25.00')
     assert.equal(currency.formatMoney(25.01, '£'), '£25')
+    // under half a penny: one significant figure, never '£0.00' for a real amount
+    assert.equal(currency.formatMoney(0.0036, '£'), '£0.004')
+    assert.equal(currency.formatMoney(0.00096, '£'), '£0.001')
+    assert.equal(currency.formatMoney(1e-7, '£'), '£0.0000001')
+    assert.equal(currency.formatMoney(-0.002, '$'), '-$0.002')
+    assert.equal(currency.formatMoney(0, '£'), '£0.00')
+    assert.equal(currency.formatMoney(0.005, '£'), '£0.01')
   })
 
   test('the status line shows the chosen currency', () => withEnv(clean, () => {

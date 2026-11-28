@@ -1,6 +1,6 @@
 ---
 name: cold-snap
-description: Prompt-cache miss audit - finds every time a conversation's cache had to be written again mid-session and why (a break longer than the cache lives, a model switch, a changed CLAUDE.md / MCP server / setting, or compaction), costs each rebuild against a warm read, and says whether the 1-hour cache would pay off. Use when asked "why is my cache hit rate low", "cache misses", "cache rebuilds", "why did that turn cost so much", "does switching model cost", "should I use the 1 hour cache", or "cold-snap".
+description: Prompt-cache miss audit: finds every time a conversation's cache had to be written again mid-session and why (a break longer than the cache lives, a model switch, a changed CLAUDE.md / MCP server / setting or compaction), costs each rebuild against a warm read, and says whether the 1-hour cache would pay off. Use when asked "why is my cache hit rate low", "cache misses", "cache rebuilds", "why did that turn cost so much", "does switching model cost", "should I use the 1 hour cache" or "cold-snap".
 ---
 
 # cold-snap: why did the cache go cold?

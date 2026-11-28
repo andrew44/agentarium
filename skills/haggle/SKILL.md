@@ -1,6 +1,6 @@
 ---
 name: haggle
-description: Quotes the likely cost of a task before an agent starts it (input, output and tool costs, from the user's own history), answers whether it is worth a given amount, and manages task contracts - an agreed target and maximum spend that the agent must ask to exceed. Use when asked "how much will this cost", "is this task worth spending £2 on", "quote this", "set a budget for this task", "approve more spend", or "haggle".
+description: Quotes the likely cost of a task before an agent starts it (input, output and tool costs, from the user's own history), answers whether it is worth a given amount, and manages task contracts: an agreed target and maximum spend that the agent must ask to exceed. Use when asked "how much will this cost", "is this task worth spending £2 on", "quote this", "set a budget for this task", "approve more spend" or "haggle".
 ---
 
 # haggle: is this task worth spending £2 on?

@@ -1,6 +1,6 @@
 ---
 name: waffle
-description: Output spend audit - splits what the agent wrote into replies, tool input (edits, files, commands) and thinking, and costs the avoidable part - long replies, end-of-task recaps, whole-file rewrites instead of edits, heavy thinking on routine work - with the instruction or setting that fixes each. Use when asked "are the replies too long", "why is output so expensive", "output tokens", "verbose AI", "stop the summaries", "thinking cost", or "waffle".
+description: Output spend audit: splits what the agent wrote into replies, tool input (edits, files, commands) and thinking, and costs the avoidable part (long replies, end-of-task recaps, whole-file rewrites instead of edits, heavy thinking on routine work), with the instruction or setting that fixes each. Use when asked "are the replies too long", "why is output so expensive", "output tokens", "verbose AI", "stop the summaries", "thinking cost" or "waffle".
 ---
 
 # waffle: are you paying for words you don't read?

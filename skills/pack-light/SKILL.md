@@ -1,6 +1,6 @@
 ---
 name: pack-light
-description: Fixed overhead audit - measures the tokens every request carries before you type (system prompt, MCP server tool definitions, skill descriptions, instruction files) from your own sessions, what re-reading it costs a month, and which MCP servers and skills you never use, with the saving from removing them. Use when asked "why does every session start so big", "which MCP servers do I actually use", "too many skills or plugins", "fixed cost per request", "baseline context", "unused tools", or "pack-light".
+description: Fixed overhead audit: measures the tokens every request carries before you type (system prompt, MCP server tool definitions, skill descriptions, instruction files) from your own sessions, what re-reading it costs a month, and which MCP servers and skills you never use, with the saving from removing them. Use when asked "why does every session start so big", "which MCP servers do I actually use", "too many skills or plugins", "fixed cost per request", "baseline context", "unused tools" or "pack-light".
 ---
 
 # pack-light: what does every request carry, and do you use it?

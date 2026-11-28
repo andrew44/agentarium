@@ -1,6 +1,6 @@
 ---
 name: rate-my-prompt
-description: Prompt score - rates a prompt out of 10 (one decimal place) on five cost criteria, 2 points each - points at the code, says what done looks like, one bounded task, no padding, asks for lean output - with the fix for each weak one and a tighter rewrite. Use when asked "rate my prompt", "score this prompt", "is this a good prompt", "how efficient is my prompt", "will this prompt be expensive", "judge", or "rate-my-prompt".
+description: Prompt score: rates a prompt out of 10 (one decimal place) on five cost criteria, 2 points each (points at the code, says what done looks like, one bounded task, no padding, asks for lean output), with the fix for each weak one and a tighter rewrite. Use when asked "rate my prompt", "score this prompt", "is this a good prompt", "how efficient is my prompt", "will this prompt be expensive", "judge" or "rate-my-prompt".
 ---
 
 # rate-my-prompt: what will this prompt cost to carry out?

@@ -1,6 +1,6 @@
 ---
 name: all-you-can-eat
-description: Plan fit - sets the user's recorded Claude Code spend (priced at API rates) against pay-as-you-go and each subscription (Pro, Max 5x, Max 20x), says whether their plan pays for itself or whether another would cost less, and shows the heaviest 5-hour stretch and week that usage limits bite on. Use when asked "am I on the right plan", "should I get Max", "is Pro worth it", "subscription or API", "would a subscription be cheaper", "am I overpaying", or "all-you-can-eat".
+description: Plan fit: sets the user's recorded Claude Code spend (priced at API rates) against pay-as-you-go and each subscription (Pro, Max 5x, Max 20x), says whether their plan pays for itself or whether another would cost less, and shows the heaviest 5-hour stretch and week that usage limits bite on. Use when asked "am I on the right plan", "should I get Max", "is Pro worth it", "subscription or API", "would a subscription be cheaper", "am I overpaying" or "all-you-can-eat".
 ---
 
 # all-you-can-eat: are you on the right plan?

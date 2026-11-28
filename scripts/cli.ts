@@ -805,10 +805,18 @@ function vscodeCmd(args: string[]): number {
   return 0
 }
 
-function doc(): string {
-  const text = readFileSync(SELF, 'utf8')
+/** A script's opening doc comment: its purpose, usage lines and settings (every script has one). */
+function doc(path = SELF): string {
+  const text = readFileSync(path, 'utf8')
   const m = /\/\*\*\n([\s\S]*?)\*\//.exec(text)
   return m ? m[1].split('\n').map((l) => l.replace(/^ \* ?/, '').replace(/^ \*$/, '')).join('\n').trimEnd() : ''
+}
+
+/** `agentarium <cmd> --help`: the script's doc comment, its usage lines spelled as `agentarium <cmd>`.
+ *  Answered here, so no helper ever mistakes --help for an argument (doggybag used to pack a note). */
+export function scriptHelp(cmd: string, file: string): string {
+  const name = file.replace(/\.ts$/, '')
+  return doc(join(HERE, file)).replace(new RegExp(`(^|\\s)${name}\\.ts\\b`, 'gm'), `$1agentarium ${cmd}`)
 }
 
 function overview(): number {
@@ -883,6 +891,11 @@ const TOOLS: Record<string, [string, string[], string[]]> = {
   lessons: ['fishingrod.ts', [], []],
   'leak-check': ['audit.ts', [], []],
 }
+/** Commands outside TOOLS whose --help is a script's doc comment (dashboard answers its own). */
+const HELP: Record<string, string> = {
+  report: 'report.ts', statusline: 'statusline.ts', router: 'sommelier.ts', sommelier: 'sommelier.ts',
+  doggybag: 'doggybag.ts', import: 'import.ts', audit: 'audit.ts',
+}
 // A hyphenated helper also answers to its name as one word, the way its script and setting spell
 // it (bang-for-buck: bangforbuck.ts, AGENTARIUM_BANGFORBUCK). The descriptive names don't.
 for (const [name, tool] of Object.entries(TOOLS)) {
@@ -909,6 +922,11 @@ export async function main(argv: string[]): Promise<number> {
     let args = rest.filter((a) => a !== '--foreground')
     if (!fg && !args.some((a) => ['--stop', '-h', '--help'].includes(a))) args = ['--background', ...args]
     return script('dashboard.ts', ...args)
+  }
+  const helpFile = HELP[cmd] ?? (Object.hasOwn(TOOLS, cmd) ? TOOLS[cmd][0] : undefined)
+  if (helpFile && rest.some((a) => a === '-h' || a === '--help')) {
+    say(scriptHelp(cmd, helpFile))
+    return 0
   }
   if (cmd === 'report') return script('report.ts', ...rest)
   if (cmd === 'statusline') return script('statusline.ts', ...(rest.length ? rest : ['--status']))

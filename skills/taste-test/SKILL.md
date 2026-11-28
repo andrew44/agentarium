@@ -1,6 +1,6 @@
 ---
 name: taste-test
-description: Proves whether a cost-saving change damaged quality - compares two runs of the same task (baseline vs optimised model, prompt, or trimmed instructions) on cost, tokens, tests, linting and type checks, and gives a quality-adjusted saving score and verdict (safe saving, cheaper but worse, false economy). Use when asked "did the cheaper model do as well", "prove the optimisation didn't hurt quality", "A/B two runs", "quality gate", or "taste-test".
+description: Proves whether a cost-saving change damaged quality: compares two runs of the same task (baseline vs optimised model, prompt or trimmed instructions) on cost, tokens, tests, linting and type checks, and gives a quality-adjusted saving score and verdict (safe saving, cheaper but worse, false economy). Use when asked "did the cheaper model do as well", "prove the optimisation didn't hurt quality", "A/B two runs", "quality gate" or "taste-test".
 ---
 
 # taste-test: can I prove the optimisation didn't damage quality?

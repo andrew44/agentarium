@@ -1,6 +1,6 @@
 ---
 name: crystal-ball
-description: Spend simulator - forecasts monthly and yearly AI spend before adopting an agentic workflow, from team size, tasks per developer per day, input and output tokens per task and cache share, across every model and provider, with routed model mixes, adoption growth and what moves the bill; or from the user's own history. Use when asked "what will this cost", "budget for AI", "forecast spend", "if 10 developers use it", "cost to roll out", "simulate spend", or "crystal-ball".
+description: Spend simulator: forecasts monthly and yearly AI spend before adopting an agentic workflow, from team size, tasks per developer per day, input and output tokens per task and cache share, across every model and provider, with routed model mixes, adoption growth and what moves the bill; or from the user's own history. Use when asked "what will this cost", "budget for AI", "forecast spend", "if 10 developers use it", "cost to roll out", "simulate spend" or "crystal-ball".
 ---
 
 # crystal-ball: what will this project cost?

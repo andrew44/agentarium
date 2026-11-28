@@ -1,6 +1,6 @@
 ---
 name: sommelier
-description: The sommelier model router - explains why a prompt was routed (down to Haiku, up to Opus), what routing saved net of the hand-off, how well it routes (eval), what it has learned from routes that missed, and switches the per-request routing proxy on or off. Use when asked "why did this go to Haiku", "what has sommelier saved", "is the router any good", "turn on the router/proxy", "route more aggressively", "stop routing", or "sommelier".
+description: The sommelier model router: explains why a prompt was routed (down to Haiku, up to Opus), what routing saved net of the hand-off, how well it routes (eval), what it has learned from routes that missed, and switches the per-request routing proxy on or off. Use when asked "why did this go to Haiku", "what has sommelier saved", "is the router any good", "turn on the router/proxy", "route more aggressively", "stop routing" or "sommelier".
 ---
 
 # sommelier: the right model for every prompt

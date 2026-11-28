@@ -1,6 +1,6 @@
 ---
 name: blinkers
-description: Scope guard - checks whether the agent did more than was asked - unrequested documentation or tests, dependency and config changes, unrelated refactoring (renames, reformatting), files outside the task, too many files - with the cost of the extra work, for a session or a branch, and explains the blinkers hook that asks before the agent expands the scope. Use when asked "did it do more than I asked", "scope creep", "why did it touch that file", "unrelated changes", "keep it focused", or "blinkers".
+description: Scope guard: checks whether the agent did more than was asked (unrequested documentation or tests, dependency and config changes, unrelated refactoring (renames, reformatting), files outside the task, too many files), with the cost of the extra work, for a session or a branch, and explains the blinkers hook that asks before the agent expands the scope. Use when asked "did it do more than I asked", "scope creep", "why did it touch that file", "unrelated changes", "keep it focused" or "blinkers".
 ---
 
 # blinkers: did the agent stay on the job?

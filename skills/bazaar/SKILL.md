@@ -1,6 +1,6 @@
 ---
 name: bazaar
-description: Provider arbitrage - prices the work actually done (input, output and cached tokens, per model) on every equivalent offering across providers (Anthropic API, Amazon Bedrock, Google Vertex AI and other vendors), filters by quality, latency and availability measured from your own sessions, and recommends the best-value provider by cost per successful task. Use when asked "which provider is cheapest", "should we use Bedrock / Vertex", "compare providers", "cheapest equivalent model", "provider arbitrage", or "bazaar".
+description: Provider arbitrage: prices the work actually done (input, output and cached tokens, per model) on every equivalent offering across providers (Anthropic API, Amazon Bedrock, Google Vertex AI and other vendors), filters by quality, latency and availability measured from your own sessions, and recommends the best-value provider by cost per successful task. Use when asked "which provider is cheapest", "should we use Bedrock / Vertex", "compare providers", "cheapest equivalent model", "provider arbitrage" or "bazaar".
 ---
 
 # bazaar: the cheapest equivalent capability, across the whole market

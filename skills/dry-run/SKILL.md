@@ -1,6 +1,6 @@
 ---
 name: dry-run
-description: Install cost check - prices a skill, plugin or MCP server before it is installed: the tokens it adds to every request (skill listing lines, MCP tool definitions) and what that costs a month at the user's own pace, plus what each use of a skill loads. Use when asked "should I install this MCP server", "what will this plugin cost", "how heavy is this skill", "is this MCP server worth it", or "dry-run".
+description: Install cost check: prices a skill, plugin or MCP server before it is installed, from the tokens it adds to every request (skill listing lines, MCP tool definitions) and what that costs a month at the user's own pace, plus what each use of a skill loads. Use when asked "should I install this MCP server", "what will this plugin cost", "how heavy is this skill", "is this MCP server worth it" or "dry-run".
 ---
 
 # dry-run: price it before you install it

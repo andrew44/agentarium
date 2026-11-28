@@ -1,6 +1,6 @@
 ---
 name: cache-buster
-description: Prefix-edit guard - lists every edit in a session to files at the start of each request (CLAUDE.md and the files it imports, settings, MCP server lists, skills, commands and agents), priced as the cache rebuild each one causes, and explains the cache-buster hook that catches them before the edit. Use when asked "does editing CLAUDE.md cost anything", "why did my cache go cold after an edit", "is it safe to change settings mid-session", "prefix change", or "cache-buster".
+description: Prefix-edit guard: lists every edit in a session to files at the start of each request (CLAUDE.md and the files it imports, settings, MCP server lists, skills, commands and agents), priced as the cache rebuild each one causes, and explains the cache-buster hook that catches them before the edit. Use when asked "does editing CLAUDE.md cost anything", "why did my cache go cold after an edit", "is it safe to change settings mid-session", "prefix change" or "cache-buster".
 ---
 
 # cache-buster: edits that make the cache start again

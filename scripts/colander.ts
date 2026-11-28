@@ -181,10 +181,17 @@ function strainCmd(args: string[]): number {
   const max = Number(argValue(args, '--max-lines')) || maxLines()
   const s = colander.strain(raw, max)
   if (cmd !== null) write('')
+  // what the model would get: below the threshold the hook passes the output through as it is
+  if (!colander.worth(s.rawChars, s.keptChars)) {
+    write(raw.replace(/\n$/, ''))
+    write('')
+    write(`colander: ${fmt(s.rawLines)} lines, about ${fmt(trace.approxTokens(s.rawChars))} tokens. Too little to leave out, ` +
+      'so the model gets it unchanged.')
+    return 0
+  }
   write(s.text)
   write('')
-  write(`colander: ${colander.summary(s)}.` + (colander.worth(s.rawChars, s.keptChars) ? ''
-    : ' Too little to leave out: the hook would pass this through unchanged.'))
+  write(`colander: ${colander.summary(s)}.`)
   return 0
 }
 

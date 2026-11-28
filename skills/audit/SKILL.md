@@ -1,6 +1,6 @@
 ---
 name: audit
-description: One leak check across everything agentarium can measure - the fixed load every request carries (pack-light), output spend (waffle), cold caches (cold-snap), context carried between tasks (ballast), bloated instruction files (spring-clean), work that produced nothing (deadwood), loops (groundhog), repeated instructions (parrot) and cost per task trending up (waistline) - biggest money first. Use when asked "where am I wasting tokens", "audit my AI spend", "what should I clean up", "find the leaks", "token audit", or "audit".
+description: One leak check across everything agentarium can measure: the fixed load every request carries (pack-light), output spend (waffle), cold caches (cold-snap), context carried between tasks (ballast), bloated instruction files (spring-clean), work that produced nothing (deadwood), loops (groundhog), repeated instructions (parrot) and cost per task trending up (waistline), biggest money first. Use when asked "where am I wasting tokens", "audit my AI spend", "what should I clean up", "find the leaks", "token audit" or "audit".
 ---
 
 # audit: where is it leaking?

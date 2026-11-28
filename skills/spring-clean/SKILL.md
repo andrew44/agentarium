@@ -1,6 +1,6 @@
 ---
 name: spring-clean
-description: Audits context hygiene - CLAUDE.md, AGENTS.md, copilot-instructions.md, imports, nested instruction files and MCP servers - for duplicated instructions, outdated paths and commands, oversized files, changelogs and long examples, and contradictions, then proposes a cleanup with estimated token and money savings. Use when asked to clean up CLAUDE.md, "context debt", "why is my context so big", "are my instructions duplicated or out of date", or "spring-clean".
+description: Audits context hygiene (CLAUDE.md, AGENTS.md, copilot-instructions.md, imports, nested instruction files and MCP servers) for duplicated instructions, outdated paths and commands, oversized files, changelogs and long examples, and contradictions, then proposes a cleanup with estimated token and money savings. Use when asked to clean up CLAUDE.md, "context debt", "why is my context so big", "are my instructions duplicated or out of date" or "spring-clean".
 ---
 
 # spring-clean: context hygiene audit

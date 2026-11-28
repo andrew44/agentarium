@@ -1,6 +1,6 @@
 ---
 name: bang-for-buck
-description: Measures whether AI coding spend is delivering value - the cost per completed feature, bug fixed, passing test suite, commit, PR and successful agent task, which models give the cheapest successful result, and how much went on sessions with nothing to show. Use when asked "is the AI worth the money", "value for money", "cost per feature/bug/outcome", "which model is best value", "bang for buck", or to record an outcome by hand.
+description: Measures whether AI coding spend is delivering value: the cost per completed feature, bug fixed, passing test suite, commit, PR and successful agent task, which models give the cheapest successful result, and how much went on sessions with nothing to show. Use when asked "is the AI worth the money", "value for money", "cost per feature/bug/outcome", "which model is best value", "bang for buck" or to record an outcome by hand.
 ---
 
 # bang-for-buck: is the AI delivering value for the money?

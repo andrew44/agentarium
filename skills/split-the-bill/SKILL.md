@@ -1,6 +1,6 @@
 ---
 name: split-the-bill
-description: Cost attribution - splits AI coding spend by project, developer, agent and subagent, task category (feature, bug fix, refactor, tests, docs, ops, research), model, provider, successful versus failed or abandoned work, and OPEX vs CAPEX, with a CSV export for finance. Use when asked "who is spending the budget", "cost by project / developer / team / agent / model", "chargeback", "showback", "split the bill", "what does finance need", or "split-the-bill".
+description: Cost attribution: splits AI coding spend by project, developer, agent and subagent, task category (feature, bug fix, refactor, tests, docs, ops, research), model, provider, successful versus failed or abandoned work, and OPEX vs CAPEX, with a CSV export for finance. Use when asked "who is spending the budget", "cost by project / developer / team / agent / model", "chargeback", "showback", "split the bill", "what does finance need" or "split-the-bill".
 ---
 
 # split-the-bill: who or what is consuming the budget?

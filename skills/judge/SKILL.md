@@ -1,6 +1,6 @@
 ---
 name: judge
-description: Alias of rate-my-prompt - scores a prompt out of 10 (one decimal place) on five cost criteria (points at the code, says what done looks like, one bounded task, no padding, asks for lean output) and suggests a tighter rewrite. Use when asked to "judge" a prompt or "/judge".
+description: Alias of rate-my-prompt: scores a prompt out of 10 (one decimal place) on five cost criteria (points at the code, says what done looks like, one bounded task, no padding, asks for lean output) and suggests a tighter rewrite. Use when asked to "judge" a prompt or "/judge".
 ---
 
 # judge: rate-my-prompt by a shorter name

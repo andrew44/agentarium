@@ -39,6 +39,9 @@ const TIPS: Record<CriterionKey, string> = {
   output: 'Ask for the shape you need ("reply with the diff only", "no summary") and leave out "think hard" for routine work.',
 }
 
+const TARGET_IN_FILE = 'You named the file: add the function or the error ("`checkToken()` in it", "the TypeError on line 42") ' +
+  'so the agent goes straight to the lines that matter.'
+
 const clamp = (v: number) => Math.max(0, Math.min(MAX_PER, v))
 const r1 = (v: number) => Math.round(v * 10) / 10
 const hits = (text: string, rules: [RegExp, string][]) => rules.filter(([re]) => re.test(text)).map(([, what]) => what)
@@ -92,7 +95,9 @@ const EFFORT = /\b(?:ultrathink|megathink|think (?:really |very )?hard(?:er)?|th
 
 function target(text: string): Criterion {
   const found = TARGET.map(([re, what], i) => [re.test(text), what, TARGET_WEIGHT[i]] as const).filter(([hit]) => hit)
-  return finish('target', 0.2 + found.reduce((s, [, , w]) => s + w, 0), found.map(([, what]) => what))
+  // a named file already saves the search: the next saving is the place in it
+  const tip = found.some(([, what]) => what === 'a file path') ? TARGET_IN_FILE : undefined
+  return finish('target', 0.2 + found.reduce((s, [, , w]) => s + w, 0), found.map(([, what]) => what), tip)
 }
 
 function done(text: string): Criterion {
@@ -141,9 +146,9 @@ function output(text: string): Criterion {
   return finish('output', score, found)
 }
 
-function finish(key: CriterionKey, raw: number, found: string[]): Criterion {
+function finish(key: CriterionKey, raw: number, found: string[], tip = TIPS[key]): Criterion {
   const score = r1(clamp(raw))
-  return { key, label: LABELS[key], score, max: MAX_PER, found, tip: score < 1.5 ? TIPS[key] : null }
+  return { key, label: LABELS[key], score, max: MAX_PER, found, tip: score < 1.5 ? tip : null }
 }
 
 export function verdict(score: number): string {

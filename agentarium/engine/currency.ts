@@ -49,6 +49,11 @@ export function currency(cfg: Record<string, any> | null | undefined): [string, 
 export function formatMoney(amount: unknown, symbol: string): string {
   const a = Number(amount) || 0
   const sign = a < 0 ? '-' : ''
+  // under half a penny: one significant figure ('£0.004'), since '£0.00' reads as nothing at all
+  if (Math.abs(a) > 0 && Math.abs(a) < 0.005) {
+    const v = Number(Math.abs(a).toPrecision(1))
+    return sign + symbol + v.toFixed(Math.min(20, 1 - Math.floor(Math.log10(v)))).replace(/0+$/, '')
+  }
   const digits = Math.abs(a) > 25 ? 0 : 2
   return sign + symbol + Math.abs(a).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 }

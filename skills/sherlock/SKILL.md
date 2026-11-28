@@ -1,6 +1,6 @@
 ---
 name: sherlock
-description: Agent forensics - audits what the agent actually did in a session, step by step, to find hidden waste - repeated file reads, redundant tool calls, searches returning the same results, tool output never used, subagents doing overlapping work, unnecessary subagent delegation - with the cost of each and why. Use when asked "where is the money disappearing", "what did the agent waste", "why did that cost so much", "forensic audit", or "sherlock".
+description: Agent forensics: audits what the agent actually did in a session, step by step, to find hidden waste (repeated file reads, redundant tool calls, searches returning the same results, tool output never used, subagents doing overlapping work, unnecessary subagent delegation), with the cost of each and why. Use when asked "where is the money disappearing", "what did the agent waste", "why did that cost so much", "forensic audit" or "sherlock".
 ---
 
 # sherlock: where is the money disappearing?

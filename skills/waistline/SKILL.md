@@ -1,6 +1,6 @@
 ---
 name: waistline
-description: AI cost regression testing - checks whether the same kind of work is getting more expensive over time (cost per session and per result, context consumption, tool calls, new expensive tools, model changes), compares against a saved baseline, and sets up a CI check that fails on cost creep. Use when asked "am I getting worse value than last month", "has my AI spend crept up", "cost regression", "why is it more expensive now", or to add a cost check to CI.
+description: AI cost regression testing: checks whether the same kind of work is getting more expensive over time (cost per session and per result, context consumption, tool calls, new expensive tools, model changes), compares against a saved baseline, and sets up a CI check that fails on cost creep. Use when asked "am I getting worse value than last month", "has my AI spend crept up", "cost regression", "why is it more expensive now" or to add a cost check to CI.
 ---
 
 # waistline: is the same work getting more expensive?

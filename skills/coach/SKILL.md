@@ -1,6 +1,6 @@
 ---
 name: coach
-description: Analyses your prompts and prompt-cache usage for the current session and suggests how to improve them, cutting wasted tokens and rework. Use when asked to review my prompts, check cache usage, why was that session expensive, or "coach".
+description: Analyses your prompts and prompt-cache usage for the current session and suggests how to improve them, cutting wasted tokens and rework. Use when asked to review my prompts, check cache usage, why was that session expensive or "coach".
 ---
 
 # Coach

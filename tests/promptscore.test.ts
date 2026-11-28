@@ -26,6 +26,12 @@ describe('rate-my-prompt', () => {
     }
   })
 
+  test('a named file gets the next step, not the same advice again', () => {
+    const named = rate('In scripts/report.ts, fix the plural. npm test should pass.').criteria.find((c) => c.key === 'target')!
+    assert.match(named.tip ?? '', /^You named the file/)
+    assert.match(rate('fix the bug').criteria.find((c) => c.key === 'target')!.tip ?? '', /^Name the file/)
+  })
+
   test('a targeted, bounded prompt beats a vague one', () => {
     const good = rate(GOOD)
     const bad = rate(BAD)

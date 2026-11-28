@@ -11,6 +11,7 @@
  *                  latency and availability, ranked by cost per successful task (bazaar)
  *   attribution    spend grouped by any dimension, with what succeeded and what was dead (split-the-bill)
  */
+import { tmpdir } from 'node:os'
 import { basename, dirname } from 'node:path'
 
 import type { Obj } from '../util.ts'
@@ -102,12 +103,18 @@ const PATH_RE = /(?:^|[\s`'"(])((?:\.{0,2}\/)?(?:[\w@.-]+\/)*[\w@-][\w@.-]*\.[A-
 const NAME_RE = /`([^`\s]{3,60})`|\b([a-z]+[A-Z][A-Za-z0-9]+|[A-Z][a-z0-9]+[A-Z][A-Za-z0-9]*|[a-z0-9]+_[a-z0-9_]+)\b/g
 const BROAD_RE = /\b(whole|entire|everywhere|throughout|across the (code|repo|project)|codebase|repo-?wide|project-?wide|all (files|modules|the code)|clean ?up|refactor)\b/i
 
+// Without a file extension, 'src/auth' and 'lib/' name folders, but 'and/or', 'OPEX/CAPEX' and
+// 'bands/mods/statuslines' are words: taken as paths, they put every real file outside the task.
+const SOURCE_DIRS = /^(src|lib|libs|app|apps|packages?|pkg|cmd|internal|scripts?|tests?|specs?|docs?|bin|tools|components|pages|routes|api|server|client|web|hooks|services|modules|core|utils?)$/i
+const folderRef = (p: string) => p.endsWith('/') || /[\d_@.-]/.test(p) || SOURCE_DIRS.test(p.split('/')[0])
+
 export function taskScope(prompt: string): TaskScope {
   const text = String(prompt ?? '')
   const paths = new Set<string>()
   for (const m of text.matchAll(PATH_RE)) {
     const p = m[1].replace(/^\.\//, '').replace(/[.,]+$/, '')
     if (/^https?:|^www\.|^\d+(\.\d+)+$|^e\.g|^i\.e/i.test(p) || p.length < 3) continue
+    if (!/\.[A-Za-z0-9]{1,8}$/.test(p) && !folderRef(p)) continue
     paths.add(p)
   }
   const names = new Set<string>()
@@ -148,6 +155,9 @@ const DEP_FILES = /(^|\/)(package(-lock)?\.json|yarn\.lock|pnpm-lock\.yaml|bun\.
 const CONFIG_FILES = /(^|\/)(\.github\/|\.gitlab-ci|\.circleci\/|Jenkinsfile|Dockerfile|docker-compose|tsconfig[\w.-]*\.json|\.eslintrc|eslint\.config|\.prettierrc|prettier\.config|biome\.json|\.editorconfig|Makefile|\.env)/i
 
 const norm = (p: string) => p.replaceAll('\\', '/').replace(/^\.\//, '')
+// A scratch file in the system's temp folder never changes the project: no scope to creep.
+const TEMP_ROOTS = [...new Set([norm(tmpdir()), '/tmp', '/var/tmp', '/private/tmp', '/var/folders', '/private/var/folders'])]
+export const isTempPath = (p: string) => TEMP_ROOTS.some((root) => root && (p === root || p.startsWith(`${root}/`)))
 const stem = (p: string) => basename(p).replace(/(\.(test|spec))?\.\w+$/i, '').replace(/^test_/, '').toLowerCase()
 const area = (p: string) => dirname(norm(p)).split('/').filter((x) => x && x !== '.').slice(0, 2).join('/')
 
@@ -193,7 +203,7 @@ function renameOnly(a: string, b: string): [string, string] | null {
 /** Judge one change against the task. `touched` = files already changed in this task. */
 export function judgeChange(scope: TaskScope, c: Change, touched: string[], opts: { maxFiles?: number } = {}): ScopeFinding | null {
   const path = norm(c.path)
-  if (!path) return null
+  if (!path || isTempPath(path)) return null
   const named = inScope(scope, path)
   const text = `${c.oldText}\n${c.newText}`
   const f = (rule: string, reason: string): ScopeFinding => ({ rule, path, reason })

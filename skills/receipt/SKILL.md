@@ -1,6 +1,6 @@
 ---
 name: receipt
-description: Branch cost receipt - adds up what the Claude Code work on the current git branch cost (every session and subagent on that branch, from the transcripts), as a one-line commit trailer or a short table for a pull request description, with cache reads and what sommelier saved. Use when asked "what did this branch cost", "how much did this PR cost in AI", "add the cost to the commit", "AI cost trailer", or "receipt".
+description: Branch cost receipt: adds up what the Claude Code work on the current git branch cost (every session and subagent on that branch, from the transcripts), as a one-line commit trailer or a short table for a pull request description, with cache reads and what sommelier saved. Use when asked "what did this branch cost", "how much did this PR cost in AI", "add the cost to the commit", "AI cost trailer" or "receipt".
 ---
 
 # receipt: what this branch cost

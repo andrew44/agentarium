@@ -1,6 +1,6 @@
 ---
 name: ballast
-description: Context carry cost - replays a session to find where the user switched to a new task while the conversation still carried a large context from the last one, and what re-reading that old context cost at every later step; explains the ballast hook's notices. Use when asked "should I /clear or /compact", "is my context too big", "does starting a new chat save money", "what did carrying context cost", "ballast", or after a ballast notice.
+description: Context carry cost: replays a session to find where the user switched to a new task while the conversation still carried a large context from the last one, and what re-reading that old context cost at every later step; explains the ballast hook's notices. Use when asked "should I /clear or /compact", "is my context too big", "does starting a new chat save money", "what did carrying context cost", "ballast" or after a ballast notice.
 ---
 
 # ballast: what did carrying old context into new work cost?

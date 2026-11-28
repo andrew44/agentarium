@@ -183,6 +183,7 @@ const SIGNALS: [string, number, RegExp[]][] = [
     R`\barchitect\w*|\bsystem design\b|\bdesign (doc|review)\b`,
     R`\bsecurity\b|\bvulnerab\w+|\bexploit\b`, R`\bthreat model\b|\baudit\b.{0,20}\b(auth|crypto|permissions?)\b`,
     R`\brace condition\b|\bconcurren\w+|\bdeadlock\b|\bdistributed\b|\bconsisten(cy|t hashing)\b`,
+    R`\bmulti[- ]region\b|\bevent[- ]sourc\w*|\bexactly[- ]once\b|\bidempoten\w*|\bconsensus\b|\bfailover\b|\bcqrs\b`,
     R`\broot cause\b|\bwhy (is|does|did|would)\b.{0,60}\b(fail|crash|hang|leak|slow)\w*`,
     R`\btrade-?offs?\b|\bcompare\b.{0,40}\b(approaches|options|designs)\b`, R`\bpros and cons\b|\brecommend (one|an? \w+)\b`,
     R`\bprove\b|\bproof\b|\balgorithm\w*\b`, R`\b(time|space) complexity\b|\bbig-?o\b|\bterminates\b`,

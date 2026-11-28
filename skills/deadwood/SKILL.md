@@ -1,6 +1,6 @@
 ---
 name: deadwood
-description: Dead work - measures AI spend that produced nothing - failed implementations, work discarded or rejected, abandoned tasks, repeated debugging and generated files never used - as a monthly report with the biggest losses by project, model and task category, from observable signals (tests, commits, reverts, refusals), never token counts. Use when asked "how much did we waste", "wasted AI spend", "what produced nothing", "failed or abandoned work", "monthly waste report", or "deadwood".
+description: Dead work: measures AI spend that produced nothing (failed implementations, work discarded or rejected, abandoned tasks, repeated debugging and generated files never used), as a monthly report with the biggest losses by project, model and task category, from observable signals (tests, commits, reverts, refusals), never token counts. Use when asked "how much did we waste", "wasted AI spend", "what produced nothing", "failed or abandoned work", "monthly waste report" or "deadwood".
 ---
 
 # deadwood: what did we pay for that produced nothing?

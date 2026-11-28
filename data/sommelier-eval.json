@@ -42,6 +42,7 @@
     { "tier": "REASONING", "prompt": "prove that this scheduling algorithm always terminates and give its time complexity" },
     { "tier": "REASONING", "prompt": "we see a race condition in the distributed lock; reason about it step by step and propose a consistent design" },
     { "tier": "REASONING", "prompt": "investigate whether this crypto code is vulnerable to timing attacks and explain the exploit" },
-    { "tier": "REASONING", "prompt": "write a system design doc for multi-region failover with consistency guarantees" }
+    { "tier": "REASONING", "prompt": "write a system design doc for multi-region failover with consistency guarantees" },
+    { "tier": "REASONING", "prompt": "design the architecture for a multi-region event-sourced billing system with exactly-once delivery" }
   ]
 }

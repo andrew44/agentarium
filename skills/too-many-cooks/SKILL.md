@@ -1,6 +1,6 @@
 ---
 name: too-many-cooks
-description: Subagent cost guard - what subagents have cost (measured from their own transcripts, by type), how many were caught before they ran (overlapping briefs, single lookups, too many in one turn), and how the too-many-cooks hook works. Use when asked "what do subagents cost", "are my agents doing the same work", "too many subagents", "should I use a subagent for this", or "too-many-cooks".
+description: Subagent cost guard: what subagents have cost (measured from their own transcripts, by type), how many were caught before they ran (overlapping briefs, single lookups, too many in one turn), and how the too-many-cooks hook works. Use when asked "what do subagents cost", "are my agents doing the same work", "too many subagents", "should I use a subagent for this" or "too-many-cooks".
 ---
 
 # too-many-cooks: subagents worth sending

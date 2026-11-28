@@ -1,6 +1,6 @@
 ---
 name: spend-report
-description: Reports where AI coding spend went over a period (default the last 7 days) - money spent in the user's currency, the OPEX/CAPEX split, projects, models, the costliest sessions and what the agentarium helpers saved - with three concrete ways to spend less. Use when asked for a spend report, weekly AI cost summary, "where did my tokens go this week", budget status, or to compare OPEX and CAPEX spend.
+description: Reports where AI coding spend went over a period (default the last 7 days): money spent in the user's currency, the OPEX/CAPEX split, projects, models, the costliest sessions and what the agentarium helpers saved, with three concrete ways to spend less. Use when asked for a spend report, weekly AI cost summary, "where did my tokens go this week", budget status or to compare OPEX and CAPEX spend.
 ---
 
 # Spend report
