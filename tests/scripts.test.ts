@@ -89,6 +89,10 @@ describe('dashboard', () => {
     assert.equal(data.activity.helpers[0].helper, 'sommelier')
     assert.ok(data.recent.some((r: any) => r.source === 'claude-code' && r.spend > 0))
     assert.ok(data.recent.filter((r: any) => r.source === 'copilot').every((r: any) => r.spend === 0), 'premium requests are never priced')
+    // each day's saving, for the chart's ghost caps, adds up to the panel's total
+    const saved = data.daily.reduce((a: number, d: any) => a + d.saved, 0)
+    assert.ok(data.daily.every((d: any) => d.saved >= 0))
+    assert.ok(Math.abs(saved - data.activity.saved_usd) < 1e-4, `${saved} vs ${data.activity.saved_usd}`)
   })
 
   test('spend lands on the day it was spent, in the display currency', async (c) => {
@@ -138,7 +142,24 @@ describe('dashboard', () => {
     assert.ok((await (await fetch(base + '/')).text()).includes('<html'))
     const data = await (await fetch(base + '/api/data?days=7')).json() as any
     assert.equal(data.daily.length, 7)
+    assert.ok(String(data.db_path).endsWith('till.db'))
     assert.equal((await fetch(base + '/nope')).status, 404)
+    // nothing from outside: no fonts, scripts or images (the only URL is a link to the docs)
+    for (const page of ['/', '/copilot']) {
+      const urls = (await (await fetch(base + page)).text()).match(/https?:\/\/[^\s"'`)]+/g) ?? []
+      assert.deepEqual(urls.filter((u) => !u.startsWith('http://www.w3.org/2000/svg') && !u.startsWith('https://github.com/andrew44/')), [], page)
+    }
+  })
+
+  test('demo data says so, instead of a temp path', async (c) => {
+    const t = useTemp(c)
+    dashboard.seedDemo(t.db)
+    const srv = await new Promise<Server>((resolve) => {
+      const s = dashboard.serve(t.db, 0, () => resolve(s), { demo: true })
+    })
+    c.after(() => srv.close())
+    const data = await (await fetch(`http://127.0.0.1:${(srv.address() as AddressInfo).port}/api/data`)).json() as any
+    assert.equal(data.db_path, 'demo data')
   })
 })
 

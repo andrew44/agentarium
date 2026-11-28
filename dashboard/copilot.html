@@ -9,69 +9,106 @@
      from outside: it opens with nothing but the local server. -->
 <style>
 :root{
-  --bg:#fcfcfb; --ink:#16181d; --ink2:#4a505c; --muted:#7a808c; --line:#e6e7ea;
-  --green:#2f9e5b; --yellow:#c48a0a; --red:#d0393e;
+  --bg:#f6f6f3; --ink:#15171c; --ink2:#454b57; --muted:#737985; --line:#e4e5e8; --track:#eceef1;
+  --green:#14804a; --yellow:#b26b00; --red:#c92a3f; --pace:#15171c;
 }
 @media (prefers-color-scheme:dark){
-  :root{ --bg:#1a1a19; --ink:#f1f1ee; --ink2:#b9bcc3; --muted:#8b909a; --line:#32332f;
-    --green:#4cc27b; --yellow:#e0a92a; --red:#ef5a5f; }
+  :root{ --bg:#121216; --ink:#f0f0f3; --ink2:#bcc0c9; --muted:#8a8f9a; --line:#2b2c34; --track:#25262d;
+    --green:#4fd18b; --yellow:#f0b040; --red:#ff6b7d; --pace:#f0f0f3; }
 }
+*{box-sizing:border-box}
 html{background:var(--bg)}
-body{margin:0;padding:14px 16px;background:var(--bg);color:var(--ink);font:14px/1.4 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
-.row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.n{font-size:28px;font-weight:800;letter-spacing:-.03em}
-.of{color:var(--muted);font-weight:600}
-.cap{font-size:12px;color:var(--muted)}
-.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:8px 0}
-.bar div{height:100%;width:0;border-radius:4px;background:var(--green);transition:width .4s}
-.level-yellow .bar div{background:var(--yellow)}
-.level-red .bar div{background:var(--red)}
-.level-yellow .warn{color:var(--yellow)}
-.level-red .warn{color:var(--red)}
-.text{color:var(--ink2);font-size:13px}
-.hint{color:var(--muted);font-size:12px;margin-top:6px}
+body{margin:0;padding:14px 16px;background:var(--bg);color:var(--ink);font:14px/1.4 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{display:flex;gap:14px;align-items:center}
+.gauge{flex:none;position:relative;width:76px;height:76px}
+.gauge svg{display:block}
+.gauge .mark{position:absolute;inset:0;display:grid;place-items:center}
+.gauge .mark svg{border-radius:7px}
+.body{min-width:0;flex:1}
+.row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.n{font-size:30px;font-weight:800;letter-spacing:-.035em;line-height:1}
+.of{color:var(--ink2);font-weight:600}
+.badge{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--track);color:var(--ink2);white-space:nowrap}
+.level-yellow .badge.warn{color:var(--yellow)}
+.level-red .badge.warn{color:var(--red)}
+.bar{position:relative;height:8px;border-radius:4px;background:var(--track);margin:10px 0 6px}
+.bar .fill{height:100%;width:0;border-radius:4px;background:var(--green);transition:width .4s}
+.level-yellow .bar .fill{background:var(--yellow)}
+.level-red .bar .fill{background:var(--red)}
+.bar .pace{position:absolute;top:-4px;width:2px;height:16px;border-radius:1px;background:var(--pace);opacity:.7}
+.text{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.text b{color:var(--ink2);font-weight:650}
+.hint{color:var(--muted);font-size:12px;margin-top:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 <main id="live" aria-live="polite">
-  <div class="row"><span class="n" id="n">…</span><span class="of" id="of"></span><span class="cap warn" id="out"></span></div>
-  <div class="bar" id="barwrap" hidden><div id="bar"></div></div>
-  <div class="text" id="text"></div>
-  <div class="hint" id="hint" hidden></div>
+  <div class="gauge" id="gauge" aria-hidden="true"></div>
+  <div class="body">
+    <div class="row"><span class="n" id="n">…</span><span class="of" id="of"></span><span class="badge" id="out" hidden></span></div>
+    <div class="bar" id="barwrap" hidden><div class="fill" id="bar"></div><div class="pace" id="pace" title="Where an even pace would be today"></div></div>
+    <div class="text" id="text"></div>
+    <div class="text" id="today"></div>
+    <div class="hint" id="hint" hidden></div>
+  </div>
 </main>
 <script>
 const $ = (id) => document.getElementById(id)
 const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
+const COLOURS = { green: 'var(--green)', yellow: 'var(--yellow)', red: 'var(--red)' }
+const LOGO = '<svg width="30" height="30" viewBox="0 0 32 32"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5f8ff2"/><stop offset=".55" stop-color="#8f6cf0"/><stop offset="1" stop-color="#f08a5d"/></linearGradient></defs><rect width="32" height="32" rx="7.5" fill="url(#lg)"/><path d="M9.5 22.5V14a6.5 6.5 0 0 1 13 0v8.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M7 22.75h18" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><path d="M16 22.2v-5.6" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></svg>'
+/** The ring: what is left of the month's allowance, running down as it is used. */
+function gauge(leftFrac, level) {
+  const r = 32, c = 2 * Math.PI * r, f = Math.max(0, Math.min(1, leftFrac))
+  return `<svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--track)" stroke-width="7"/>` +
+    (f > 0 ? `<circle cx="38" cy="38" r="${r}" fill="none" stroke="${COLOURS[level] || COLOURS.green}" stroke-width="7" stroke-linecap="round" ` +
+      `stroke-dasharray="${(f * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 38 38)"/>` : '') + `</svg><div class="mark">${LOGO}</div>`
+}
+/** How far through the month we are (UTC, as the allowance counts it): where an even pace would be. */
+function monthFrac(d = new Date()) {
+  const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1), end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)
+  return (d.getTime() - start) / (end - start)
+}
 function draw(b) {
   if (!b || (b.show !== false && !b.today)) {
     $('text').textContent = `agentarium couldn't read the numbers${b && b.error ? `: ${b.error}` : ''}.`
     return
   }
   if (b.show === false) {
+    $('gauge').innerHTML = gauge(0, 'green')
     $('n').textContent = 'hidden'
     $('of').textContent = ''
-    $('out').textContent = ''
+    $('out').hidden = true
     $('text').textContent = 'agentarium statusline --band-on brings it back.'
     $('barwrap').hidden = true
     return
   }
   $('live').className = 'level-' + (b.level || 'green')
   const p = b.premium
+  const today = `today <b>${b.today.prompts}</b> prompt${b.today.prompts === 1 ? '' : 's'}, <b>${fmt(b.today.requests)}</b> requests`
   if (p) {
+    $('gauge').innerHTML = gauge(Math.max(0, p.left) / p.allowance, b.level)
     $('n').textContent = fmt(Math.max(0, p.left))
     $('of').textContent = `of ${p.allowance} premium requests left`
-    $('out').textContent = p.over ? 'over the allowance' : p.runs_out ? `runs out ~${new Date(p.runs_out + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}` : ''
+    const out = p.over ? 'over the allowance' : p.runs_out ? `runs out ~${new Date(p.runs_out + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}` : 'lasts the month'
+    $('out').textContent = out
+    $('out').className = p.over || p.runs_out ? 'badge warn' : 'badge'
+    $('out').hidden = false
     $('barwrap').hidden = false
     $('bar').style.width = Math.min(100, p.pct) + '%'
+    $('pace').style.left = `calc(${(monthFrac() * 100).toFixed(1)}% - 1px)`
+    $('text').innerHTML = `<b>~${fmt(p.per_day)}</b> a day · <b>~${p.projected}</b> by month end · the next ${p.steps} prompts use <b>${fmt(p.next)}</b>`
+    $('today').innerHTML = today[0].toUpperCase() + today.slice(1)
   } else {
+    $('gauge').innerHTML = gauge(0, 'green')
     $('n').textContent = String(b.today.prompts)
     $('of').textContent = `Copilot prompt${b.today.prompts === 1 ? '' : 's'} today`
-    $('out').textContent = ''
+    $('out').hidden = true
     $('barwrap').hidden = true
+    $('text').innerHTML = `<b>${b.month_prompts}</b> this month · ${today}`
+    $('today').textContent = ''
   }
-  const today = `today ${b.today.prompts} prompt${b.today.prompts === 1 ? '' : 's'}, ${fmt(b.today.requests)} requests`
-  $('text').textContent = p ? `~${fmt(p.per_day)} a day · ~${p.projected} by month end · next ${p.steps} prompts use ${fmt(p.next)} · ${today}`
-    : `${b.month_prompts} this month · ${today}`
   $('hint').hidden = !b.hint
   $('hint').textContent = b.hint || ''
   document.title = `${b.short} · agentarium`

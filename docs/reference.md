@@ -1265,11 +1265,13 @@ The band's numbers, and what to do about them, in a **pane beside the transcript
 
 ## dashboard
 
-A local web UI over the till database: a headline **% OPEX vs % CAPEX** split bar, what you spent and what agentarium saved, **what agentarium did**, daily trend, per-project split, skills used and recent sessions. Switch the measure between spend, tokens, sessions and prompts, and the range between 7d, 30d, 90d and all time. Light and dark mode follow your system. The header names the database with your home folder as `~` (`~/.agentarium/till.db`), so a screenshot doesn't show your username.
+A local web UI over the till database. It leads with **what agentarium saved**: the figure, the share of the bill, and a bar of what you spent against what you would have spent without it. Beside that sit spend and tokens (each with a sparkline of the range), the cache hit rate and sessions by platform. Under it: **what agentarium did**, helper by helper; the **daily** chart, stacked OPEX / CAPEX, with a hatched cap on each column for what agentarium saved that day; **building vs running**, the OPEX / CAPEX split; per-project split, skills used and recent sessions (cards on a phone).
+
+Switch the measure between spend, tokens, sessions and prompts, and the range between 7d, 30d, 90d and all time. Every chart has a table view, and each column of the daily chart shows its split on hover or keyboard focus. Light and dark mode follow your system; the button beside the range picks one for this browser. It refreshes every minute while the tab is open. The header names the database with your home folder as `~` (`~/.agentarium/till.db`), so a screenshot doesn't show your username, and says *demo data* under `--demo`. The page loads nothing from outside, fonts included.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/dashboard-dark.png">
-  <img src="assets/dashboard-light.png" alt="The agentarium dashboard: OPEX vs CAPEX split of spend, spend and savings, and what each helper did, priced">
+  <img src="assets/dashboard-light.png" alt="The agentarium dashboard: what agentarium saved against what was spent, spend and token sparklines, cache hit rate, and what each helper did, priced">
 </picture>
 
 **Spend** is in your display currency (`AGENTARIUM_CURRENCY`, or the status line's saved choice), from the cost till records per day, so a long session's spend lands on the days it was spent. It covers token-billed sessions only: Copilot's premium requests are counted elsewhere and never priced. It opens on spend when there is any, and on tokens otherwise.
@@ -1283,7 +1285,7 @@ A local web UI over the till database: a headline **% OPEX vs % CAPEX** split ba
 | **Tokens** | Kept out of the context (diet, and hold-up's pastes not sent again), carried into a new task (ballast), or what a `/clear` from a doggybag skips re-writing. | `diet_events`, `holdup_events`, `ballast_events`, `doggybag_events` |
 | **Times** | Loops broken (groundhog), edits questioned (blinkers), prompts paused (budget, hold-up, Copilot premium), tasks quoted and held to their price (haggle), repeated instructions spotted (parrot). | the matching `<name>_events` table, `contracts` |
 
-The headline compares what you spent with what you would have spent without the saved items. Everything is an estimate at list prices. The same figures are available to scripts as `PolicyEngine.activity(db, since)` in `agentarium/services/policy.ts`, and as `activity` in the page's `/api/data`.
+The headline compares what you spent with what you would have spent without the saved items. The daily chart's caps are the same figure per day (`saved` on each row of `/api/data`'s `daily`), up to 120 days. Everything is an estimate at list prices. The same figures are available to scripts as `PolicyEngine.activity(db, since)` in `agentarium/services/policy.ts`, and as `activity` in the page's `/api/data`.
 
 ```bash
 agentarium dashboard                      # opens http://127.0.0.1:8765 (runs in the background)

@@ -154,6 +154,8 @@ export function build(dbPath: string, days: number): Obj {
     }
   }
 
+  savedByDay(dbPath, series)
+
   const recent = [...rows].sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || ''))).slice(0, 12)
     .map((r) => ({ session_id: r.session_id, source: r.source, cwd: r.cwd, label: r.label, prompts: r.prompt_count || 0,
       tokens: (r.input_tokens || 0) + (r.output_tokens || 0), spend: sessionSpend.get(r.session_id) ?? 0, updated_at: r.updated_at }))
@@ -169,6 +171,24 @@ export function build(dbPath: string, days: number): Obj {
     skills: [...skills.values()].sort((a, b) => b.sessions - a.sessions).slice(0, 10),
     sources, recent,
   }
+}
+
+/** What agentarium saved each day (USD), as `saved` on each row of the daily series: the chart
+ *  draws it as a ghost cap over the day's spend. Each day is the difference of two running totals
+ *  from PolicyEngine.activity, so it counts exactly what the "What agentarium did" panel counts.
+ *  Skipped past SAVED_DAYS days, where a column is too thin to show it anyway. */
+const SAVED_DAYS = 120
+function savedByDay(dbPath: string, series: Obj[]): void {
+  for (const row of series) row.saved = 0
+  if (!series.length || series.length > SAVED_DAYS) return
+  withDb(dbPath, (db) => {
+    let after = 0
+    for (let i = series.length - 1; i >= 0; i--) {
+      const since = PolicyEngine.activity(db, series[i].date).saved_usd
+      series[i].saved = Math.max(0, Math.round((since - after) * 1e6) / 1e6)
+      after = since
+    }
+  }, { readOnly: true })
 }
 
 /** A small seeded PRNG, so the demo data is the same on every run. */
@@ -337,7 +357,7 @@ function seedActivity(db: store.Db, sessions: { sid: string, ts: Date, source: s
   })
 }
 
-export function serve(dbPath: string, port: number, onListening?: () => void) {
+export function serve(dbPath: string, port: number, onListening?: () => void, opts: { demo?: boolean } = {}) {
   const srv = createServer((req, res) => {
     const send = (code: number, body: string | Buffer, ctype: string) => {
       const data = typeof body === 'string' ? Buffer.from(body, 'utf8') : body
@@ -368,7 +388,8 @@ export function serve(dbPath: string, port: number, onListening?: () => void) {
       try {
         const n = Number.parseInt(u.searchParams.get('days') ?? '30', 10)
         const days = Math.max(0, Math.min(Number.isNaN(n) ? 30 : n, 3650))
-        send(200, JSON.stringify(build(dbPath, days)), 'application/json')
+        // demo data says so in the header, rather than showing a temp path that looks like someone's real file
+        send(200, JSON.stringify({ ...build(dbPath, days), ...(opts.demo ? { db_path: 'demo data', demo: true } : {}) }), 'application/json')
       } catch (e) {                                 // never crash the server on a bad DB
         send(500, JSON.stringify({ error: String(e instanceof Error ? e.message : e) }), 'application/json')
       }
@@ -516,7 +537,7 @@ async function main(argv: string[]): Promise<number> {
     process.stdout.write(`agentarium dashboard on ${url}\n  db: ${dbPath}${demo ? '  (demo data)' : ''}\n  Ctrl+C to stop\n`)
     if (win) openWindow(url, noOpen)
     else openBrowser(url, noOpen)
-  }).on('error', (e) => {
+  }, { demo }).on('error', (e) => {
     process.stderr.write(`agentarium dashboard: ${e.message}\n`)
     process.exitCode = 1
   })

@@ -1,156 +1,235 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agentarium</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>agentarium</title>
+<!-- The dashboard, served by scripts/dashboard.ts from /api/data. No fonts, scripts or images from
+     outside: opening it sends nothing anywhere but the local server. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%235f8ff2'/%3E%3Cstop offset='.55' stop-color='%238f6cf0'/%3E%3Cstop offset='1' stop-color='%23f08a5d'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7.5' fill='url(%23a)'/%3E%3Cpath d='M9.5 22.5V14a6.5 6.5 0 0 1 13 0v8.5' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M7 22.75h18' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
 :root{
-  --bg:#fcfcfb; --panel:#ffffff; --ink:#16181d; --ink2:#4a505c; --muted:#7a808c;
-  --line:#e6e7ea; --grid:#eceef1;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Inter,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --bg:#f6f6f3; --panel:#ffffff; --raise:#fbfbfa; --ink:#15171c; --ink2:#454b57; --muted:#737985;
+  --line:#e4e5e8; --grid:#eef0f2;
   --opex:#2d6cdf; --capex:#c4590a; --mixed:#8a5fc0; --unknown:#aab0ba;
-  --focus:#2d6cdf; --save:#1a7f45; --save-bg:#e8f5ec;
+  --accent:#6f4ff0; --focus:#2d6cdf;
+  --save:#14804a; --save-soft:#dff3e7; --warn:#b26b00; --risk:#c92a3f;
+  --glow1:rgba(111,79,240,.10); --glow2:rgba(45,108,223,.08); --shadow:0 1px 2px rgba(20,22,28,.04),0 8px 28px rgba(20,22,28,.05);
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#1a1a19; --panel:#222221; --ink:#f1f1ee; --ink2:#b9bcc3; --muted:#8b909a;
-    --line:#32332f; --grid:#2b2c29;
-    --opex:#4f86e6; --capex:#cf7433; --mixed:#9672cc; --unknown:#6b717c; --focus:#7aa2f0;
-    --save:#5cc98a; --save-bg:#1f2e24;
+    --bg:#121216; --panel:#1b1b21; --raise:#202027; --ink:#f0f0f3; --ink2:#bcc0c9; --muted:#8a8f9a;
+    --line:#2b2c34; --grid:#25262d;
+    --opex:#4f86e6; --capex:#cf7433; --mixed:#9672cc; --unknown:#6b717c;
+    --accent:#b4a0ff; --focus:#7aa2f0;
+    --save:#4fd18b; --save-soft:#173325; --warn:#f0b040; --risk:#ff6b7d;
+    --glow1:rgba(180,160,255,.12); --glow2:rgba(79,134,230,.10); --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.25);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#1a1a19; --panel:#222221; --ink:#f1f1ee; --ink2:#b9bcc3; --muted:#8b909a;
-  --line:#32332f; --grid:#2b2c29;
-  --opex:#4f86e6; --capex:#cf7433; --mixed:#9672cc; --unknown:#6b717c; --focus:#7aa2f0;
-  --save:#5cc98a; --save-bg:#1f2e24;
+  --bg:#121216; --panel:#1b1b21; --raise:#202027; --ink:#f0f0f3; --ink2:#bcc0c9; --muted:#8a8f9a;
+  --line:#2b2c34; --grid:#25262d;
+  --opex:#4f86e6; --capex:#cf7433; --mixed:#9672cc; --unknown:#6b717c;
+  --accent:#b4a0ff; --focus:#7aa2f0;
+  --save:#4fd18b; --save-soft:#173325; --warn:#f0b040; --risk:#ff6b7d;
+  --glow1:rgba(180,160,255,.12); --glow2:rgba(79,134,230,.10); --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.25);
 }
 *{box-sizing:border-box}
-html{background:var(--bg)}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Hanken Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
-.wrap{max-width:1120px;margin:0 auto;padding:28px 16px 64px}
-:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans)}
+.wrap{max-width:1160px;margin:0 auto;padding:22px 16px 64px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+.num,td.num,.tab{font-variant-numeric:tabular-nums}
+.hidden{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-header{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:center;justify-content:space-between;margin-bottom:28px}
-.brand{display:flex;align-items:baseline;gap:12px}
-.brand h1{font-size:22px;letter-spacing:-.02em;margin:0;font-weight:800}
-.brand span{color:var(--muted);font-size:13px}
-.controls{display:flex;flex-wrap:wrap;gap:10px}
-.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
-.seg button{font:inherit;font-size:13px;font-weight:600;color:var(--ink2);background:none;border:0;padding:6px 12px;border-radius:7px;cursor:pointer}
+/* header */
+header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand svg{flex:none;border-radius:9px;box-shadow:0 4px 14px rgba(111,79,240,.25)}
+.brand h1{font-size:21px;letter-spacing:-.02em;margin:0;font-weight:800;line-height:1.1}
+.brand .meta{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;min-width:0}
+.brand .meta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--save);box-shadow:0 0 0 0 var(--save);animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(79,209,139,.5)}70%{box-shadow:0 0 0 7px rgba(79,209,139,0)}100%{box-shadow:0 0 0 0 rgba(79,209,139,0)}}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:3px}
+.seg button,.icon-btn{font:inherit;font-size:13px;font-weight:600;color:var(--ink2);background:none;border:0;padding:6px 11px;border-radius:8px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
-.seg button:not([aria-pressed="true"]):hover{background:var(--grid)}
+.seg button:not([aria-pressed="true"]):hover,.icon-btn:hover{background:var(--grid)}
+.icon-btn{border:1px solid var(--line);background:var(--panel);padding:7px 9px;display:inline-flex;align-items:center;gap:6px}
+.icon-btn svg{width:16px;height:16px}
 
-/* hero */
-.hero{padding:8px 0 30px}
-.hero-top{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
-.big{display:flex;flex-direction:column;gap:2px}
-.big .n{font-size:clamp(56px,11vw,112px);font-weight:800;letter-spacing:-.05em;line-height:.9}
-.big .n small{font-size:.36em;letter-spacing:-.02em;font-weight:700;margin-left:2px}
-.big .t{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
-.big .t i{width:10px;height:10px;border-radius:3px;display:inline-block}
-.big .d{font-size:13px;color:var(--muted)}
-.big.right{text-align:right;align-items:flex-end}
-.big.right .t{flex-direction:row-reverse}
-.splitbar{margin-top:22px;height:64px;display:flex;gap:2px;border-radius:14px;overflow:hidden}
-.splitbar div{min-width:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;transition:flex-basis .5s cubic-bezier(.2,.7,.2,1);cursor:default;white-space:nowrap;overflow:hidden}
-.splitbar div:first-child{border-radius:14px 0 0 14px}
-.splitbar div:last-child{border-radius:0 14px 14px 0}
-.hero-foot{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:12px;font-size:13px;color:var(--ink2)}
-.hero-foot span{display:inline-flex;align-items:center;gap:7px}
-.dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+/* hero: what it saved */
+.hero{position:relative;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px;background:var(--panel);
+  border:1px solid var(--line);border-radius:20px;padding:26px;margin-bottom:18px;overflow:hidden;box-shadow:var(--shadow)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(600px 260px at 0% 0%,var(--glow1),transparent 70%),radial-gradient(500px 240px at 100% 100%,var(--glow2),transparent 70%)}
+.hero>*{position:relative}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.headline{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:6px 0 4px}
+.headline .n{font-size:clamp(48px,8vw,84px);font-weight:800;letter-spacing:-.045em;line-height:.95;color:var(--save)}
+.headline .pct{font-size:15px;font-weight:700;color:var(--save);background:var(--save-soft);padding:3px 10px;border-radius:99px;white-space:nowrap}
+.lede{color:var(--ink2);font-size:15px;margin:6px 0 18px;max-width:46ch}
+.lede b{color:var(--ink)}
+.bill{display:grid;gap:8px}
+.bill .row{display:grid;grid-template-columns:140px minmax(0,1fr) 80px;gap:10px;align-items:center;font-size:13px}
+.bill .row>span:first-child{color:var(--muted)}
+.bill .amt{text-align:right;font-weight:700}
+.bill .track{height:14px;border-radius:7px;background:var(--grid);display:flex;gap:2px;overflow:hidden}
+.bill .track div{height:100%;min-width:0;transition:flex-basis .6s cubic-bezier(.2,.7,.2,1)}
+.hatch{background:repeating-linear-gradient(135deg,var(--save) 0 3px,transparent 3px 7px);opacity:.75}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
+.tile{background:var(--raise);border:1px solid var(--line);border-radius:14px;padding:14px 15px;min-width:0;display:flex;flex-direction:column;gap:2px;text-decoration:none;color:inherit}
+.tile .l{font-size:12px;color:var(--muted);font-weight:600}
+.tile .v{font-size:26px;font-weight:750;letter-spacing:-.025em;line-height:1.15}
+.tile .s{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile .viz{height:28px;margin-top:6px}
+.tile .viz svg{display:block;width:100%;height:28px;overflow:visible}
+.tile.ring{flex-direction:row;align-items:center;gap:12px}
+.tile.ring svg{flex:none}
+.split2{display:flex;height:6px;border-radius:3px;overflow:hidden;gap:2px;margin-top:8px;background:var(--grid)}
+.srcs{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:6px;font-size:12px;color:var(--muted)}
+.srcs span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.srcs .dot{width:8px;height:8px;border-radius:2px}
+.srcs b{color:var(--ink2);font-weight:650}
+.split2 div{min-width:0}
 
-/* kpis */
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:22px}
-.kpi{background:var(--panel);padding:16px 18px}
-.kpi .l{font-size:13px;color:var(--muted)}
-.kpi .v{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
-.kpi .s{font-size:12px;color:var(--muted)}
-a.kpi{color:inherit;text-decoration:none}
-a.kpi:hover{background:var(--grid)}
-.kpi.save .v{color:var(--save)}
+/* panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px 22px 18px;margin-bottom:18px;box-shadow:var(--shadow)}
+.panel h2{font-size:17px;margin:0;letter-spacing:-.015em}
+.panel .sub{font-size:13px;color:var(--muted);margin:3px 0 0}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.link{font:inherit;font-size:13px;font-weight:600;color:var(--ink2);background:none;border:1px solid var(--line);border-radius:9px;padding:5px 11px;cursor:pointer}
+.link:hover{background:var(--grid)}
+.cols{display:grid;grid-template-columns:3fr 2fr;gap:18px}
 
 /* what agentarium did */
-.did-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin:2px 0 14px}
-.did-head .n{font-size:40px;font-weight:800;letter-spacing:-.03em;color:var(--save);line-height:1}
-.did-head .w{font-size:14px;color:var(--ink2)}
-.compare{display:grid;grid-template-columns:auto 1fr auto;gap:6px 12px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:16px}
-.compare .track{height:10px;border-radius:5px;background:var(--grid);overflow:hidden;display:flex}
-.compare .track div{height:100%}
-.compare .amt{text-align:right;color:var(--ink2);font-weight:600}
-.act{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
-.act:first-of-type{border-top:0}
-.act .ico{font-size:18px;line-height:1;text-align:center}
+.group{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 0 4px}
+.group+.act{border-top:0}
+.act{display:grid;grid-template-columns:36px minmax(0,1fr) minmax(70px,22%) 86px;gap:6px 14px;align-items:center;padding:11px 0;border-top:1px solid var(--line);font-size:13px}
+.act .ico{width:36px;height:36px;border-radius:11px;background:var(--grid);display:grid;place-items:center;font-size:18px;line-height:1}
 .act .txt{color:var(--ink2);min-width:0}
 .act .txt a{color:var(--ink);font-weight:700;text-decoration:none;margin-right:6px}
 .act .txt a:hover{text-decoration:underline}
-.act .amt{text-align:right;font-weight:700;white-space:nowrap}
+.act .meter{height:8px;border-radius:4px;background:var(--grid);overflow:hidden}
+.act .meter div{height:100%;border-radius:4px;background:var(--save);transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.act .amt{text-align:right;font-weight:750;white-space:nowrap;font-variant-numeric:tabular-nums}
 .act .amt small{display:block;font-size:11px;font-weight:500;color:var(--muted)}
 .act .amt.save{color:var(--save)}
+.act.nometer{grid-template-columns:36px minmax(0,1fr) 86px}
 
-/* panels */
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 20px 16px;margin-bottom:22px}
-.panel h2{font-size:16px;margin:0;letter-spacing:-.01em}
-.panel .sub{font-size:13px;color:var(--muted);margin:2px 0 0}
-.ph{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;flex-wrap:wrap}
-.link{font:inherit;font-size:13px;font-weight:600;color:var(--ink2);background:none;border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}
-.link:hover{background:var(--grid)}
-.cols{display:grid;grid-template-columns:3fr 2fr;gap:22px}
-.cols .panel{margin-bottom:22px}
+/* the daily chart */
 .chart{position:relative;width:100%}
 .chart svg{display:block;width:100%;overflow:visible}
-.axis text{fill:var(--muted);font-size:11px}
+.axis text{fill:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
 .gridline{stroke:var(--grid);stroke-width:1}
-.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);padding:9px 11px;border-radius:9px;font-size:12px;line-height:1.5;box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .08s;z-index:5;min-width:140px}
-.tip b{display:block;margin-bottom:3px;font-size:12px}
-.tip div{display:flex;justify-content:space-between;gap:16px}
+.baseline{stroke:var(--line);stroke-width:1}
+.hit{outline:none}
+.hit:focus-visible{stroke:var(--focus);stroke-width:2}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;font-size:13px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.dot{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.55;box-shadow:0 8px 28px rgba(0,0,0,.22);opacity:0;transition:opacity .08s;z-index:5;min-width:170px}
+.tip b{display:block;margin-bottom:4px;font-size:12px}
+.tip div{display:flex;justify-content:space-between;gap:18px;font-variant-numeric:tabular-nums}
 .tip i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:6px}
+.tip .t{border-top:1px solid color-mix(in srgb,var(--bg) 25%,transparent);margin-top:4px;padding-top:4px;font-weight:700}
+
+/* building vs running */
+.split-top{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.big{display:flex;flex-direction:column;gap:2px}
+.big .n{font-size:clamp(44px,7vw,72px);font-weight:800;letter-spacing:-.05em;line-height:.9}
+.big .n small{font-size:.4em;letter-spacing:-.02em;font-weight:700;margin-left:2px}
+.big .t{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.big .d{font-size:13px;color:var(--muted)}
+.big.right{text-align:right;align-items:flex-end}
+.big.right .t{flex-direction:row-reverse}
+.splitbar{margin-top:18px;height:56px;display:flex;gap:2px;border-radius:14px;overflow:hidden}
+.splitbar div{min-width:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;transition:flex-basis .5s cubic-bezier(.2,.7,.2,1);cursor:default;white-space:nowrap}
+.splitbar div:first-child{border-radius:14px 0 0 14px}
+.splitbar div:last-child{border-radius:0 14px 14px 0}
 
 /* project rows */
-.prow{display:grid;grid-template-columns:minmax(90px,150px) 1fr auto;gap:12px;align-items:center;padding:7px 0}
-.prow .nm{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prow .bar{display:flex;height:14px;gap:2px;border-radius:5px;overflow:hidden;background:var(--grid)}
+.prow{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr) 72px;gap:12px;align-items:center;padding:8px 0}
+.prow .nm{font-size:13px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .bar{display:flex;height:12px;gap:2px;border-radius:6px;overflow:hidden;background:var(--grid)}
 .prow .bar div{min-width:0}
-.prow .v{font-size:12px;color:var(--muted);text-align:right;min-width:48px}
+.prow .v{font-size:13px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.prow .v small{display:block;font-size:11px;font-weight:500;color:var(--muted)}
 
 /* skills */
-.skill{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.skill{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
 .skill:first-of-type{border-top:0}
-.chip{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid currentColor;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.skill .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{font-size:12px;font-weight:650;padding:2px 9px;border-radius:99px;border:1px solid currentColor;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .chip i{width:6px;height:6px;border-radius:50%;background:currentColor}
 .c-opex{color:var(--opex)}.c-capex{color:var(--capex)}.c-mixed{color:var(--mixed)}.c-unknown{color:var(--muted)}
+.src{font-size:11px;font-weight:700;letter-spacing:.02em;padding:2px 7px;border-radius:6px;background:var(--grid);color:var(--ink2);white-space:nowrap}
 
 /* table */
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;font-weight:600;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
 td.num,th.num{text-align:right}
+tbody tr:hover td{background:var(--raise)}
 tr:last-child td{border-bottom:0}
 .scroll{overflow-x:auto}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--ink2)}
+.mono{font-family:var(--mono);font-size:12px;color:var(--ink2)}
 
-/* empty */
-.empty{border:1px dashed var(--line);border-radius:14px;padding:40px 24px;text-align:center;color:var(--ink2)}
-.empty h2{margin:0 0 6px;color:var(--ink)}
-.empty code{background:var(--grid);padding:2px 6px;border-radius:5px;font-size:13px}
-.hidden{display:none!important}
-.foot{color:var(--muted);font-size:12px;margin-top:8px}
+/* empty and footer */
+.empty{background:var(--panel);border:1px dashed var(--line);border-radius:18px;padding:48px 24px;text-align:center;color:var(--ink2)}
+.empty h2{margin:12px 0 6px;color:var(--ink)}
+.empty code{background:var(--grid);padding:2px 6px;border-radius:5px;font-size:13px;font-family:var(--mono)}
+.foot{color:var(--muted);font-size:12px;margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:space-between}
+.foot a{color:inherit}
+.stale{opacity:.55;transition:opacity .2s}
 
-@media (max-width:820px){
-  .kpis{grid-template-columns:repeat(2,1fr)}
+@media (max-width:900px){
+  .hero{grid-template-columns:1fr;padding:22px}
   .cols{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .wrap{padding:16px 16px 48px}
+  .tiles{grid-template-columns:1fr 1fr;gap:10px}
+  .tile .v{font-size:22px}
+  .tile .s{white-space:normal}
+  .tile.ring{flex-direction:column;align-items:flex-start;gap:6px}
+  .tile.ring svg{width:40px;height:40px}
+  .bill .row{grid-template-columns:88px minmax(0,1fr) 66px;font-size:12px}
+  .act,.act.nometer{grid-template-columns:36px minmax(0,1fr) 76px}
+  .act .meter{display:none}
   .big.right{text-align:left;align-items:flex-start}
   .big.right .t{flex-direction:row}
+  .panel{padding:18px 16px 14px}
+  /* recent sessions as cards */
+  #recent table,#recent tbody,#recent tr,#recent td{display:block;width:100%}
+  #recent thead{display:none}
+  #recent tr{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+  #recent tr:last-child{border-bottom:0}
+  #recent td{border:0;padding:0}
+  #recent td[data-k]:not(.lead)::before{content:attr(data-k) " ";color:var(--muted)}
+  #recent td.lead{font-weight:650}
+  #recent td.num{text-align:left}
+  #recent td:nth-child(even){text-align:right}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (forced-colors:active){.hatch{background:Highlight}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>Agentarium</h1><span id="dbinfo"></span></div>
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5f8ff2"/><stop offset=".55" stop-color="#8f6cf0"/><stop offset="1" stop-color="#f08a5d"/></linearGradient></defs><rect width="32" height="32" rx="7.5" fill="url(#lg)"/><path d="M9.5 22.5V14a6.5 6.5 0 0 1 13 0v8.5" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/><path d="M7 22.75h18" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/><path d="M16 22.2v-5.6" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><path d="M16 17.6c-2.6 0-3.9-1.5-3.9-3.7 2.6 0 3.9 1.5 3.9 3.7Z" fill="#fff"/><path d="M16 16.4c0-2.4 1.3-3.9 3.8-3.9 0 2.4-1.3 3.9-3.8 3.9Z" fill="#fff"/></svg>
+      <div>
+        <h1>agentarium</h1>
+        <div class="meta"><span id="dbinfo"></span><span class="live" id="live" hidden><i></i><span id="liveText"></span></span></div>
+      </div>
+    </div>
     <div class="controls">
       <div class="seg" role="group" aria-label="Measure" id="metricSeg">
         <button data-m="spend" aria-pressed="false">Spend</button>
@@ -164,22 +243,22 @@ tr:last-child td{border-bottom:0}
         <button data-d="90" aria-pressed="false">90d</button>
         <button data-d="0" aria-pressed="false">All</button>
       </div>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Colour theme"></button>
     </div>
   </header>
 
   <div id="empty" class="empty hidden"></div>
 
   <main id="app" class="hidden">
-    <section class="hero" aria-label="Opex and capex share">
-      <div class="hero-top">
-        <div class="big"><div class="n" id="opexPct"></div><div class="t"><i style="background:var(--opex)"></i>OPEX</div><div class="d">Running it: insights, logs, metrics, Grafana</div></div>
-        <div class="big right"><div class="n" id="capexPct"></div><div class="t"><i style="background:var(--capex)"></i>CAPEX</div><div class="d">Building it: generating and changing code</div></div>
+    <section class="hero" aria-labelledby="heroTitle">
+      <div>
+        <div class="eyebrow" id="heroTitle">Saved by agentarium</div>
+        <div class="headline"><span class="n" id="savedBig">£0.00</span><span class="pct" id="savedPct"></span></div>
+        <p class="lede" id="lede"></p>
+        <div class="bill" id="bill" role="img"></div>
       </div>
-      <div class="splitbar" id="splitbar" role="img" aria-label=""></div>
-      <div class="hero-foot" id="herofoot"></div>
+      <div class="tiles" id="tiles"></div>
     </section>
-
-    <section class="kpis" id="kpis"></section>
 
     <section class="panel" id="did" aria-labelledby="didTitle">
       <div class="ph"><div><h2 id="didTitle">What agentarium did</h2><p class="sub" id="didSub"></p></div></div>
@@ -188,29 +267,39 @@ tr:last-child td{border-bottom:0}
 
     <section class="panel">
       <div class="ph">
-        <div><h2 id="trendTitle">Daily usage</h2><p class="sub" id="trendSub"></p></div>
+        <div><h2 id="trendTitle">Daily spend</h2><p class="sub" id="trendSub"></p></div>
         <button class="link" id="tableToggle" aria-pressed="false">View as table</button>
       </div>
       <div class="chart" id="trend"></div>
       <div class="scroll hidden" id="trendTable"></div>
     </section>
 
+    <section class="panel" aria-labelledby="splitTitle">
+      <div class="ph"><div><h2 id="splitTitle">Building vs running</h2><p class="sub" id="splitSub">OPEX keeps things running; CAPEX builds and changes them. till labels every session.</p></div></div>
+      <div class="split-top">
+        <div class="big"><div class="n" id="opexPct"></div><div class="t"><i class="dot" style="background:var(--opex)"></i>OPEX</div><div class="d">Running it: insights, logs, metrics, incidents</div></div>
+        <div class="big right"><div class="n" id="capexPct"></div><div class="t"><i class="dot" style="background:var(--capex)"></i>CAPEX</div><div class="d">Building it: generating and changing code</div></div>
+      </div>
+      <div class="splitbar" id="splitbar" role="img" aria-label=""></div>
+      <div class="legend" id="splitfoot"></div>
+    </section>
+
     <div class="cols">
       <section class="panel">
-        <div class="ph"><div><h2>By project</h2><p class="sub">Share of each project's usage that was opex vs capex</p></div></div>
+        <div class="ph"><div><h2>By project</h2><p class="sub" id="projSub">Each project's share, OPEX against CAPEX</p></div></div>
         <div id="projects"></div>
       </section>
       <section class="panel">
-        <div class="ph"><div><h2>Skills used</h2><p class="sub">Sessions per skill, with the side it counts toward</p></div></div>
+        <div class="ph"><div><h2>Skills used</h2><p class="sub">Sessions per skill, and the side it counts toward</p></div></div>
         <div id="skills"></div>
       </section>
     </div>
 
     <section class="panel">
-      <div class="ph"><div><h2>Recent sessions</h2></div></div>
+      <div class="ph"><div><h2>Recent sessions</h2><p class="sub">The latest twelve, newest first</p></div></div>
       <div class="scroll" id="recent"></div>
     </section>
-    <p class="foot" id="foot"></p>
+    <div class="foot"><span id="foot"></span><span>Read-only and local: nothing on this page leaves your machine.</span></div>
   </main>
 </div>
 <div class="tip" id="tip" role="presentation"></div>
@@ -218,9 +307,9 @@ tr:last-child td{border-bottom:0}
 <script>
 const LABELS = ["opex","capex","mixed","unknown"];
 const NAMES = {opex:"OPEX",capex:"CAPEX",mixed:"Mixed",unknown:"Unclassified"};
-const state = {metric:null, days:30, table:false, data:null};
+const SOURCES = {"claude-code":"Claude Code", copilot:"Copilot CLI", vscode:"VS Code"};
+const state = {metric:null, days:30, table:false, data:null, first:true};
 const $ = s => document.querySelector(s);
-const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const colour = l => `var(--${l})`;
 const METRIC_NAME = {spend:"spend", tokens:"tokens", sessions:"sessions", prompts:"prompts"};
 const DOCS = "https://github.com/andrew44/agentarium/blob/main/docs/reference.md#";
@@ -228,8 +317,9 @@ const HELPERS = {
   "sommelier":["🍷","sommelier"], "cache-buster":["💥","cache-buster"], "diet":["🥗","diet"], "groundhog":["🦫","groundhog"],
   "blinkers":["🐴","blinkers"], "too-many-cooks":["🧑‍🍳","too-many-cooks"], "ballast":["⚓","ballast"], "budget":["💳","budget"],
   "premium":["🐙","copilot-premium-requests"], "haggle":["🤝","haggle"], "doggybag":["🥡","doggybag"], "kettle":["🫖","kettle"],
-  "parrot":["🦜","parrot"], "colander":["🍝","colander"],
+  "parrot":["🦜","parrot"], "colander":["🍝","colander"], "hold-up":["✋","hold-up"],
 };
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function fmt(n){
   if (n >= 1e9) return (n/1e9).toFixed(n>=1e10?0:1)+"B";
@@ -261,21 +351,52 @@ function ago(iso){
   return Math.round(m/1440)+"d ago";
 }
 function base(p){ return (p||"unknown").split(/[\\/]/).filter(Boolean).pop() || p; }
+const when = d => d.days ? `the last ${d.days} days` : "all time";
 
-async function load(){
+/* ---------- theme: system, light or dark, remembered in this browser only ---------- */
+const THEMES = ["system","light","dark"];
+const ICONS = {
+  system:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5"/><path d="M5.5 14h5"/></svg>',
+  light:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"/></svg>',
+  dark:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.6A5.5 5.5 0 0 1 6.4 2.5a5.5 5.5 0 1 0 7.1 7.1Z"/></svg>',
+};
+function getTheme(){ try { return localStorage.getItem("agentarium-theme") || "system"; } catch { return "system"; } }
+function applyTheme(t){
+  if (t === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+  const b = $("#themeBtn");
+  b.innerHTML = ICONS[t] + `<span class="sr">Theme: ${t}</span>`;
+  b.title = `Theme: ${t} (click to change)`;
+}
+$("#themeBtn").addEventListener("click", () => {
+  const next = THEMES[(THEMES.indexOf(getTheme()) + 1) % THEMES.length];
+  try { localStorage.setItem("agentarium-theme", next); } catch {}
+  applyTheme(next);
+  if (state.data && !state.data.empty) render();
+});
+applyTheme(getTheme());
+
+/* ---------- loading: the previous render stays, dimmed, while the next arrives ---------- */
+async function load(quiet){
+  if (!quiet && state.data) $("#app").classList.add("stale");
   try{
-    const r = await fetch("/api/data?days="+state.days);
+    const r = await fetch("/api/data?days="+state.days, {cache:"no-store"});
     const d = await r.json();
     if (d.error) throw new Error(d.error);
     state.data = d; render();
+    const t = new Date();
+    $("#live").hidden = false;
+    $("#liveText").textContent = `updated ${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}`;
   }catch(e){
-    showEmpty("Can't read the database", `<code>${esc(e.message)}</code>`);
+    if (!quiet || !state.data) showEmpty("Can't read the database", `<code>${esc(e.message)}</code>`);
+  }finally{
+    $("#app").classList.remove("stale");
   }
 }
 function showEmpty(title, body){
   $("#app").classList.add("hidden");
   const el = $("#empty"); el.classList.remove("hidden");
-  el.innerHTML = `<h2>${title}</h2><p>${body}</p>`;
+  el.innerHTML = `${$(".brand svg").outerHTML}<h2>${title}</h2><p>${body}</p>`;
 }
 
 function render(){
@@ -284,46 +405,81 @@ function render(){
   if (d.empty){
     const msg = d.reason === "no-database" || d.reason === "no-table"
       ? `No till database found at <code>${esc(d.db_path)}</code>. Install the agentarium plugin and use Claude Code or Copilot for a session, or point to another file with <code>--db</code>.`
-      : `No sessions logged in this date range. Try a wider range, or run with <code>--demo</code> to preview.`;
+      : `No sessions logged in ${when(d)}. Try a wider range, or run with <code>--demo</code> to preview.`;
     return showEmpty("Nothing to chart yet", msg);
   }
   if (!state.metric) setMetric(d.spend_usd > 0 ? "spend" : "tokens");
   $("#empty").classList.add("hidden"); $("#app").classList.remove("hidden");
-  hero(d); kpis(d); did(d); trend(d); projects(d); skills(d); recent(d);
-  $("#foot").textContent = `Percentages use ${METRIC_NAME[state.metric]}. Spend and savings are estimates at list prices, for token-billed sessions only: Copilot's premium requests are counted, never priced. Tokens are input plus output; cache reads are shown separately as the cache hit rate. Data refreshes when you change the range.`;
+  hero(d); did(d); trend(d); split(d); projects(d); skills(d); recent(d);
+  $("#foot").textContent = `Spend and savings are estimates at list prices, for token-billed sessions only: Copilot's premium requests are counted, never priced. Tokens are input plus output; cache reads count toward the hit rate. Refreshes every minute.`;
+  state.first = false;
 }
 
+/* ---------- hero: what it saved, and the numbers beside it ---------- */
+function countUp(el, to, fmtFn){
+  if (REDUCED || !state.first) { el.textContent = fmtFn(to); return; }
+  const t0 = performance.now(), dur = 700;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = fmtFn(to * e);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function spark(values, colourVar){
+  const W = 200, H = 28, max = Math.max(...values, 0) || 1, n = values.length;
+  if (n < 2) return "";
+  const x = i => i / (n - 1) * W, y = v => H - 2 - v / max * (H - 4);
+  const line = values.map((v,i)=>`${i?"L":"M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const last = values.length - 1;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <path d="${line} L${W},${H} L0,${H} Z" fill="${colourVar}" opacity=".12"/>
+    <path d="${line}" fill="none" stroke="${colourVar}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${x(last)}" cy="${y(values[last])}" r="3" fill="${colourVar}" stroke="var(--raise)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function ring(p){
+  const r = 22, c = 2 * Math.PI * r, f = Math.max(0, Math.min(1, p / 100));
+  return `<svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="${r}" fill="none" stroke="var(--grid)" stroke-width="6"/>
+    <circle cx="28" cy="28" r="${r}" fill="none" stroke="var(--save)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(f*c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 28 28)"/></svg>`;
+}
 function hero(d){
-  const tot = d.totals, sum = LABELS.reduce((s,l)=>s+val(tot[l]),0) || 1;
-  const p = l => pct(val(tot[l]), sum);
-  $("#opexPct").innerHTML = `${p("opex").toFixed(0)}<small>%</small>`;
-  $("#capexPct").innerHTML = `${p("capex").toFixed(0)}<small>%</small>`;
-  const bar = $("#splitbar");
-  bar.innerHTML = LABELS.filter(l=>val(tot[l])>0).map(l=>{
-    const x = p(l);
-    return `<div style="flex:${x} 1 0;background:${colour(l)}" title="${NAMES[l]}: ${x.toFixed(1)}%">${x>=9?`${NAMES[l]} ${x.toFixed(0)}%`:""}</div>`;
-  }).join("");
-  bar.setAttribute("aria-label", LABELS.map(l=>`${NAMES[l]} ${p(l).toFixed(1)} percent`).join(", "));
-  $("#herofoot").innerHTML = LABELS.map(l=>`<span><i class="dot" style="background:${colour(l)}"></i>${NAMES[l]} ${p(l).toFixed(1)}% · ${qty(val(tot[l]))}</span>`).join("");
-}
-
-function kpis(d){
   const all = LABELS.reduce((a,l)=>{for(const k in a)a[k]+=d.totals[l][k]||0;return a},
     {sessions:0,prompts:0,tokens:0,input:0,output:0,cache_read:0,cache_creation:0});
-  const cacheDen = all.cache_read+all.cache_creation+all.input;
-  const hit = cacheDen ? all.cache_read/cacheDen*100 : 0;
-  const act = d.activity || {saved_usd:0, stepped_in:0}, spent = d.spend_usd || 0;
-  const off = spent + act.saved_usd ? act.saved_usd/(spent + act.saved_usd)*100 : 0;
-  const items = [
-    ["Spend", usd(spent), spent ? `${fmt(all.sessions)} sessions · estimated at list prices` : "no token-billed sessions"],
-    ["Saved by agentarium", usd(act.saved_usd), act.stepped_in ? `${off.toFixed(0)}% off the bill · stepped in ${times(act.stepped_in,"time","times")}` : "nothing to count yet", "save", "#did"],
-    ["Tokens", fmt(all.tokens), `${fmt(all.input)} in · ${fmt(all.output)} out · ${fmt(all.prompts)} prompts`],
-    ["Cache hit rate", hit.toFixed(0)+"%", `${fmt(all.cache_read)} tokens read from cache`],
-  ];
-  $("#kpis").innerHTML = items.map(([l,v,s,cls,href])=>{
-    const tag = href ? "a" : "div";
-    return `<${tag} class="kpi ${cls||""}"${href?` href="${href}"`:""}><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></${tag}>`;
-  }).join("");
+  const act = d.activity || {saved_usd:0, stepped_in:0}, spent = d.spend_usd || 0, saved = act.saved_usd || 0;
+  const without = spent + saved, off = without ? saved / without * 100 : 0;
+  $("#heroTitle").textContent = `Saved by agentarium · ${when(d)}`;
+  countUp($("#savedBig"), saved * rate(), money);
+  $("#savedPct").textContent = saved >= 0.005 ? `${off.toFixed(0)}% off the bill` : "";
+  $("#savedPct").classList.toggle("hidden", saved < 0.005);
+  $("#lede").innerHTML = saved >= 0.005
+    ? `You spent <b>${usd(spent)}</b>; without agentarium it would have been about <b>${usd(without)}</b>. It stepped in <b>${times(act.stepped_in,"time","times")}</b>, and counts only what it stopped and could price.`
+    : act.stepped_in ? `It stepped in <b>${times(act.stepped_in,"time","times")}</b>. Nothing it could price as saved yet: the list below says what it caught.`
+    : `Nothing to count yet. sommelier and the guard-rails list what they do here as they work.`;
+  const bill = $("#bill");
+  if (spent && saved >= 0.005){
+    const w = spent / without * 100;
+    bill.classList.remove("hidden");
+    bill.setAttribute("aria-label", `Spent ${usd(spent)} of about ${usd(without)} without agentarium; ${usd(saved)} saved`);
+    bill.innerHTML = `<div class="row"><span>Without agentarium</span><div class="track"><div style="flex:1 1 0;background:var(--unknown)"></div></div><span class="amt">${usd(without)}</span></div>
+      <div class="row"><span>You spent</span><div class="track"><div style="flex:${w.toFixed(2)} 1 0;background:var(--ink)"></div><div class="hatch" style="flex:${(100-w).toFixed(2)} 1 0"></div></div><span class="amt">${usd(spent)}</span></div>`;
+  } else bill.classList.add("hidden");
+
+  const days = d.daily || [];
+  const spendDays = days.map(x => LABELS.reduce((s,l)=>s+(x[l].spend||0),0) * rate());
+  const tokenDays = days.map(x => LABELS.reduce((s,l)=>s+(x[l].tokens||0),0));
+  const cacheDen = all.cache_read + all.cache_creation + all.input;
+  const hit = cacheDen ? all.cache_read / cacheDen * 100 : 0;
+  const src = Object.entries(d.sources || {}).sort((a,b)=>b[1]-a[1]);
+  const srcTotal = src.reduce((s,[,n])=>s+n,0) || 1;
+  const SRC_COLOUR = {"claude-code":"var(--accent)", copilot:"var(--opex)", vscode:"var(--mixed)"};
+  $("#tiles").innerHTML = [
+    `<div class="tile"><span class="l">Spend</span><span class="v">${usd(spent)}</span><span class="s">${spent ? "estimated at list prices" : "no token-billed sessions"}</span><div class="viz">${spark(spendDays, "var(--accent)")}</div></div>`,
+    `<div class="tile"><span class="l">Tokens</span><span class="v">${fmt(all.tokens)}</span><span class="s">${fmt(all.input)} in · ${fmt(all.output)} out</span><div class="viz">${spark(tokenDays, "var(--opex)")}</div></div>`,
+    `<div class="tile ring">${ring(hit)}<div style="min-width:0"><span class="l">Cache hit rate</span><div class="v">${hit.toFixed(0)}%</div><span class="s">${fmt(all.cache_read)} tokens read warm</span></div></div>`,
+    `<div class="tile"><span class="l">Sessions</span><span class="v">${fmt(all.sessions)}</span><span class="s">${fmt(all.prompts)} prompts</span>
+      <div class="split2" aria-hidden="true">${src.map(([k,n])=>`<div style="flex:${n} 1 0;background:${SRC_COLOUR[k]||"var(--unknown)"}"></div>`).join("")}</div>
+      <div class="srcs">${src.map(([k,n])=>`<span><i class="dot" style="background:${SRC_COLOUR[k]||"var(--unknown)"}"></i>${esc(SOURCES[k]||k)} <b class="tab">${n}</b></span>`).join("")}</div></div>`,
+  ].join("");
 }
 
 /* ---------- what agentarium did ---------- */
@@ -339,6 +495,10 @@ function sentence(h){
       (h.at_stake_usd >= 0.005 ? ` About ${usd(h.at_stake_usd)} rode on the ones it only flagged.` : "");
     case "diet": return `Stopped ${times(h.stopped,"tool call","tool calls")} that would have flooded the context` +
       (h.tokens ? ` with about ${fmt(h.tokens)} tokens` : "") + `${more}.`;
+    case "hold-up": return (h.stopped ? `Paused ${times(h.stopped,"prompt","prompts")} carrying a big paste or an open-ended ask before ${h.stopped === 1 ? "it" : "they"} joined the conversation`
+      : `Warned about ${times(h.flagged,"prompt","prompts")} carrying a big paste or an open-ended ask`) +
+      (h.stopped && h.flagged ? `, and warned about ${fmt(h.flagged)} more` : "") +
+      (h.tokens ? `; about ${fmt(h.tokens)} tokens stayed out` : "") + ".";
     case "groundhog": return `Broke ${times(h.stopped,"loop","loops")}${more}.`;
     case "blinkers": return `Questioned ${times(h.stopped,"edit","edits")} the task didn't ask for${more}.`;
     case "too-many-cooks": return `Caught ${times(n,"subagent","subagents")} not worth sending` +
@@ -349,7 +509,7 @@ function sentence(h){
       : `Warned ${times(h.flagged,"time","times")} as a budget ran low.`;
     case "premium": return h.stopped ? `Paused ${times(h.stopped,"prompt","prompts")} once Copilot's premium requests ran out${more}.`
       : `Warned ${times(h.flagged,"time","times")} about Copilot's premium-request allowance.`;
-    case "haggle": return `Quoted ${times(n,"task","tasks")} before they started` + (h.stopped ? `; ${fmt(h.stopped)} stopped at the agreed price` : "") + ".";
+    case "haggle": return `Quoted ${times(n,"task","tasks")} before ${n === 1 ? "it" : "they"} started` + (h.stopped ? `; ${fmt(h.stopped)} stopped at the agreed price` : "") + ".";
     case "doggybag": return `Packed ${times(h.stopped,"note","notes")} before the cache went cold` +
       (h.tokens ? `: carrying on from them skips up to ${fmt(h.tokens)} tokens of cache writes` : "") + ".";
     case "kettle": return `Said ${times(h.flagged,"time","times")} how long was left before the cache went cold` +
@@ -368,109 +528,145 @@ function figure(h){
   return `<div class="amt">${fmt(n)}<small>${n === 1 ? "time" : "times"}</small></div>`;
 }
 function did(d){
-  const act = d.activity || {saved_usd:0, stepped_in:0, helpers:[]}, spent = d.spend_usd || 0;
-  const when = d.days ? `the last ${d.days} days` : "all time";
+  const act = d.activity || {saved_usd:0, stepped_in:0, helpers:[]};
   if (!act.helpers.length){
-    $("#didSub").textContent = `Nothing in ${when} yet.`;
+    $("#didSub").textContent = `Nothing in ${when(d)} yet.`;
     $("#didBody").innerHTML = `<p class="sub">sommelier and the guard-rails list what they did here as they work: prompts routed, floods and loops stopped, notes packed before the cache went cold.</p>`;
     return;
   }
-  $("#didSub").textContent = `Each helper that stepped in, ${when}. Saved counts only spend a helper stopped and could price; the rest is what it caught and what was at stake.`;
-  const without = spent + act.saved_usd, w = without ? spent/without*100 : 0;
-  const head = `<div class="did-head"><span class="n">${usd(act.saved_usd)}</span><span class="w">saved, stepping in ${times(act.stepped_in,"time","times")}</span></div>` +
-    (spent && act.saved_usd >= 0.005 ? `<div class="compare" role="img" aria-label="Spent ${usd(spent)}; about ${usd(without)} without agentarium">
-      <span>Without it</span><div class="track"><div style="flex:1;background:var(--unknown)"></div></div><span class="amt">${usd(without)}</span>
-      <span>Spent</span><div class="track"><div style="width:${w.toFixed(1)}%;background:var(--ink)"></div><div style="flex:1;background:var(--save);opacity:.35"></div></div><span class="amt">${usd(spent)}</span>
-    </div>` : "");
-  $("#didBody").innerHTML = head + `<div class="acts">` + act.helpers.map(h=>{
+  $("#didSub").textContent = `Every helper that stepped in, ${when(d)}. Saved counts only spend a helper stopped and could price; the rest is what it caught.`;
+  const savers = act.helpers.filter(h => h.saved_usd >= 0.005), caught = act.helpers.filter(h => h.saved_usd < 0.005);
+  const top = Math.max(...savers.map(h => h.saved_usd), 0) || 1;
+  const row = (h, meter) => {
     const [ico, anchor] = HELPERS[h.helper] || ["•", h.helper];
-    return `<div class="act"><span class="ico" aria-hidden="true">${ico}</span>
-      <div class="txt"><a href="${DOCS}${anchor}" target="_blank" rel="noopener">${esc(h.helper)}</a>${esc(sentence(h))}</div>${figure(h)}</div>`;
-  }).join("") + `</div>`;
+    return `<div class="act${meter ? "" : " nometer"}"><span class="ico" aria-hidden="true">${ico}</span>
+      <div class="txt"><a href="${DOCS}${anchor}" target="_blank" rel="noopener">${esc(h.helper)}</a>${esc(sentence(h))}</div>` +
+      (meter ? `<div class="meter" aria-hidden="true"><div style="width:${(h.saved_usd/top*100).toFixed(1)}%"></div></div>` : "") + `${figure(h)}</div>`;
+  };
+  $("#didBody").innerHTML =
+    (savers.length ? `<div class="group">Saved you money</div>` + savers.map(h => row(h, true)).join("") : "") +
+    (caught.length ? `<div class="group" style="margin-top:14px">Caught before it cost you</div>` + caught.map(h => row(h, false)).join("") : "");
 }
 
-/* ---------- trend: stacked daily columns ---------- */
+/* ---------- daily: stacked columns, with what agentarium saved as a ghost cap ---------- */
 function trend(d){
+  const spendMode = state.metric === "spend";
   $("#trendTitle").textContent = "Daily " + METRIC_NAME[state.metric];
   const days = d.daily;
   const labelsUsed = LABELS.filter(l=>days.some(x=>val(x[l])>0));
-  $("#trendSub").textContent = `${days.length} days · hover a column for the split`;
+  const savedOf = x => spendMode ? (x.saved || 0) * rate() : 0;
+  const anySaved = days.some(x => savedOf(x) > 0);
+  $("#trendSub").textContent = `${days.length} days` + (anySaved ? " · the hatched cap is what agentarium saved that day" : "") + " · hover or tab to a column";
   const box = $("#trend"), tbl = $("#trendTable");
   box.classList.toggle("hidden", state.table); tbl.classList.toggle("hidden", !state.table);
   $("#tableToggle").textContent = state.table ? "View as chart" : "View as table";
   $("#tableToggle").setAttribute("aria-pressed", state.table);
   if (state.table){
-    tbl.innerHTML = `<table><thead><tr><th>Date</th>${labelsUsed.map(l=>`<th class="num">${NAMES[l]}</th>`).join("")}</tr></thead><tbody>${
-      days.slice().reverse().map(x=>`<tr><td>${x.date}</td>${labelsUsed.map(l=>`<td class="num">${fmtV(val(x[l]))}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    tbl.innerHTML = `<table><thead><tr><th>Date</th>${labelsUsed.map(l=>`<th class="num">${NAMES[l]}</th>`).join("")}${anySaved?`<th class="num">Saved</th>`:""}</tr></thead><tbody>${
+      days.slice().reverse().map(x=>`<tr><td class="tab">${x.date}</td>${labelsUsed.map(l=>`<td class="num">${fmtV(val(x[l]))}</td>`).join("")}${anySaved?`<td class="num">${money(savedOf(x))}</td>`:""}</tr>`).join("")}</tbody></table>`;
     return;
   }
-  const W = box.clientWidth || 800, H = 260, m = {t:10,r:8,b:26,l:state.metric === "spend" ? 52 : 40};
+  const W = box.clientWidth || 800, H = 280, m = {t:12,r:8,b:28,l:spendMode ? 56 : 42};
   const iw = W-m.l-m.r, ih = H-m.t-m.b;
   const totals = days.map(x=>labelsUsed.reduce((s,l)=>s+val(x[l]),0));
-  const max = niceMax(Math.max(1,...totals));
-  const step = iw/days.length, bw = Math.max(2, Math.min(28, step*0.68));
+  const max = niceMax(Math.max(1e-9,...totals.map((t,i)=>t + savedOf(days[i]))));
+  const step = iw/Math.max(1,days.length), bw = Math.max(2, Math.min(24, step*0.66));
   const y = v => m.t + ih - v/max*ih;
   let g = "";
-  for (let i=0;i<=4;i++){
+  for (let i=1;i<=4;i++){
     const v = max*i/4, yy = y(v);
     g += `<line class="gridline" x1="${m.l}" x2="${W-m.r}" y1="${yy}" y2="${yy}"/><text x="${m.l-8}" y="${yy+4}" text-anchor="end">${fmtV(v)}</text>`;
   }
+  g += `<line class="baseline" x1="${m.l}" x2="${W-m.r}" y1="${y(0)}" y2="${y(0)}"/><text x="${m.l-8}" y="${y(0)+4}" text-anchor="end">${fmtV(0)}</text>`;
   let bars = "", xl = "";
   const every = Math.ceil(days.length/8);
+  const capPath = (X, y0, Y, w, r) => `M${X},${y0} V${Y+r} ${r?`Q${X},${Y} ${X+r},${Y}`:`V${Y}`} H${X+w-r} ${r?`Q${X+w},${Y} ${X+w},${Y+r}`:`H${X+w}`} V${y0} Z`;
   days.forEach((x,i)=>{
-    const cx = m.l + step*i + step/2; let acc = 0;
-    const segs = labelsUsed.filter(l=>val(x[l])>0);
+    const cx = m.l + step*i + step/2, X = cx-bw/2; let acc = 0;
+    const segs = labelsUsed.filter(l=>val(x[l])>0), sv = savedOf(x);
     segs.forEach((l,k)=>{
       const v = val(x[l]), y0 = y(acc), y1 = y(acc+v); acc += v;
-      const h = Math.max(0,(y0-y1)-(k<segs.length-1?2:0));   // 2px surface gap between segments
+      const h = Math.max(0,(y0-y1)-(k<segs.length-1 || sv>0?2:0));   // a 2px surface gap between segments
       if (h<=0) return;
-      const top = k===segs.length-1, r = top?Math.min(4,bw/2,h):0, X = cx-bw/2, Y = y0-h;
-      bars += `<path fill="${colour(l)}" d="M${X},${y0} V${Y+r} ${r?`Q${X},${Y} ${X+r},${Y}`:`V${Y}`} H${X+bw-r} ${r?`Q${X+bw},${Y} ${X+bw},${Y+r}`:`H${X+bw}`} V${y0} Z"/>`;
+      const top = k===segs.length-1 && !(sv>0), r = top?Math.min(4,bw/2,h):0;
+      bars += `<path fill="${colour(l)}" d="${capPath(X, y0, y0-h, bw, r)}"/>`;
     });
-    if (i%every===0) xl += `<text x="${cx}" y="${H-6}" text-anchor="middle">${x.date.slice(5)}</text>`;
-    bars += `<rect class="hit" data-i="${i}" x="${cx-step/2}" y="${m.t}" width="${step}" height="${ih}" fill="transparent"/>`;
+    if (sv > 0){
+      const y0 = y(acc) - (segs.length ? 2 : 0), h = Math.max(0, y(acc) - y(acc+sv) - (segs.length ? 2 : 0)), r = Math.min(4, bw/2, h);
+      if (h > 0) bars += `<path fill="url(#hatch)" stroke="var(--save)" stroke-width="1" stroke-opacity=".6" d="${capPath(X+.5, y0, y0-h+.5, bw-1, r)}"/>`;
+    }
+    if (i%every===0) xl += `<text x="${cx}" y="${H-8}" text-anchor="middle">${x.date.slice(5).replace("-","/")}</text>`;
+    bars += `<rect class="hit" tabindex="0" data-i="${i}" x="${cx-step/2}" y="${m.t}" width="${step}" height="${ih}" fill="transparent" aria-label="${x.date}: ${fmtV(totals[i])}${sv>0?`, ${money(sv)} saved`:""}"/>`;
   });
-  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Stacked daily ${METRIC_NAME[state.metric]} split by opex and capex"><g class="axis">${g}${xl}</g>${bars}</svg><div class="hero-foot">${labelsUsed.map(l=>`<span><i class="dot" style="background:${colour(l)}"></i>${NAMES[l]}</span>`).join("")}</div>`;
+  const defs = `<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--save)" opacity=".14"/><rect width="2.2" height="6" fill="var(--save)" opacity=".75"/></pattern></defs>`;
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily ${METRIC_NAME[state.metric]}, stacked by OPEX and CAPEX${anySaved?", with what agentarium saved on top":""}">${defs}<g class="axis">${g}${xl}</g>${bars}</svg>` +
+    `<div class="legend">${labelsUsed.map(l=>`<span><i class="dot" style="background:${colour(l)}"></i>${NAMES[l]}</span>`).join("")}${anySaved?`<span><i class="dot hatch" style="opacity:1"></i>Saved by agentarium</span>`:""}</div>`;
   const tip = $("#tip");
+  const show = (r, clientX) => {
+    const x = days[+r.dataset.i], tot = labelsUsed.reduce((s,l)=>s+val(x[l]),0), sv = savedOf(x);
+    tip.innerHTML = `<b>${new Date(x.date+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</b>` +
+      labelsUsed.filter(l=>val(x[l])>0).map(l=>`<div><span><i style="background:${colour(l)}"></i>${NAMES[l]}</span><span>${fmtV(val(x[l]))}</span></div>`).join("") +
+      `<div class="t"><span>Total</span><span>${fmtV(tot)}</span></div>` + (sv>0 ? `<div><span><i style="background:var(--save)"></i>Saved</span><span>${money(sv)}</span></div>` : "");
+    const b = box.getBoundingClientRect(), rr = r.getBoundingClientRect(), tw = tip.offsetWidth;
+    const at = clientX ?? (rr.left + rr.width/2);
+    let left = at - b.left + 14; if (left+tw > b.width) left = at - b.left - tw - 14;
+    tip.style.left = (b.left + window.scrollX + Math.max(0,left)) + "px"; tip.style.top = (b.top + window.scrollY + 8) + "px";
+    tip.style.opacity = 1;
+  };
   box.querySelectorAll(".hit").forEach(r=>{
-    r.addEventListener("mousemove", e=>{
-      const x = days[+r.dataset.i], tot = labelsUsed.reduce((s,l)=>s+val(x[l]),0);
-      tip.innerHTML = `<b>${x.date}</b>` + labelsUsed.map(l=>`<div><span><i style="background:${colour(l)}"></i>${NAMES[l]}</span><span>${fmtV(val(x[l]))} (${pct(val(x[l]),tot).toFixed(0)}%)</span></div>`).join("") + `<div><span>Total</span><span>${fmtV(tot)}</span></div>`;
-      const b = box.getBoundingClientRect(), tw = tip.offsetWidth;
-      let left = e.clientX - b.left + 14; if (left+tw > b.width) left = e.clientX - b.left - tw - 14;
-      tip.style.left = (b.left + window.scrollX + left) + "px"; tip.style.top = (b.top + window.scrollY + 8) + "px";
-      tip.style.position = "absolute"; tip.style.opacity = 1;
-    });
+    r.addEventListener("mousemove", e=>show(r, e.clientX));
+    r.addEventListener("focus", ()=>show(r));
     r.addEventListener("mouseleave", ()=>{ tip.style.opacity = 0; });
+    r.addEventListener("blur", ()=>{ tip.style.opacity = 0; });
   });
 }
+/** The axis top: the next clean step above v (1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10 x a power of ten). */
 function niceMax(v){
   const p = Math.pow(10, Math.floor(Math.log10(v))), f = v/p;
-  return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p;
+  return ([1,1.2,1.5,2,2.5,3,4,5,6,8,10].find(s => f <= s) ?? 10)*p;
+}
+
+/* ---------- building vs running ---------- */
+function split(d){
+  const tot = d.totals, sum = LABELS.reduce((s,l)=>s+val(tot[l]),0) || 1;
+  const p = l => pct(val(tot[l]), sum);
+  $("#splitSub").textContent = `Share of ${METRIC_NAME[state.metric]}, ${when(d)}. OPEX keeps things running; CAPEX builds and changes them.`;
+  $("#opexPct").innerHTML = `${p("opex").toFixed(0)}<small>%</small>`;
+  $("#capexPct").innerHTML = `${p("capex").toFixed(0)}<small>%</small>`;
+  const bar = $("#splitbar");
+  bar.innerHTML = LABELS.filter(l=>val(tot[l])>0).map(l=>{
+    const x = p(l);
+    return `<div style="flex:${x} 1 0;background:${colour(l)}" title="${NAMES[l]}: ${x.toFixed(1)}%">${x>=12?`${NAMES[l]} ${x.toFixed(0)}%`:""}</div>`;
+  }).join("");
+  bar.setAttribute("aria-label", LABELS.map(l=>`${NAMES[l]} ${p(l).toFixed(1)} percent`).join(", "));
+  $("#splitfoot").innerHTML = LABELS.filter(l=>val(tot[l])>0).map(l=>`<span><i class="dot" style="background:${colour(l)}"></i>${NAMES[l]} <b class="tab">${p(l).toFixed(1)}%</b> · ${qty(val(tot[l]))}</span>`).join("");
 }
 
 function projects(d){
   const rows = d.projects.map(p=>({name:base(p.cwd), full:p.cwd, by:p.by, tot:LABELS.reduce((s,l)=>s+val(p.by[l]),0)}))
     .filter(r=>r.tot>0).sort((a,b)=>b.tot-a.tot).slice(0,8);
+  $("#projSub").textContent = `${METRIC_NAME[state.metric][0].toUpperCase()+METRIC_NAME[state.metric].slice(1)} by project, split OPEX against CAPEX`;
   $("#projects").innerHTML = rows.length ? rows.map(r=>{
     const op = pct(val(r.by.opex), r.tot);
     return `<div class="prow" title="${esc(r.full)}"><div class="nm">${esc(r.name)}</div>
       <div class="bar" role="img" aria-label="${esc(r.name)}: ${LABELS.map(l=>NAMES[l]+" "+pct(val(r.by[l]),r.tot).toFixed(0)+"%").join(", ")}">${
         LABELS.filter(l=>val(r.by[l])>0).map(l=>`<div style="flex:${val(r.by[l])} 1 0;background:${colour(l)}"></div>`).join("")}</div>
-      <div class="v">${op.toFixed(0)}% opex</div></div>`;
+      <div class="v">${fmtV(r.tot)}<small>${op.toFixed(0)}% opex</small></div></div>`;
   }).join("") : `<p class="sub">No project data in this range.</p>`;
 }
 
 function skills(d){
   $("#skills").innerHTML = d.skills.length ? d.skills.map(s=>{
     const side = s.side || "unknown";
-    return `<div class="skill"><span>${esc(s.name)}</span><span style="display:flex;gap:10px;align-items:center"><span class="chip c-${side}"><i></i>${NAMES[side]}</span><span style="color:var(--muted);min-width:20px;text-align:right">${s.sessions}</span></span></div>`;
+    return `<div class="skill"><span class="nm">${esc(s.name)}</span><span style="display:flex;gap:10px;align-items:center"><span class="chip c-${side}"><i></i>${NAMES[side]}</span><span class="tab" style="color:var(--muted);min-width:20px;text-align:right">${s.sessions}</span></span></div>`;
   }).join("") : `<p class="sub">No skills recorded yet. They are logged when a session ends.</p>`;
 }
 
 function recent(d){
-  $("#recent").innerHTML = `<table><thead><tr><th>Session</th><th>Project</th><th>Side</th><th class="num">Prompts</th><th class="num">Tokens</th><th class="num">Spend</th><th class="num">Updated</th></tr></thead><tbody>${
-    d.recent.map(r=>`<tr><td class="mono">${esc((r.session_id||"").slice(0,12))}</td><td>${esc(base(r.cwd))}</td><td><span class="chip c-${r.label||"unknown"}"><i></i>${NAMES[r.label]||"Unclassified"}</span></td><td class="num">${r.prompts}</td><td class="num">${fmt(r.tokens)}</td><td class="num">${r.spend ? usd(r.spend) : "n/a"}</td><td class="num">${ago(r.updated_at)}</td></tr>`).join("")}</tbody></table>`;
+  $("#recent").innerHTML = `<table><thead><tr><th>Session</th><th>Project</th><th>Where</th><th>Side</th><th class="num">Prompts</th><th class="num">Tokens</th><th class="num">Spend</th><th class="num">Updated</th></tr></thead><tbody>${
+    d.recent.map(r=>`<tr><td class="mono lead">${esc((r.session_id||"").slice(0,12))}</td><td class="lead">${esc(base(r.cwd))}</td>` +
+      `<td><span class="src">${esc(SOURCES[r.source]||r.source||"?")}</span></td><td><span class="chip c-${r.label||"unknown"}"><i></i>${NAMES[r.label]||"Unclassified"}</span></td>` +
+      `<td class="num" data-k="prompts">${r.prompts}</td><td class="num" data-k="tokens">${fmt(r.tokens)}</td><td class="num" data-k="spend">${r.spend ? usd(r.spend) : r.source === "claude-code" ? usd(0) : "premium"}</td><td class="num" data-k="">${ago(r.updated_at)}</td></tr>`).join("")}</tbody></table>`;
 }
 
 function setMetric(m){
@@ -488,6 +684,9 @@ document.querySelectorAll("#rangeSeg button").forEach(b=>b.addEventListener("cli
 }));
 $("#tableToggle").addEventListener("click",()=>{ state.table = !state.table; if (state.data) trend(state.data); });
 let rz; window.addEventListener("resize",()=>{ clearTimeout(rz); rz = setTimeout(()=>{ if (state.data && !state.data.empty && !state.table) trend(state.data); },120); });
+// a dashboard left open beside the work keeps up with it; a hidden tab doesn't ask
+setInterval(()=>{ if (document.visibilityState === "visible") load(true); }, 60_000);
+document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState === "visible" && state.data) load(true); });
 load();
 </script>
 </body>
