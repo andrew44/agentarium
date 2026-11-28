@@ -37,7 +37,7 @@ import { join, resolve as resolvePath, sep } from 'node:path'
 export const PROFILES: Record<string, Record<string, string>> = {
   frugal: {
     AGENTARIUM_ROUTER_TIERS: 'SIMPLE=haiku,MEDIUM=haiku,COMPLEX=sonnet,REASONING=opus',
-    AGENTARIUM_PENNYWISE_UP: 'off',
+    AGENTARIUM_SOMMELIER_UP: 'off',
     AGENTARIUM_BUDGET_WARN: '70',
     AGENTARIUM_DIET: 'block',
     AGENTARIUM_GROUNDHOG: 'block',
@@ -50,7 +50,7 @@ export const PROFILES: Record<string, Record<string, string>> = {
   balanced: {},
   quality: {
     AGENTARIUM_ROUTER_TIERS: 'SIMPLE=sonnet,MEDIUM=sonnet,COMPLEX=opus,REASONING=fable',
-    AGENTARIUM_PENNYWISE_BUDGET: 'off',
+    AGENTARIUM_SOMMELIER_BUDGET: 'off',
     AGENTARIUM_DIET: 'warn',
     AGENTARIUM_GROUNDHOG: 'warn',
     AGENTARIUM_BALLAST: 'warn',

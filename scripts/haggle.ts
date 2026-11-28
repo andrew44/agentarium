@@ -28,7 +28,7 @@
  *   AGENTARIUM_HAGGLE_CAP_X   cap = this x the estimate (default 2)
  * Hooks always exit 0; a crash never blocks anything (errors go to <db>.err).
  */
-import { score as complexity } from './pennywise.ts'
+import { score as complexity } from './sommelier.ts'
 import { defaultDbPath } from '../agentarium/config.ts'
 import * as contract from '../agentarium/engine/contract.ts'
 import * as currency from '../agentarium/engine/currency.ts'

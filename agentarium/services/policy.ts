@@ -10,7 +10,7 @@
  *   enforce()     a decision -> the adapter's hook output. When a platform can't express an action it
  *                 falls back to the nearest one it can: ask -> deny with "ask the user first",
  *                 warn -> nothing (rather than block), so a missing feature never makes a guard stricter.
- *   activity()    what every guard and pennywise did over a window, read back from their event tables,
+ *   activity()    what every guard and sommelier did over a window, read back from their event tables,
  *                 with the money each one kept from being spent (the dashboard's "What agentarium did")
  */
 import type { Db } from '../engine/db.ts'
@@ -81,12 +81,12 @@ export type Intervention = {
   stopped: number
   /** A notice only: the user or the agent decided. */
   flagged: number
-  /** Spend it stopped and could price: pennywise's routes net of hand-offs, cache rebuilds refused, the cache
+  /** Spend it stopped and could price: sommelier's routes net of hand-offs, cache rebuilds refused, the cache
    *  writes colander's strained output never needed. */
   saved_usd: number
   /** What its notices priced, not counted as saved because carrying on was still an option. */
   at_stake_usd: number
-  /** What it chose to spend more (pennywise sending a hard prompt up). */
+  /** What it chose to spend more (sommelier sending a hard prompt up). */
   extra_usd: number
   /** Tokens kept out of the context (diet, colander, hold-up), carried into a new task (ballast) or a /clear skips (doggybag). */
   tokens: number
@@ -115,7 +115,7 @@ function pick(t: Map<string, Record<string, number>>, actions: string[], field =
   return v
 }
 
-/** What pennywise and every guard did since `since` (YYYY-MM-DD), biggest saving first. Helpers
+/** What sommelier and every guard did since `since` (YYYY-MM-DD), biggest saving first. Helpers
  *  with nothing to report are left out; a table that isn't there yet counts as nothing. */
 export function activity(db: Db, since: string): Activity {
   const tables = db.tables()
@@ -127,13 +127,13 @@ export function activity(db: Db, since: string): Activity {
   }
   const on = (table: string) => tables.has(table)
 
-  if (on('pennywise_events')) {
-    const t = tally(db, 'pennywise_events', since)
-    const cols = db.columns('pennywise_events')
+  if (on('sommelier_events')) {
+    const t = tally(db, 'sommelier_events', since)
+    const cols = db.columns('sommelier_events')
     // the same sums the status line, the band and the weekly report show
     const v = cols.has('saved_usd') ? db.get('SELECT COALESCE(SUM(CASE WHEN saved_usd>0 THEN saved_usd END),0) AS saved, ' +
-      'COALESCE(-SUM(CASE WHEN saved_usd<0 THEN saved_usd END),0) AS extra FROM pennywise_events WHERE substr(ts,1,10) >= ?', since) : null
-    add('pennywise', { stopped: pick(t, ['routed', 'routed-up', 'proxy-routed']), flagged: pick(t, ['warned', 'blocked']),
+      'COALESCE(-SUM(CASE WHEN saved_usd<0 THEN saved_usd END),0) AS extra FROM sommelier_events WHERE substr(ts,1,10) >= ?', since) : null
+    add('sommelier', { stopped: pick(t, ['routed', 'routed-up', 'proxy-routed']), flagged: pick(t, ['warned', 'blocked']),
       saved_usd: Number(v?.saved) || 0, extra_usd: Number(v?.extra) || 0 })
   }
   if (on('cachebuster_events')) {

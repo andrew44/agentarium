@@ -25,7 +25,7 @@ New to tokens, the prompt cache or why context costs money? Read [How tokens wor
 | See OPEX vs CAPEX, spend trends and what agentarium saved as charts | [dashboard](#dashboard) | Tool |
 | Check where I am against my spending limit | [budget status](#budget-1) | Tool |
 | Stop myself overspending | [budget](#budget) | Hook |
-| Send each prompt to the right model (cheap for trivial, strong for hard) | [pennywise](#pennywise) | Hook (or the [router proxy](#agentarium-router)) |
+| Send each prompt to the right model (cheap for trivial, strong for hard) | [sommelier](#sommelier) | Hook (or the [router proxy](#agentarium-router)) |
 | Stop the AI pulling huge files or logs into the conversation | [diet](#diet) | Hook |
 | Stop paying for passing tests, progress bars and install chatter every time a test run or build succeeds | [colander](#colander) | Hook (plus `agentarium colander`) |
 | Pick up after a break where I left off, cheaply | [doggybag](#doggybag) | Hook (plus `agentarium doggybag`) |
@@ -65,7 +65,7 @@ flowchart TD
     Q -->|"A summary of spend over time"| SR["spend-report<br/>(skill)"]
     Q -->|"A live view while I work"| SB["status line<br/>(tool)"]
     Q -->|"Charts"| DB["dashboard<br/>(tool)"]
-    Q -->|"Guard rails that act on their own"| H["Hooks:<br/>pennywise, diet, colander, budget, hold-up,<br/>doggybag, haggle, groundhog,<br/>cache-buster, too-many-cooks, kettle"]
+    Q -->|"Guard rails that act on their own"| H["Hooks:<br/>sommelier, diet, colander, budget, hold-up,<br/>doggybag, haggle, groundhog,<br/>cache-buster, too-many-cooks, kettle"]
     Q -->|"Value, waste and quality"| V["bang-for-buck, sherlock, waistline,<br/>taste-test, spring-clean (skills)"]
     Q -->|"Attribution, planning and dead work"| I["split-the-bill, bazaar, crystal-ball,<br/>deadwood, blinkers (skills)"]
     Q -->|"Data collected in the background"| SL["till<br/>(hook)"]
@@ -94,7 +94,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 
 ### spend-report
 
-**What it does.** Turns the till database into a short report for a period (default the last 7 days): money spent in your currency, the OPEX/CAPEX split, top projects and models, the costliest sessions, what pennywise, doggybag, diet and budget did, and three ways to spend less tied to your own numbers.
+**What it does.** Turns the till database into a short report for a period (default the last 7 days): money spent in your currency, the OPEX/CAPEX split, top projects and models, the costliest sessions, what sommelier, doggybag, diet and budget did, and three ways to spend less tied to your own numbers.
 
 **Reach for it when:**
 
@@ -285,7 +285,7 @@ Where each hook fires:
 | Moment | Claude Code event | Copilot CLI event | Hooks |
 |--------|-------------------|-------------------|-------|
 | Session starts (or `/clear`, or after compaction) | `SessionStart` | (none) | doggybag, waistline\* |
-| You send a prompt | `UserPromptSubmit` | `userPromptSubmitted` | the controller, which runs till, budget\*, hold-up\*, pennywise\*, haggle\*, ballast\*, doggybag, blinkers and parrot\* in one process (Copilot, in one process too: till, premium\*, doggybag, blinkers) |
+| You send a prompt | `UserPromptSubmit` | `userPromptSubmitted` | the controller, which runs till, budget\*, hold-up\*, sommelier\*, haggle\*, ballast\*, doggybag, blinkers and parrot\* in one process (Copilot, in one process too: till, premium\*, doggybag, blinkers) |
 | A tool is about to run | `PreToolUse` (diet: `Read`, `Bash`; blinkers and cache-buster: edits; too-many-cooks: `Agent`; the rest: every tool) | `preToolUse` | diet, groundhog, haggle\*, blinkers, cache-buster\*, too-many-cooks\* |
 | A tool has run | `PostToolUse` (diet: `Read`, `Bash`; colander: `Bash`) | `postToolUse` | diet (sizes), colander; till on Copilot |
 | A subagent finishes | `SubagentStop` | (none) | too-many-cooks |
@@ -302,7 +302,7 @@ sequenceDiagram
     participant Hooks
     participant AI as Assistant
     You->>Hooks: send prompt
-    Note over Hooks: till scores it<br/>budget: over limit?<br/>hold-up: a whole log pasted in?<br/>pennywise: which model suits it?
+    Note over Hooks: till scores it<br/>budget: over limit?<br/>hold-up: a whole log pasted in?<br/>sommelier: which model suits it?
     Hooks->>AI: prompt (unless paused)
     AI->>Hooks: wants to Read / run Bash
     Note over Hooks: diet: will this flood the context?
@@ -326,13 +326,13 @@ sequenceDiagram
 
 **Script:** `scripts/till.ts` (`prompt`, `tool`, `finalize`, and `capabilities` to see what each assistant supports). Details: [What till saves](reference.md#till).
 
-### pennywise
+### sommelier
 
 **What it does.** A model router. Scores each prompt from weighted signals (length, code, simple-task phrases, technical terms, complex work, reasoning words, multi-step structure) into one of four tiers, `SIMPLE` → Haiku, `MEDIUM` → Sonnet, `COMPLEX` → Opus, `REASONING` → Opus (you choose the map). As a hook it hands the prompt to a subagent on that model, routing down to save money and up when your model is out of its depth. It only routes down when the saving beats the cost of the hand-off, moves back up when an answer didn't land, and learns from both. As a background proxy (`agentarium router on`) it rewrites the model of every request instead, cache-aware, with fallback and no hand-off.
 
 **Reach for it (keep it on) when:** you tend to leave one model selected all day, or a team is new to choosing models. Run the proxy when you want every turn routed with full context rather than handed to a subagent. Set it to `block` if you'd rather be asked to switch with `/model`, or `off` if you always pick models deliberately.
 
-**To steer one prompt:** start it with `keep-model:`, or `haiku:` / `sonnet:` / `opus:` / `fable:` to force a model. Curious why a prompt went where it did? `agentarium router explain "<prompt>"`. Claude Code only. Details: [Using pennywise](reference.md#pennywise).
+**To steer one prompt:** start it with `keep-model:`, or `haiku:` / `sonnet:` / `opus:` / `fable:` to force a model. Curious why a prompt went where it did? `agentarium router explain "<prompt>"`. Claude Code only. Details: [Using sommelier](reference.md#sommelier).
 
 ### diet
 
@@ -428,7 +428,7 @@ It also packs one before `/compact` or auto-compact and loads it back afterwards
 
 ### fishingrod
 
-**What it does.** Not a hook of its own: it adds a lesson to the notices from hold-up, ballast, parrot, haggle, pennywise, doggybag and budget. The first 3 times each kind of notice comes up, it says why that prompt costs what it does and what to type next time (with an example); after that, one line pointing to `agentarium fishingrod <lesson>`. Claude Code only, like those notices.
+**What it does.** Not a hook of its own: it adds a lesson to the notices from hold-up, ballast, parrot, haggle, sommelier, doggybag and budget. The first 3 times each kind of notice comes up, it says why that prompt costs what it does and what to type next time (with an example); after that, one line pointing to `agentarium fishingrod <lesson>`. Claude Code only, like those notices.
 
 **When it's in the way:** `AGENTARIUM_FISHINGROD=off` drops the lessons and pointers; `AGENTARIUM_FISHINGROD_TIMES` changes how many times each is shown in full. Details: [fishingrod](reference.md#fishingrod).
 
@@ -506,7 +506,7 @@ node scripts/coach.ts --transcript path/to/file.jsonl
 
 ### agentarium router
 
-`agentarium router on` runs pennywise as a routing proxy in the background and points Claude Code at it (`off` undoes it; `serve` runs it in the foreground). `status` shows what it saved, `explain "<prompt>"` the tier, score and signals for a prompt, `eval` how well it routes a labelled set, and `learn` what the routes that held and missed would change. **Reach for it** when you want every request routed with full context, or to tune the tiers.
+`agentarium router on` runs sommelier as a routing proxy in the background and points Claude Code at it (`off` undoes it; `serve` runs it in the foreground). `status` shows what it saved, `explain "<prompt>"` the tier, score and signals for a prompt, `eval` how well it routes a labelled set, and `learn` what the routes that held and missed would change. **Reach for it** when you want every request routed with full context, or to tune the tiers.
 
 ### agentarium audit and agentarium profile
 
@@ -569,7 +569,7 @@ node scripts/update_prices.ts --check    # exit 1 if out of date
 
 ## A sensible setup
 
-- **Everyone:** install the plugin (till, diet, doggybag and pennywise run by default) and the [status line](#status-line).
+- **Everyone:** install the plugin (till, diet, doggybag and sommelier run by default) and the [status line](#status-line).
 - **Paying personally or on an allowance:** also set a [budget](#budget).
 - **Weekly:** ask for a [spend-report](#spend-report).
 - **After any session that surprised you:** ask the [coach](#coach), then [sherlock](#sherlock) for the wasted steps.

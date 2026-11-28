@@ -1,5 +1,5 @@
 {
-  "about": "Labelled prompts for `pennywise eval`: the tier a careful human would pick for each. SIMPLE = Haiku can do it; MEDIUM = a routine change (Sonnet); COMPLEX = multi-file, debugging or refactoring work (Opus); REASONING = design, security, proofs and trade-offs. Add your own with the same shape; keep the labels honest rather than fitted to the scorer.",
+  "about": "Labelled prompts for `sommelier eval`: the tier a careful human would pick for each. SIMPLE = Haiku can do it; MEDIUM = a routine change (Sonnet); COMPLEX = multi-file, debugging or refactoring work (Opus); REASONING = design, security, proofs and trade-offs. Add your own with the same shape; keep the labels honest rather than fitted to the scorer.",
   "prompts": [
     { "tier": "SIMPLE", "prompt": "create a hello world console app" },
     { "tier": "SIMPLE", "prompt": "fix the typo in the README heading" },

@@ -5,7 +5,7 @@ description: One leak check across everything agentarium can measure - the fixed
 
 # audit: where is it leaking?
 
-pennywise, the band and the guard-rails stop spend as it happens. The audit finds what they can't: standing costs and habits. It runs every leak check, keeps the sections that found something, and orders them by money. Every number comes from the script.
+sommelier, the band and the guard-rails stop spend as it happens. The audit finds what they can't: standing costs and habits. It runs every leak check, keeps the sections that found something, and orders them by money. Every number comes from the script.
 
 ## 1. Run it
 

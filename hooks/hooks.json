@@ -36,7 +36,7 @@
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" doggybag.ts start claude-code", "timeout": 10 } ] },
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" statusline.ts --sync", "timeout": 10 } ] },
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" waistline.ts nudge claude-code", "timeout": 10 } ] },
-      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" pennywise.ts ensure", "timeout": 10 } ] }
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" sommelier.ts ensure", "timeout": 10 } ] }
     ],
     "SessionEnd": [
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" till.ts finalize claude-code", "timeout": 20 } ] },
@@ -44,7 +44,7 @@
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" bangforbuck.ts record claude-code", "timeout": 20 } ] },
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" sherlock.ts log claude-code", "timeout": 20 } ] },
       { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" haggle.ts close claude-code", "timeout": 10 } ] },
-      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" pennywise.ts learn --quiet", "timeout": 20 } ] }
+      { "hooks": [ { "type": "command", "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh\" sommelier.ts learn --quiet", "timeout": 20 } ] }
     ]
   }
 }

@@ -3,14 +3,14 @@
  * agentarium / controller: one decision and one message per prompt.
  *
  * Claude Code's UserPromptSubmit used to start eight Node.js processes per prompt (till,
- * pennywise, budget, doggybag, haggle, blinkers, ballast, parrot), each reading the session on its
+ * sommelier, budget, doggybag, haggle, blinkers, ballast, parrot), each reading the session on its
  * own, in parallel, each free to add its own message. The controller runs them in one process, in
  * an order that lets the stronger decision win:
  *
  *   1. till        records the prompt (never says anything)
  *   2. budget      a limit reached pauses the prompt: nothing else runs
  *   3. holdup      a huge paste (a log, a document, a data dump) or a blatantly broad ask pauses the prompt
- *   4. pennywise   picks the model (it already routes down harder as the budget runs out)
+ *   4. sommelier   picks the model (it already routes down harder as the budget runs out)
  *   5. haggle      prices the task; a quote over the cap pauses the prompt
  *   6. ballast · doggybag · blinkers · parrot   advice for the next steps
  *
@@ -23,7 +23,7 @@
  *
  * The first helper to pause (block) the prompt decides alone. Otherwise every notice is joined into
  * one message, and every piece of context into one block, so the user sees one line per prompt.
- * Each helper keeps its own switch (AGENTARIUM_BUDGET_MODE, AGENTARIUM_PENNYWISE, ...), and a
+ * Each helper keeps its own switch (AGENTARIUM_BUDGET_MODE, AGENTARIUM_SOMMELIER, ...), and a
  * helper that throws is skipped: the others still run, and a crash never blocks a prompt.
  *
  * Every prompt also times each step (loading it included: each prompt is a fresh process) and
@@ -56,8 +56,8 @@ export const STEPS: Step[] = [
   { name: 'budget', blocks: true, about: 'pauses the prompt once a daily or session limit is reached',
     run: async (s) => (await import('./budget.ts')).main([s]) },
   HOLDUP,
-  { name: 'pennywise', blocks: true, about: 'routes the prompt to the model it needs (harder down on a tight budget)',
-    run: async () => (await import('./pennywise.ts')).main([]) },
+  { name: 'sommelier', blocks: true, about: 'routes the prompt to the model it needs (harder down on a tight budget)',
+    run: async () => (await import('./sommelier.ts')).main([]) },
   { name: 'haggle', blocks: true, about: "prices the task and pauses a quote over the cap",
     run: async (s) => (await import('./haggle.ts')).main(['prompt', s]) },
   { name: 'ballast', blocks: false, about: "flags a new task carrying the last one's context",

@@ -11,7 +11,7 @@ import * as bazaar from '../scripts/bazaar.ts'
 import * as blinkers from '../scripts/blinkers.ts'
 import * as crystalball from '../scripts/crystalball.ts'
 import * as deadwood from '../scripts/deadwood.ts'
-import * as pennywise from '../scripts/pennywise.ts'
+import * as sommelier from '../scripts/sommelier.ts'
 import * as splitthebill from '../scripts/splitthebill.ts'
 import { GATE_FAILS } from '../scripts/tastetest.ts'
 import { withDb } from '../agentarium/engine/db.ts'
@@ -266,9 +266,9 @@ describe('PolicyEngine', () => {
     const t = useTemp(c)
     const ev = (table: string, fields: Record<string, string | number | null>) => PolicyEngine.log(t.db, table, { session_id: 's', ...fields })
     withDb(t.db, (db) => {
-      pennywise.ensureLog(db)
+      sommelier.ensureLog(db)
       const pw = (action: string, saved: number | null, ts = now()) =>
-        db.run('INSERT INTO pennywise_events(session_id,ts,action,saved_usd) VALUES(?,?,?,?)', 's', ts, action, saved)
+        db.run('INSERT INTO sommelier_events(session_id,ts,action,saved_usd) VALUES(?,?,?,?)', 's', ts, action, saved)
       pw('routed', 0.10)
       pw('routed', 0.05)
       pw('routed-up', -0.04)
@@ -285,9 +285,9 @@ describe('PolicyEngine', () => {
     ev('ballast_events', { rule: 'new_task', ctx_tokens: 90_000, action: 'none' })   // the platform couldn't say it
 
     const a = withDb(t.db, (db) => PolicyEngine.activity(db, today()), { readOnly: true })
-    assert.deepEqual(a.helpers.map((h) => h.helper), ['cache-buster', 'pennywise', 'diet', 'kettle'])
+    assert.deepEqual(a.helpers.map((h) => h.helper), ['cache-buster', 'sommelier', 'diet', 'kettle'])
     const by = Object.fromEntries(a.helpers.map((h) => [h.helper, h]))
-    assert.deepEqual([by.pennywise.stopped, by.pennywise.flagged, by.pennywise.saved_usd, by.pennywise.extra_usd], [3, 1, 0.15, 0.04])
+    assert.deepEqual([by.sommelier.stopped, by.sommelier.flagged, by.sommelier.saved_usd, by.sommelier.extra_usd], [3, 1, 0.15, 0.04])
     assert.deepEqual([by['cache-buster'].saved_usd, by['cache-buster'].at_stake_usd], [0.3, 0.2], 'only a refused edit counts as saved')
     assert.equal(by.diet.tokens, 1000, 'tokens kept out count only calls that were stopped')
     assert.deepEqual([by.kettle.flagged, by.kettle.at_stake_usd, by.kettle.saved_usd], [2, 0.75, 0])

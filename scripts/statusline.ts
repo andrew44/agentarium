@@ -618,7 +618,7 @@ export function scanTranscript(path: string, state: Obj, cfg: Obj): Obj | null {
 
 export type Info = { model: string, total: number, cost: number, symbol: string, estimated: boolean, pct: number,
   ttl: number, remaining: number | null,
-  /** Claude Code's session id, when the payload had one (pennywise's savings are kept per session). */
+  /** Claude Code's session id, when the payload had one (sommelier's savings are kept per session). */
   sid?: string,
   /** A Copilot CLI session (its transcript is a session-state directory). */
   copilot?: boolean,
@@ -739,7 +739,7 @@ export type Budget = { kind: 'session' | 'daily' | 'task', limit: number, spent:
 export const budgetWhen = (kind: Budget['kind']) => (kind === 'daily' ? 'today' : kind === 'task' ? 'this task' : 'this session')
 export type Outlook = { step: number, forecast: number, steps: number, at_risk: number, cold: boolean,
   budget: Budget | null, tip: Tip | null,
-  /** What pennywise saved this session (display currency), net of its hand-offs; 0 when nothing. */
+  /** What sommelier saved this session (display currency), net of its hand-offs; 0 when nothing. */
   saved: number }
 
 function budgetNum(name: string): number | null {
@@ -834,13 +834,13 @@ function readDb<T>(fn: (db: import('node:sqlite').DatabaseSync) => T, fallback: 
 const hasColumn = (db: import('node:sqlite').DatabaseSync, table: string, col: string) =>
   (db.prepare(`PRAGMA table_info(${table})`).all() as Obj[]).some((r) => r.name === col)
 
-/** USD pennywise saved in a session (net of hand-offs; routes up not counted), from till's
+/** USD sommelier saved in a session (net of hand-offs; routes up not counted), from till's
  *  database (read-only); 0 when there's nothing to read. */
-export function pennywiseSavedUsd(sid: string | undefined): number {
+export function sommelierSavedUsd(sid: string | undefined): number {
   if (!sid) return 0
   return readDb((db) => {
-    if (!hasColumn(db, 'pennywise_events', 'saved_usd')) return 0
-    const row = db.prepare('SELECT COALESCE(SUM(saved_usd),0) AS usd FROM pennywise_events WHERE session_id=? AND saved_usd>0')
+    if (!hasColumn(db, 'sommelier_events', 'saved_usd')) return 0
+    const row = db.prepare('SELECT COALESCE(SUM(saved_usd),0) AS usd FROM sommelier_events WHERE session_id=? AND saved_usd>0')
       .get(sid) as Obj | undefined
     return Number(row?.usd) || 0
   }, 0)
@@ -950,7 +950,7 @@ export function outlook(info: Info, cfg: Obj, opts: { daySpentUsd?: number | nul
     }
   }
   const best = tips.filter((t) => t.saves >= 0.01).reduce<Tip | null>((a, b) => (!a || b.saves > a.saves ? b : a), null)
-  const saved = (opts.savedUsd ?? pennywiseSavedUsd(info.sid)) * rate
+  const saved = (opts.savedUsd ?? sommelierSavedUsd(info.sid)) * rate
   return { step, forecast, steps: n, at_risk: riskUsd * rate, cold, budget, tip: best, saved }
 }
 
@@ -1119,7 +1119,7 @@ export function tipText(o: Outlook | null, symbol: string): string {
   if (o.budget) parts.push(`${money(Math.max(0, o.budget.left), symbol)}${o.budget.kind === 'task' ? ` of ${money(o.budget.limit, symbol)}` : ''} ` +
     `left ${budgetWhen(o.budget.kind)}`)
   if (o.tip) parts.push(`${o.tip.action} saves ~${money(o.tip.saves, symbol)} (${o.tip.why})`)
-  if (o.saved >= 0.005) parts.push(`pennywise saved ~${money(o.saved, symbol)} this session`)
+  if (o.saved >= 0.005) parts.push(`sommelier saved ~${money(o.saved, symbol)} this session`)
   return `\n${parts.join(' · ')}`
 }
 
@@ -1267,7 +1267,7 @@ export function renderOutlook(o: Outlook | null, info: Info, style: Style): stri
     const action = o.tip.kind === 'warm' ? (rem && rem > 0 ? `reply within ${mmss(rem)}` : '') : o.tip.action
     if (action) parts.push(style.paint(a ? '-> ' : '→ ', 'accent', true) + fig(action) + dim(` saves ~${m(o.tip.saves)}`))
   }
-  if (o.saved >= 0.005) parts.push(fig(m(o.saved), 'green') + dim(' saved by pennywise'))
+  if (o.saved >= 0.005) parts.push(fig(m(o.saved), 'green') + dim(' saved by sommelier'))
   return parts.join(sep)
 }
 

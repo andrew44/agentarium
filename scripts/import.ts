@@ -13,8 +13,10 @@
  *                            since; a later run adds only what tokenomics recorded after the last.
  *                            A copy of till.db as it was is kept in backups/ first.
  *   config.json              the profile, per-folder profiles and "settings" (TOKENOMICS_ keys become
- *                            AGENTARIUM_ ones), merged key by key: a value agentarium has is kept
- *   statusline.json, router.json, providers.json, plans.json, pennywise_learned.json, pennywise_eval.json
+ *                            AGENTARIUM_ ones, and pennywise's become sommelier's), merged key by key: a
+ *                            value agentarium has is kept
+ *   statusline.json, router.json, providers.json, plans.json, and pennywise's learned thresholds and
+ *                            eval misses (now sommelier's: sommelier_learned.json, sommelier_eval.json),
  *                            merged the same way
  *   TOKENOMICS_* settings    from this shell and from Claude Code's settings.json "env", into
  *                            config.json "settings", where agentarium reads them (an AGENTARIUM_*
@@ -57,8 +59,15 @@ function tokenomicsEnv(name: string): string {
 
 export const tokenomicsHome = () => tokenomicsEnv('TOKENOMICS_HOME') || join(homedir(), '.tokenomics')
 
-/** Files merged key by key: a key agentarium already has wins. */
-export const MERGED = ['statusline.json', 'router.json', 'providers.json', 'plans.json', 'pennywise_learned.json', 'pennywise_eval.json']
+/** Files merged key by key (a key agentarium already has wins): tokenomics's name, then agentarium's. */
+export const MERGED: [string, string][] = [['statusline.json', 'statusline.json'], ['router.json', 'router.json'],
+  ['providers.json', 'providers.json'], ['plans.json', 'plans.json'],
+  ['pennywise_learned.json', 'sommelier_learned.json'], ['pennywise_eval.json', 'sommelier_eval.json']]
+
+/** tokenomics's helper names that agentarium renamed, in a setting's name or value. */
+const RENAMED: [RegExp, string][] = [[/(?<![a-z0-9])pennywise(?![a-z0-9])/g, 'sommelier'],
+  [/(?<![A-Z0-9])PENNYWISE(?![A-Z0-9])/g, 'SOMMELIER'], [/(?<![a-z0-9])spendlens(?![a-z0-9])/g, 'till']]   // `_` separates, unlike \b
+export const renamed = (text: string) => RENAMED.reduce((t, [from, to]) => t.replace(from, to), text)
 
 /** TOKENOMICS_ names that say where tokenomics lives or how its installer ran, not how it behaves. */
 const PLACES = new Set(['HOME', 'DB', 'REPO', 'REF', 'NODE', 'ROOT', 'SETUP_ARGS'])
@@ -97,7 +106,7 @@ export function translateConfig(cfg: Obj): Obj {
   const out: Obj = { ...cfg }
   if (isObj(cfg.settings)) {
     out.settings = Object.fromEntries(Object.entries(cfg.settings).map(([k, v]) =>
-      [/^TOKENOMICS_[A-Z0-9_]+$/.test(k) ? `AGENTARIUM_${k.slice('TOKENOMICS_'.length)}` : k, v]))
+      [renamed(/^TOKENOMICS_[A-Z0-9_]+$/.test(k) ? `AGENTARIUM_${k.slice('TOKENOMICS_'.length)}` : k), typeof v === 'string' ? renamed(v) : v]))
   }
   return out
 }
@@ -136,15 +145,16 @@ export function envSettings(env: NodeJS.ProcessEnv = process.env, claudeSettings
   for (const source of [env, isObj(claude) ? claude : {}]) {
     for (const [k, v] of Object.entries(source)) {
       const m = /^TOKENOMICS_([A-Z0-9_]+)$/.exec(k)
-      if (m && !PLACES.has(m[1]) && typeof v === 'string' && v.trim() !== '') out[m[1]] = v
+      if (m && !PLACES.has(m[1]) && typeof v === 'string' && v.trim() !== '') out[renamed(m[1])] = renamed(v)
     }
   }
   return out
 }
 
 /** Read tokenomics's database through a consistent copy (VACUUM INTO from a read-only handle: safe
- *  while tokenomics writes), with doggybag's table and the controller's first step renamed the way
- *  agentarium calls them. The caller deletes the copy. */
+ *  while tokenomics writes), with the tables and the controller's steps of the helpers agentarium
+ *  renamed (handoff is doggybag, pennywise is sommelier, spendlens is till) under their new names.
+ *  The caller deletes the copy. */
 function readableCopy(from: string, tmp: string): void {
   rmSync(tmp, { force: true })
   const src = new Db(from, { readOnly: true })
@@ -156,7 +166,11 @@ function readableCopy(from: string, tmp: string): void {
   const db = new Db(tmp)
   try {
     if (db.columns('handoff_events').size && !db.columns('doggybag_events').size) db.exec('ALTER TABLE handoff_events RENAME TO doggybag_events')
-    if (db.columns('controller_events').has('step')) db.run("UPDATE controller_events SET step='till' WHERE step='spendlens'")
+    if (db.columns('pennywise_events').size && !db.columns('sommelier_events').size) db.exec('ALTER TABLE pennywise_events RENAME TO sommelier_events')
+    if (db.columns('controller_events').has('step')) {
+      db.run("UPDATE controller_events SET step='till' WHERE step='spendlens'")
+      db.run("UPDATE controller_events SET step='sommelier' WHERE step='pennywise'")
+    }
   } finally {
     db.close()
   }
@@ -244,7 +258,7 @@ function mergeDb(from: string, to: string, r: Result): void {
 
 /** A tokenomics install at `from`: its database or any of its settings files. */
 export const found = (from = tokenomicsHome()): boolean =>
-  ['spendlens.db', 'config.json', ...MERGED].some((f) => existsSync(join(from, f)))
+  ['spendlens.db', 'config.json', ...MERGED.map(([theirs]) => theirs)].some((f) => existsSync(join(from, f)))
 
 /** Brought over already: scripts/import.ts left its record. */
 export const imported = (): boolean => existsSync(statusline.IMPORTED_FILE)
@@ -301,8 +315,8 @@ export function bringOver(opts: { from?: string, dryRun?: boolean } = {}): Resul
   }
 
   // the rest of the settings files
-  for (const name of MERGED) {
-    const theirs = readObj(join(from, name))
+  for (const [theirName, name] of MERGED) {
+    const theirs = readObj(join(from, theirName))
     if (!theirs) continue
     const mine = readObj(join(to, name))
     const m = merge(mine ?? {}, theirs)

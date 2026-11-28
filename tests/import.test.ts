@@ -23,13 +23,16 @@ function setup(c: Parameters<typeof useTemp>[0], { plugin = true } = {}) {
   const db = new Db(join(tk, 'spendlens.db'))
   try {
     db.exec('ALTER TABLE doggybag_events RENAME TO handoff_events')
+    db.exec('ALTER TABLE sommelier_events RENAME TO pennywise_events')
     db.exec('CREATE TABLE IF NOT EXISTS controller_events(id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, session_id TEXT, run TEXT, source TEXT, step TEXT, ms REAL)')
     db.run("INSERT INTO controller_events(ts,session_id,run,source,step,ms) VALUES('2026-11-01T10:00:00+0000','s','r','claude-code','spendlens',40)")
+    db.run("INSERT INTO controller_events(ts,session_id,run,source,step,ms) VALUES('2026-11-01T10:00:00+0000','s','r','claude-code','pennywise',90)")
   } finally {
     db.close()
   }
   writeFileSync(join(tk, 'config.json'), JSON.stringify({ profile: 'frugal', projects: { '~/work/api': 'quality' },
-    settings: { currency: 'USD', TOKENOMICS_DIET_MAX_KB: 128 } }))
+    settings: { currency: 'USD', TOKENOMICS_DIET_MAX_KB: 128, pennywise_up: 'off', TOKENOMICS_CONTROLLER_SKIP: 'parrot,pennywise' } }))
+  writeFileSync(join(tk, 'pennywise_learned.json'), JSON.stringify({ thresholds: { MEDIUM: 0.2 } }))
   writeFileSync(join(tk, 'statusline.json'), JSON.stringify({ theme: 'light', currency: 'USD' }))
   writeFileSync(join(tk, 'statusline.mts'), '// tokenomics\'s status line\n')
   const settings = join(h, '.claude', 'settings.json')
@@ -86,15 +89,19 @@ describe('agentarium import', () => {
     assert.equal(Number(rows('SELECT COUNT(*) AS n FROM sessions')[0].n), sessions)
     const tables = rows("SELECT name FROM sqlite_master WHERE type='table'").map((r) => r.name)
     assert.ok(tables.includes('doggybag_events') && !tables.includes('handoff_events'), tables.join(' '))
+    assert.ok(tables.includes('sommelier_events') && !tables.includes('pennywise_events'), tables.join(' '))
     assert.ok(Number(rows('SELECT COUNT(*) AS n FROM doggybag_events')[0].n) > 0)
-    assert.deepEqual(rows('SELECT DISTINCT step FROM controller_events').map((r) => r.step), ['till'])
+    assert.ok(Number(rows('SELECT COUNT(*) AS n FROM sommelier_events')[0].n) > 0)
+    assert.deepEqual(rows('SELECT DISTINCT step FROM controller_events ORDER BY step').map((r) => r.step), ['sommelier', 'till'])
 
     // the settings: tokenomics's file in agentarium's terms, plus what Claude Code's env set
     const cfg = json(join(ours, 'config.json'))
     assert.equal(cfg.profile, 'frugal')
     assert.deepEqual(cfg.projects, { '~/work/api': 'quality' })
-    assert.deepEqual(cfg.settings, { currency: 'USD', AGENTARIUM_DIET_MAX_KB: 128, budget_daily: '20' })   // not TOKENOMICS_HOME
+    assert.deepEqual(cfg.settings, { currency: 'USD', AGENTARIUM_DIET_MAX_KB: 128, sommelier_up: 'off',   // pennywise's, renamed
+      AGENTARIUM_CONTROLLER_SKIP: 'parrot,sommelier', budget_daily: '20' })                              // not TOKENOMICS_HOME
     assert.equal(json(join(ours, 'statusline.json')).theme, 'light')
+    assert.deepEqual(json(join(ours, 'sommelier_learned.json')), { thresholds: { MEDIUM: 0.2 } })
 
     // the status line runs agentarium's copy now
     assert.ok(json(settings).statusLine.command.includes(join(ours, 'statusline.mts')))
@@ -191,6 +198,12 @@ describe('agentarium import', () => {
     // a setting spelled the other way is still the same setting: agentarium's value stays the only one
     assert.deepEqual(merge({ settings: { budget_daily: 5 } }, translateConfig({ settings: { TOKENOMICS_BUDGET_DAILY: 20, TOKENOMICS_DIET: 'warn' } })).merged,
       { settings: { budget_daily: 5, AGENTARIUM_DIET: 'warn' } })
+  })
+
+  test("pennywise's settings are sommelier's, in their names and their values", () => {
+    assert.deepEqual(translateConfig({ settings: { TOKENOMICS_PENNYWISE: 'warn', pennywise_learn: 'off', TOKENOMICS_CONTROLLER_SKIP: 'pennywise,spendlens' } }),
+      { settings: { AGENTARIUM_SOMMELIER: 'warn', sommelier_learn: 'off', AGENTARIUM_CONTROLLER_SKIP: 'sommelier,till' } })
+    assert.deepEqual(envSettings({ TOKENOMICS_PENNYWISE_UP: 'off' }, '/nowhere'), { SOMMELIER_UP: 'off' })
   })
 
   test("TOKENOMICS_ settings come from the shell and Claude Code's env; where tokenomics lives does not", (c) => {

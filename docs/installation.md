@@ -51,7 +51,7 @@ In the **Code** tab, start a **local** (or SSH) session, click **+** next to the
 ### What you get
 
 - **Skills:** `/agentarium:coach`, `/agentarium:spend-report`, `/agentarium:dashboard`, `/agentarium:statusline`. You don't need the slash: *"coach, review my prompts"* or *"open the agentarium dashboard"* works too.
-- **Hooks:** `till`, `pennywise`, `diet`, `colander`, `budget` and `doggybag` (and the other guard-rails), running automatically. `/hooks` lists them.
+- **Hooks:** `till`, `sommelier`, `diet`, `colander`, `budget` and `doggybag` (and the other guard-rails), running automatically. `/hooks` lists them.
 - **The status line** switches itself on at the start of your next session, as long as you don't already have a status line, and updates itself with the plugin. Set `AGENTARIUM_STATUSLINE=ask` to be asked first, or `off` to leave it off. `/agentarium:statusline` installs, removes or changes it.
 - **A row in the band** (desktop app and VS Code): the same line, in the strip directly above the prompt box, on from your next session whether or not the status line is installed. `/agentarium:statusline band off` hides it.
 
@@ -154,11 +154,11 @@ Every helper works on its own. Pick what you want:
 
 ### Choosing which hooks run
 
-The hooks (`till`, `pennywise`, `diet`, `colander`, `budget`, `doggybag` and the rest) ship together in the plugin and share one engine. To keep only the ones you want, switch the others off with a setting, in your shell profile or in Claude Code's `settings.json` under `"env"`:
+The hooks (`till`, `sommelier`, `diet`, `colander`, `budget`, `doggybag` and the rest) ship together in the plugin and share one engine. To keep only the ones you want, switch the others off with a setting, in your shell profile or in Claude Code's `settings.json` under `"env"`:
 
 | Hook | Switch it off | Or soften it |
 |---|---|---|
-| **pennywise** | `AGENTARIUM_PENNYWISE=off` | `block` asks you to switch with `/model` instead of routing; `warn` only shows a notice |
+| **sommelier** | `AGENTARIUM_SOMMELIER=off` | `block` asks you to switch with `/model` instead of routing; `warn` only shows a notice |
 | **diet** | `AGENTARIUM_DIET=off` | `warn` shows a notice but never blocks |
 | **colander** | `AGENTARIUM_COLANDER=off` | `# colander-off` on one command shows its whole output |
 | **budget** | `AGENTARIUM_BUDGET_MODE=off` (or just don't set a limit) | `warn` |
@@ -170,7 +170,7 @@ Example `~/.claude/settings.json`:
 ```json
 {
   "env": {
-    "AGENTARIUM_PENNYWISE": "warn",
+    "AGENTARIUM_SOMMELIER": "warn",
     "AGENTARIUM_DIET": "off"
   }
 }
@@ -251,7 +251,7 @@ What works on Copilot:
 | doggybag | ✅ best effort |
 | status line | ✅ (countdown is approximate) |
 | dashboard | ✅ |
-| pennywise, budget | ❌ Copilot ignores prompt-hook output |
+| sommelier, budget | ❌ Copilot ignores prompt-hook output |
 | coach | ❌ no conversation file to read |
 
 <details>
@@ -351,11 +351,11 @@ What comes over, into `~/.agentarium`, with tokenomics's own files left exactly 
 |---|---|
 | `spendlens.db`: every session, cost and guard event | added to `till.db` in one transaction, read from a consistent copy (safe while tokenomics is running). The file is never replaced and nothing in it is changed or removed: agentarium's own sessions stay, the older history goes in ahead of them, and running it again adds only what tokenomics recorded since. A copy of `till.db` as it was goes into `backups/` first. |
 | `config.json`: the profile, per-folder profiles and settings | merged into `config.json`, with `TOKENOMICS_` names as `AGENTARIUM_` ones; a value agentarium already has is kept |
-| `statusline.json`, `router.json`, `providers.json`, `plans.json` and pennywise's learned thresholds and eval misses | merged the same way |
+| `statusline.json`, `router.json`, `providers.json`, `plans.json` and pennywise's learned thresholds and eval misses | merged the same way (pennywise's files as `sommelier_learned.json` and `sommelier_eval.json`) |
 | `TOKENOMICS_*` settings in your shell or in Claude Code's `settings.json` `"env"` | `config.json` `"settings"`, where agentarium reads them (agentarium doesn't read `TOKENOMICS_` variables; an `AGENTARIUM_` one still wins over the file) |
 | the status line, if it runs tokenomics's copy | agentarium's copy (also done by itself at the first session start) |
 
-The names that changed: the plugin is `agentarium@agentarium` from `andrew44/agentarium`, the command is `agentarium`, settings start `AGENTARIUM_`, the data folder is `~/.agentarium`, **spendlens** is now **till** (its database `till.db`), the pane is `/agentarium-pane` and the VS Code hook file `.github/hooks/agentarium.json` (run `agentarium vscode` again in each workspace, and `agentarium vscode --status-bar` for the status bar item). A waistline baseline keeps working under its old file name; `--baseline` takes any path.
+The names that changed: the plugin is `agentarium@agentarium` from `andrew44/agentarium`, the command is `agentarium`, settings start `AGENTARIUM_`, the data folder is `~/.agentarium`, **spendlens** is now **till** (its database `till.db`), **pennywise** is now **sommelier** (settings `AGENTARIUM_SOMMELIER*`, the `agentarium sommelier` command, and its history in `sommelier_events`; the import moves all three over), the pane is `/agentarium-pane` and the VS Code hook file `.github/hooks/agentarium.json` (run `agentarium vscode` again in each workspace, and `agentarium vscode --status-bar` for the status bar item). A waistline baseline keeps working under its old file name; `--baseline` takes any path.
 
 ### Update isn't showing up
 

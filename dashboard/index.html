@@ -225,7 +225,7 @@ const colour = l => `var(--${l})`;
 const METRIC_NAME = {spend:"spend", tokens:"tokens", sessions:"sessions", prompts:"prompts"};
 const DOCS = "https://github.com/andrew44/agentarium/blob/main/docs/reference.md#";
 const HELPERS = {
-  "pennywise":["💰","pennywise"], "cache-buster":["💥","cache-buster"], "diet":["🥗","diet"], "groundhog":["🦫","groundhog"],
+  "sommelier":["🍷","sommelier"], "cache-buster":["💥","cache-buster"], "diet":["🥗","diet"], "groundhog":["🦫","groundhog"],
   "blinkers":["🐴","blinkers"], "too-many-cooks":["🧑‍🍳","too-many-cooks"], "ballast":["⚓","ballast"], "budget":["💳","budget"],
   "premium":["🐙","copilot-premium-requests"], "haggle":["🤝","haggle"], "doggybag":["🥡","doggybag"], "kettle":["🫖","kettle"],
   "parrot":["🦜","parrot"], "colander":["🍝","colander"],
@@ -330,7 +330,7 @@ function kpis(d){
 function sentence(h){
   const n = h.stopped + h.flagged, more = h.flagged ? `, and warned about ${fmt(h.flagged)} more` : "";
   switch (h.helper){
-    case "pennywise": return (h.stopped ? `Routed ${times(h.stopped,"prompt","prompts")} to the model each one needed` +
+    case "sommelier": return (h.stopped ? `Routed ${times(h.stopped,"prompt","prompts")} to the model each one needed` +
         (h.saved_usd ? `, saving about ${usd(h.saved_usd)} net of hand-offs` : "") + "." +
         (h.extra_usd ? ` Sending hard prompts up to a stronger model cost ${usd(h.extra_usd)} more.` : "") : "") +
       (h.flagged ? ` Suggested a cheaper model ${times(h.flagged,"time","times")}.` : "");
@@ -372,7 +372,7 @@ function did(d){
   const when = d.days ? `the last ${d.days} days` : "all time";
   if (!act.helpers.length){
     $("#didSub").textContent = `Nothing in ${when} yet.`;
-    $("#didBody").innerHTML = `<p class="sub">pennywise and the guard-rails list what they did here as they work: prompts routed, floods and loops stopped, notes packed before the cache went cold.</p>`;
+    $("#didBody").innerHTML = `<p class="sub">sommelier and the guard-rails list what they did here as they work: prompts routed, floods and loops stopped, notes packed before the cache went cold.</p>`;
     return;
   }
   $("#didSub").textContent = `Each helper that stepped in, ${when}. Saved counts only spend a helper stopped and could price; the rest is what it caught and what was at stake.`;

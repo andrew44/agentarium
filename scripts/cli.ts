@@ -9,7 +9,7 @@
  *   agentarium report [--days N]  spend report in the terminal
  *   agentarium statusline [...]   status line and band options, e.g. --demo, --set-currency USD,
  *                                 --band-off, --status
- *   agentarium router [...]       pennywise model router: on | off [--project] (the proxy, in the
+ *   agentarium router [...]       sommelier model router: on | off [--project] (the proxy, in the
  *                                 background), status, learn, eval, serve [--port N], explain "prompt", env
  *   agentarium profile [name]     show the settings in effect; frugal | balanced | quality sets the profile
  *   agentarium audit [...]        every leak check in one report, biggest money first (--days 30)
@@ -880,13 +880,13 @@ export async function main(argv: string[]): Promise<number> {
   }
   if (cmd === 'report') return script('report.ts', ...rest)
   if (cmd === 'statusline') return script('statusline.ts', ...(rest.length ? rest : ['--status']))
-  if (cmd === 'router' || cmd === 'pennywise') {
+  if (cmd === 'router' || cmd === 'sommelier') {
     if (!rest.length || !['serve', 'explain', 'env', 'on', 'off', 'status', 'learn', 'eval'].includes(rest[0])) {
       say('Usage: agentarium router on|off [--project] | status | learn [--dry-run] [--apply-tiers] | eval [--misses]\n' +
         '                         serve [--port N] | explain "prompt" | env [--port N]')
       return 2
     }
-    return script('pennywise.ts', ...rest)
+    return script('sommelier.ts', ...rest)
   }
   if (cmd === 'doggybag') return script('doggybag.ts', 'write', ...rest)
   if (cmd === 'import') return script('import.ts', ...rest)

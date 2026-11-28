@@ -3,7 +3,7 @@
  *
  * Give a man a fish and you feed him for a day. A notice that only says "this prompt is expensive"
  * fixes one prompt; one that says why it costs what it does, and what to type next time, fixes the
- * habit. Each prompt-time helper (hold-up, ballast, parrot, haggle, pennywise, doggybag, budget) appends
+ * habit. Each prompt-time helper (hold-up, ballast, parrot, haggle, sommelier, doggybag, budget) appends
  * `teach()` to its message:
  *
  *   the first AGENTARIUM_FISHINGROD_TIMES times (3) a lesson comes up, the full lesson: "Why: ... Next time: ..."

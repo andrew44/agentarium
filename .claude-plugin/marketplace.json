@@ -7,7 +7,7 @@
     {
       "name": "agentarium",
       "source": { "source": "github", "repo": "andrew44/agentarium" },
-      "description": "Make every AI token earn its keep: automated prevention for the whole AI coding session. pennywise, the flagship, routes every prompt to the model it needs, net of what routing costs, and learns from what lands; a forward-looking band and status line (forecast, budget or Copilot premium requests left, cache risk, the saving to make, what pennywise saved); one decision per prompt from budget, quotes and guard-rails against floods, loops, scope creep and carried context; test, build and install output strained before the model reads it; and proof: cost per result, agent forensics, a quality gate and one audit of every leak. Profiles: frugal, balanced, quality."
+      "description": "Make every AI token earn its keep: automated prevention for the whole AI coding session. sommelier, the flagship, routes every prompt to the model it needs, net of what routing costs, and learns from what lands; a forward-looking band and status line (forecast, budget or Copilot premium requests left, cache risk, the saving to make, what sommelier saved); one decision per prompt from budget, quotes and guard-rails against floods, loops, scope creep and carried context; test, build and install output strained before the model reads it; and proof: cost per result, agent forensics, a quality gate and one audit of every leak. Profiles: frugal, balanced, quality."
     }
   ]
 }

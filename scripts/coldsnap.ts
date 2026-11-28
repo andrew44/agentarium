@@ -53,7 +53,7 @@ function summarise(c: ColdCache, scope: Obj): Obj {
   }
   if (byCause.model_switch) {
     tips.push('Model switches: pick the model when you start a task (after `/clear`), not halfway through; each switch re-writes ' +
-      'the whole conversation. The pennywise router keeps the model while its cache is warm.')
+      'the whole conversation. The sommelier router keeps the model while its cache is warm.')
   }
   if (byCause.prefix_change) {
     tips.push('Prefix changes: edit CLAUDE.md, add or remove MCP servers and plugins, and change settings between sessions, not ' +

@@ -1,6 +1,6 @@
 ---
 name: dashboard
-description: Opens the agentarium dashboard, a local web page showing where tokens and money went (OPEX vs CAPEX, by project, by day, recent sessions) and what agentarium saved (what pennywise and each guard stopped, priced). Use when asked to open, show, start or stop the dashboard, for charts of token usage or spend, or to see what agentarium has saved.
+description: Opens the agentarium dashboard, a local web page showing where tokens and money went (OPEX vs CAPEX, by project, by day, recent sessions) and what agentarium saved (what sommelier and each guard stopped, priced). Use when asked to open, show, start or stop the dashboard, for charts of token usage or spend, or to see what agentarium has saved.
 argument-hint: "[demo|stop]"
 allowed-tools: Bash(sh *run.sh dashboard.ts*), Bash(node *dashboard.ts*)
 ---

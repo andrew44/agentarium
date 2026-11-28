@@ -34,7 +34,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" tastetest.ts --a <session-or-transcrip
 1. **Verdict** (`summary`), then the score: raw saving %, quality change (points), **quality-adjusted saving %** = 1 − (cost_B/quality_B) / (cost_A/quality_A).
 2. **Side-by-side**: cost, tokens, turns, each check's pass/fail counts, quality.
 3. **Recommendation**:
-   - `safe-saving` → adopt B; suggest making it the default (e.g. pennywise tiers, model setting).
+   - `safe-saving` → adopt B; suggest making it the default (e.g. sommelier tiers, model setting).
    - `cheaper-but-worse` → say exactly what got worse and let the user decide.
    - `false-economy` → keep A; name the broken checks.
    - `better-for-more`, `no-saving`, `worse` → state the trade-off plainly.

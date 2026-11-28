@@ -35,7 +35,7 @@ Most cost tools are receipts: they tell you what you already paid. **agentarium 
   <img src="docs/assets/statusline.svg" alt="The agentarium status line showing model, context fill, tokens, cost and a prompt-cache countdown" width="760">
 </p>
 
-- 💰 **The right model for every prompt: [pennywise](#-the-flagship-pennywise).** Routes each prompt down to Haiku or up to Opus by what it needs, and routes down harder as your budget runs out, so it lasts.
+- 🍷 **The right model for every prompt: [sommelier](#-the-flagship-sommelier).** Routes each prompt down to Haiku or up to Opus by what it needs, and routes down harder as your budget runs out, so it lasts.
 - 🔭 **See what's coming, not just what's gone.** agentarium's row in the band, above the prompt box, forecasts the next steps, shows the budget left (in steps), prices a cold cache before it happens, and names the one change that saves most. The terminal status line shows context fill, tokens, cost in £/$/€ and the cache countdown, with the same forecast row under it.
 - 🛡️ **Stop waste automatically.** Guard-rails that catch context floods, loops, scope creep and runaway spend *before* they cost you, each with a one-step override.
 - 🍝 **Read the result, not the noise: [colander](#colander-drains-the-test-run).** A green test run reaches the model as its summary, not 353 passing tests: every successful test run, build, lint and install is strained first, warnings and failures kept, the full output one grep away.
@@ -47,25 +47,25 @@ Most cost tools are receipts: they tell you what you already paid. **agentarium 
 
 ---
 
-## 💰 The flagship: pennywise
+## 🍷 The flagship: sommelier
 
-*Penny wise, pound foolish.* pennywise is the decision every prompt goes through: **which model should do this?** It scores each prompt and sends it to the tier it needs, down to Haiku for a rename, up to Opus for an architecture question, with nothing to set up.
+*The right wine for the dish.* sommelier is the decision every prompt goes through: **which model should do this?** It scores each prompt and sends it to the tier it needs, down to Haiku for a rename, up to Opus for an architecture question, with nothing to set up.
 
 - **Down to save, up to succeed.** A hello-world never runs on the priciest model; a hard problem never gets stuck on the cheapest.
-- **Only when it pays.** Handing a prompt to a cheaper model isn't free: your model still reads the conversation to pass it on. pennywise prices that hand-off and only routes down when the saving is bigger, then shows what it saved, net, on the status line, the band and the weekly report. It also reads what the routed model really used from the transcript, shows estimated against measured in `agentarium router status`, and prices later routes on your own tasks' shape and your session's cache (a hand-off that outlasts a warm cache costs the relay a re-write).
-- **Spends to your budget.** Once a daily or session budget passes 80%, pennywise routes down harder and stops routing up, so the budget lasts the task instead of running out halfway. Forced models (`opus:`) still win.
+- **Only when it pays.** Handing a prompt to a cheaper model isn't free: your model still reads the conversation to pass it on. sommelier prices that hand-off and only routes down when the saving is bigger, then shows what it saved, net, on the status line, the band and the weekly report. It also reads what the routed model really used from the transcript, shows estimated against measured in `agentarium router status`, and prices later routes on your own tasks' shape and your session's cache (a hand-off that outlasts a warm cache costs the relay a re-write).
+- **Spends to your budget.** Once a daily or session budget passes 80%, sommelier routes down harder and stops routing up, so the budget lasts the task instead of running out halfway. Forced models (`opus:`) still win.
 - **Backs off when it got it wrong, and learns.** "That didn't work" after a routed answer sends the next prompt back to your model, and so does the evidence when you don't say it: the routed work ended on a failing test, was reverted or tripped groundhog. Those misses, and your `keep-model:` overrides, tune its thresholds at the end of every session, within bounds, per project once a repository has enough routes of its own. `agentarium router eval` scores it on a labelled set of prompts (90% on the right tier today), `--mine` on your own misses (hashes only unless you opt in to the wording), and CI fails if a change to the scorer routes the set worse.
 - **Two ways to run.** As a hook (the default, nothing to set up), or as a per-request routing proxy, which skips the hand-off entirely: `agentarium router on` starts it in the background and points Claude Code at it (`off` undoes it).
-- **Always your call.** `keep-model:` keeps your model for one prompt; `AGENTARIUM_PENNYWISE=warn` only suggests; `agentarium profile frugal` or `quality` moves the whole dial.
+- **Always your call.** `keep-model:` keeps your model for one prompt; `AGENTARIUM_SOMMELIER=warn` only suggests; `agentarium profile frugal` or `quality` moves the whole dial.
 
 ```text
-pennywise: routing down to Haiku (SIMPLE, score -0.25, saves ~£0.07 after the hand-off) instead of Opus.
+sommelier: routing down to Haiku (SIMPLE, score -0.25, saves ~£0.07 after the hand-off) instead of Opus.
 Start a prompt with 'keep-model:' to keep it on Opus.
 ```
 
-Every prompt gets **one decision and one message**: pennywise, budget, haggle and the guard-rails run together, in order, in one process, and the first one that needs to pause the prompt decides alone.
+Every prompt gets **one decision and one message**: sommelier, budget, haggle and the guard-rails run together, in order, in one process, and the first one that needs to pause the prompt decides alone.
 
-[How pennywise scores and routes →](docs/reference.md#pennywise)
+[How sommelier scores and routes →](docs/reference.md#sommelier)
 
 ## 🔭 The band: what's coming, and what to do about it
 
@@ -77,7 +77,7 @@ The band is the strip Claude Code keeps directly above the prompt box, where eac
 | **Budget left** | The tightest of your daily and session budgets and the price you agreed with haggle for the task in hand, and how many steps it buys | `£0.29 left` · today · ~4 steps, or `£0.80 of £2.00 left` · this task · ~3 steps |
 | **Cache risk** | What a cold cache adds to the next prompt; once cold, what the next prompt will pay | `£0.58` at risk if the cache goes cold |
 | **Saving** | The one change that saves most, priced | `→ reply within 01:40` saves ~£0.58 · `→ /clear` saves ~£0.83 |
-| **Saved** | What pennywise saved this session, net of its hand-offs | `£0.41` saved by pennywise |
+| **Saved** | What sommelier saved this session, net of its hand-offs | `£0.41` saved by sommelier |
 
 On **Copilot CLI** (and Copilot in VS Code), which bills premium requests rather than tokens, the status line's second row shows the monthly allowance instead: requests left, the pace, and the day they run out at that pace (`agentarium copilot`). On **Copilot Fusion**, which picks a model for each task, the model pill shows where it sent the work (`Copilot Fusion → claude-sonnet-4.6`) and each prompt counts at that model's multiplier.
 
@@ -95,7 +95,7 @@ Token counts tell you what AI cost. They don't tell you whether it was worth it.
 |---|---|---|---|
 | 👁️ | **1. Observe** | Collect costs, tokens, tool calls, task outcomes and agent behaviour, from every assistant, in one event format. | till · status line · dashboard |
 | 🧠 | **2. Understand** | Find waste, inefficiency, quality problems and spending patterns. | **sherlock** · **audit** (pack-light · waffle · cold-snap · ballast · spring-clean · deadwood · groundhog · parrot · waistline) · split-the-bill · coach · dry-run · rate-my-prompt |
-| ⚙️ | **3. Optimise** | Prevent spend automatically, or recommend the change that saves most. | **pennywise** · the controller · band · bazaar · blinkers · diet · colander · groundhog · budget · hold-up · haggle · doggybag · ballast · parrot · fishingrod · cache-buster · too-many-cooks · kettle · all-you-can-eat |
+| ⚙️ | **3. Optimise** | Prevent spend automatically, or recommend the change that saves most. | **sommelier** · the controller · band · bazaar · blinkers · diet · colander · groundhog · budget · hold-up · haggle · doggybag · ballast · parrot · fishingrod · cache-buster · too-many-cooks · kettle · all-you-can-eat |
 | ✅ | **4. Prove** | Measure savings against task success and output quality. | **bang-for-buck** · **taste-test** · crystal-ball · receipt |
 
 ### ⭐ Proof features
@@ -192,7 +192,7 @@ Plugins can't be installed on the web. Commit the coach to your repo instead: `n
 
 ### Moving from tokenomics
 
-agentarium is what tokenomics became. Install it as above, then `agentarium import` brings your history and settings over from `~/.tokenomics` (the one-line installer does it for you) and leaves tokenomics's files as they are. Then remove tokenomics (`/plugin uninstall tokenomics@tokenomics`), or both run every hook. [What comes over, and what changed name →](docs/installation.md#moving-from-tokenomics)
+agentarium is what tokenomics became. Install it as above, then `agentarium import` brings your history and settings over from `~/.tokenomics` (the one-line installer does it for you) and leaves tokenomics's files as they are (pennywise is sommelier now, spendlens is till, and the import renames their settings and history to match). Then remove tokenomics (`/plugin uninstall tokenomics@tokenomics`), or both run every hook. [What comes over, and what changed name →](docs/installation.md#moving-from-tokenomics)
 
 Full details, updating and removing: **[Installation guide](docs/installation.md)**.
 
@@ -208,7 +208,7 @@ Every piece works on its own. Grab just what you want:
 | 📊 **spend-report** skill | `npx skills@latest add andrew44/agentarium --skill spend-report` *(reads till data, so pair it with the plugin)* |
 | 📟 **status line** only | Install the plugin and switch the hooks off (below), or without the plugin: `curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh \| sh -s -- --no-plugin` |
 | 📈 **dashboard** | `/agentarium:dashboard` with the plugin, or `agentarium dashboard` after the one-liner |
-| 🛡️ **Some of the hooks** | Install the plugin, then switch off the ones you don't want, e.g. `AGENTARIUM_DIET=off` or `AGENTARIUM_PENNYWISE=block` ([every switch](#-turn-things-on-and-off)) |
+| 🛡️ **Some of the hooks** | Install the plugin, then switch off the ones you don't want, e.g. `AGENTARIUM_DIET=off` or `AGENTARIUM_SOMMELIER=block` ([every switch](#-turn-things-on-and-off)) |
 
 The `npx skills` commands need [Node.js](https://nodejs.org). See [Installation → pick and choose](docs/installation.md#install-pieces-individually) for every option.
 
@@ -233,12 +233,12 @@ Every automatic helper has a switch, and every switch is an environment variable
 
 | Helper | Setting | Values |
 |---|---|---|
-| 💰 pennywise | `AGENTARIUM_PENNYWISE` | `route` (hand the prompt to the right model) · `block` (pause and suggest `/model`) · `warn` (notice only) · `proxy` (leave it to `agentarium router serve`) · `off` |
-| 💰 pennywise, routing up | `AGENTARIUM_PENNYWISE_UP` | `on` · `off` (only ever route down) |
-| 💰 pennywise, spending to the budget | `AGENTARIUM_PENNYWISE_BUDGET` | `on` (route down harder, never up, past 80% of a budget; hook and proxy) · `off` |
-| 💰 pennywise, the hand-off check | `AGENTARIUM_PENNYWISE_OVERHEAD` | `on` (route down only when the saving beats the hand-off) · `off` |
-| 💰 pennywise, learning | `AGENTARIUM_PENNYWISE_LEARN` | `on` (use what `agentarium router learn` found; it runs at each session end) · `off` |
-| 💰 pennywise, your eval set | `AGENTARIUM_PENNYWISE_EVAL` | `hash` (keep each miss as a labelled case: hash and score) · `text` (the wording too) · `off` |
+| 🍷 sommelier | `AGENTARIUM_SOMMELIER` | `route` (hand the prompt to the right model) · `block` (pause and suggest `/model`) · `warn` (notice only) · `proxy` (leave it to `agentarium router serve`) · `off` |
+| 🍷 sommelier, routing up | `AGENTARIUM_SOMMELIER_UP` | `on` · `off` (only ever route down) |
+| 🍷 sommelier, spending to the budget | `AGENTARIUM_SOMMELIER_BUDGET` | `on` (route down harder, never up, past 80% of a budget; hook and proxy) · `off` |
+| 🍷 sommelier, the hand-off check | `AGENTARIUM_SOMMELIER_OVERHEAD` | `on` (route down only when the saving beats the hand-off) · `off` |
+| 🍷 sommelier, learning | `AGENTARIUM_SOMMELIER_LEARN` | `on` (use what `agentarium router learn` found; it runs at each session end) · `off` |
+| 🍷 sommelier, your eval set | `AGENTARIUM_SOMMELIER_EVAL` | `hash` (keep each miss as a labelled case: hash and score) · `text` (the wording too) · `off` |
 | 🎛️ the controller | `AGENTARIUM_CONTROLLER_SKIP` | none · a list of prompt-time helpers to leave out, e.g. `parrot,blinkers` |
 | 🎛️ the controller, timing | `AGENTARIUM_CONTROLLER_TIMING` | `on` (time each prompt-time helper; `agentarium doctor` flags one that slows every prompt) · `off` |
 | 🐙 Copilot allowance | `AGENTARIUM_COPILOT_ALLOWANCE` | not set · your monthly premium requests (e.g. `300`); `AGENTARIUM_COPILOT_MULTIPLIERS` per model (e.g. `claude-haiku-4.5=0.33,gpt-4.1=0`), `AGENTARIUM_COPILOT_MULTIPLIER` for the rest |
@@ -285,11 +285,11 @@ The environment variable wins over the saved choice (`~/.agentarium/statusline.j
 
 | Start a prompt with... | What it does |
 |---|---|
-| `keep-model:` | pennywise leaves this prompt on your model. |
-| `haiku:` · `sonnet:` · `opus:` · `fable:` | pennywise sends this prompt to that model, budget or not. |
+| `keep-model:` | sommelier leaves this prompt on your model. |
+| `haiku:` · `sonnet:` · `opus:` · `fable:` | sommelier sends this prompt to that model, budget or not. |
 | `over-budget:` | budget lets this prompt through past the limit (and doesn't pause you again for it today). |
 | `haggle £2:` | haggle holds the task to that price; `haggle +£1` (or `approve`) raises it, `haggle off` drops it. |
-| *the same prompt again* | Carries on past a one-time pause from budget, hold-up, pennywise (`block`), ballast (`block`) or doggybag (`block`). |
+| *the same prompt again* | Carries on past a one-time pause from budget, hold-up, sommelier (`block`), ballast (`block`) or doggybag (`block`). |
 
 ---
 
@@ -297,11 +297,11 @@ The environment variable wins over the saved choice (`~/.agentarium/statusline.j
 
 ### 🛡️ Prevent: before the spend happens
 
-pennywise picks the model; the controller runs it with budget, haggle and the guard-rails, one decision per prompt.
+sommelier picks the model; the controller runs it with budget, haggle and the guard-rails, one decision per prompt.
 
 | | Helper | What it does | Kind | Claude Code | Copilot CLI |
 |---|---|---|:---:|:---:|:---:|
-| 💰 | **[pennywise](docs/reference.md#pennywise)** ⭐ | The flagship. Model router: scores every prompt and sends it to the model that suits it (Haiku for a hello-world, Opus for architecture), only when the saving beats the hand-off, harder down as a budget runs out, back up when an answer didn't land, and it learns from both. A hook, or a background proxy (`agentarium router on`). | hook + tool | ✅ | ❌ |
+| 🍷 | **[sommelier](docs/reference.md#sommelier)** ⭐ | The flagship. Model router: scores every prompt and sends it to the model that suits it (Haiku for a hello-world, Opus for architecture), only when the saving beats the hand-off, harder down as a budget runs out, back up when an answer didn't land, and it learns from both. A hook, or a background proxy (`agentarium router on`). | hook + tool | ✅ | ❌ |
 | 💳 | **[budget](docs/reference.md#budget)** | Daily and per-session limits in your currency. Warns at 80%, pauses at 100%. On Copilot, **premium** is its counterpart: the monthly premium-request allowance. | hook | ✅ | ❌ |
 | ✋ | **[hold-up](docs/reference.md#hold-up)** | *Should that be a file?* Pauses a prompt that pastes in a huge log, data dump, diff, source file or document (10,000 tokens and up) before it joins the conversation, says what carrying it costs at every later step and what to do instead: point at the file and let the agent grep it. Also pauses a short prompt that is blatantly too broad ("refactor the whole codebase", "fix all the bugs") with no file, function or error named. Send it again to go ahead. In VS Code too, without the money. | hook | ✅ | ❌ |
 | 🤝 | **[haggle](docs/reference.md#haggle)** | *Is this task worth £2?* Quotes a task before it starts (input, output and tool costs), warns when it runs over, and with `haggle £2:` stops the agent at the agreed price until you approve more. | skill + hook | ✅ | ❌ |
@@ -324,7 +324,7 @@ Live, on screen, between turns.
 | | Helper | What it does | Kind | Claude Code | Copilot CLI |
 |---|---|---|:---:|:---:|:---:|
 | 📟 | **[status line](docs/reference.md#status-line)**, **[band](docs/reference.md#band)** and **[pane](docs/reference.md#pane)** | Context fill, tokens, cost and a cache countdown, live: the status line at the bottom of your assistant in a terminal, a row in the band above the prompt box in the desktop app and VS Code. For Copilot, premium requests left show in VS Code's status bar (`agentarium vscode --status-bar`) or a small window beside the Copilot app (`agentarium copilot --window`). Both add the outlook (in the terminal, a second row): a forecast of the next steps, budget left, cache risk and the saving to make. The pane shows it all beside the transcript in tabs, with the advice in full. On automatically; `/agentarium:statusline` to manage the first two, `/agentarium-pane` to open the pane. | tool | ✅ | ✅ |
-| 📈 | **[dashboard](docs/reference.md#dashboard)** | A local web view of where your tokens and money went, split by OPEX/CAPEX, project and day, and **what agentarium did**: every prompt pennywise routed and every flood, loop and cache rebuild a guard stopped, with the saving. | tool | ✅ | ✅ |
+| 📈 | **[dashboard](docs/reference.md#dashboard)** | A local web view of where your tokens and money went, split by OPEX/CAPEX, project and day, and **what agentarium did**: every prompt sommelier routed and every flood, loop and cache rebuild a guard stopped, with the saving. | tool | ✅ | ✅ |
 | 📊 | **[spend-report](docs/reference.md#spend-report)** | "Spend report" gets you the week's spend, OPEX vs CAPEX, costliest sessions, and three ways to spend less. | skill | ✅ | ❌ |
 | 🧑‍🏫 | **[coach](docs/reference.md#coach)** | Reads your conversation and tells you where tokens were wasted, with the fixes and a rewrite of your weakest prompt. | skill | ✅ | ❌ |
 | 🔮 | **[crystal-ball](docs/reference.md#crystal-ball)** | *What will this cost?* Simulates a team's monthly AI spend across every model and provider before you adopt an agentic workflow. | skill + tool | ✅ | ✅ |
@@ -359,22 +359,22 @@ The three proof features, then **`agentarium audit`**, which runs every leak che
 
 ## 👀 See it in action
 
-### pennywise routes the over-specced prompt
+### sommelier routes the over-specced prompt
 
-You ask for a hello-world on the priciest model. pennywise scores it SIMPLE and routes it to Haiku without you lifting a finger (and routes an architecture question *up* if you're on Haiku):
+You ask for a hello-world on the priciest model. sommelier scores it SIMPLE and routes it to Haiku without you lifting a finger (and routes an architecture question *up* if you're on Haiku):
 
 ```text
-pennywise: routing down to Haiku (SIMPLE, score -0.25, saves ~£0.07 after the hand-off) instead of Opus.
+sommelier: routing down to Haiku (SIMPLE, score -0.25, saves ~£0.07 after the hand-off) instead of Opus.
 Start a prompt with 'keep-model:' to keep it on Opus.
 
 you:       that didn't work, the test still fails
-pennywise: the last answer came from Haiku and it didn't land, so Opus takes this one itself.
+sommelier: the last answer came from Haiku and it didn't land, so Opus takes this one itself.
 ```
 
 You don't have to say it. If the routed work ended on a failing test, was reverted, or groundhog caught it looping, the next prompt gets the same treatment:
 
 ```text
-pennywise: the last answer came from Haiku and the last check it ran failed, so Opus takes this one itself.
+sommelier: the last answer came from Haiku and the last check it ran failed, so Opus takes this one itself.
 ```
 
 Want true per-request routing, like an auto-router, with no hand-off at all? `agentarium router on`. The proxy runs in the background, Claude Code is pointed at it, and every turn goes upstream on the right model, cache-aware, with fallback. `agentarium router status` shows what it has saved; `agentarium router off` undoes it.
@@ -567,7 +567,7 @@ all-you-can-eat:   Max 20x costs £160, but your work came to about £58 a month
 
 ### The dashboard shows where it all went, and what agentarium saved
 
-Spend in your currency, split OPEX / CAPEX by day and project, and a line for each helper that stepped in: what it stopped, what it flagged and what that saved. Only spend a helper actually stopped and could price counts as saved (pennywise's routes net of the hand-off, cache rebuilds cache-buster refused); notices show what was at stake.
+Spend in your currency, split OPEX / CAPEX by day and project, and a line for each helper that stepped in: what it stopped, what it flagged and what that saved. Only spend a helper actually stopped and could price counts as saved (sommelier's routes net of the hand-off, cache rebuilds cache-buster refused); notices show what was at stake.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dashboard-dark.png">
@@ -582,7 +582,7 @@ Spend in your currency, split OPEX / CAPEX by day and project, and a line for ea
 
 ```mermaid
 flowchart LR
-    You(["You + your AI assistant"]) -->|every prompt| G["🎛️ controller: 💰 pennywise · 💳 budget · ✋ hold-up · 🤝 haggle · ⚓ ballast · 🥡 doggybag · 🦜 parrot<br/><i>one decision: which model, worth it, should that paste be a file, carrying old work?</i>"]
+    You(["You + your AI assistant"]) -->|every prompt| G["🎛️ controller: 🍷 sommelier · 💳 budget · ✋ hold-up · 🤝 haggle · ⚓ ballast · 🥡 doggybag · 🦜 parrot<br/><i>one decision: which model, worth it, should that paste be a file, carrying old work?</i>"]
     You -->|every tool call| D["🥗 diet<br/><i>is this too big?</i>"]
     You -->|every test run, build, install| CO["🍝 colander<br/><i>what's worth reading?</i>"]
     You -->|every turn| S["🧮 till · 🥡 doggybag<br/><i>record it, pack it up</i>"]
@@ -637,7 +637,7 @@ Nothing is installed from npm to *use* agentarium: the plugin, the hooks and the
 | | Guide | |
 |---|---|---|
 | 🚀 | [**Installation**](docs/installation.md) | Whole toolkit, individual pieces, desktop, web, Copilot, teams, troubleshooting |
-| 🎯 | [**Product strategy and roadmap**](docs/strategy.md) | Prevention over reporting, pennywise as the flagship, the band's outlook, where Copilot fits, and the roadmap (done and next) |
+| 🎯 | [**Product strategy and roadmap**](docs/strategy.md) | Prevention over reporting, sommelier as the flagship, the band's outlook, where Copilot fits, and the roadmap (done and next) |
 | 🧭 | [**Skills, tools and hooks**](docs/skills-tools-and-hooks.md) | What each helper does and when to reach for it |
 | 🌱 | [**What is generative AI?**](docs/what-is-generative-ai.md) | AI that makes new things, in plain English then in depth |
 | 🤖 | [**What is an LLM?**](docs/what-is-an-llm.md) | The language models behind Claude and Copilot, and why size matters for cost |

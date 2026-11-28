@@ -7,7 +7,7 @@ These rules apply to every change: code, comments, docs, commit messages and pul
 - **UK English** everywhere you write: optimise, behaviour, colour, analyse, licence (noun), catalogue, organisation. Leave external names as they are (`color` in CSS, API fields, package names).
 - **No Oxford comma.** Write "tests, lint and build", not "tests, lint, and build".
 - **No em-dashes or en-dashes as punctuation.** Use a colon, comma, brackets or a full stop. Hyphens in compound words are fine.
-- **Helper and skill names:** lowercase. Hyphenate a name made of separate words (bang-for-buck, split-the-bill, crystal-ball, cold-snap); keep a single word as one (groundhog, deadwood, pennywise). Script files, settings and tables drop the hyphens (`bangforbuck.ts`, `AGENTARIUM_BANGFORBUCK`, `tastetest_runs`).
+- **Helper and skill names:** lowercase. Hyphenate a name made of separate words (bang-for-buck, split-the-bill, crystal-ball, cold-snap); keep a single word as one (groundhog, deadwood, sommelier). Script files, settings and tables drop the hyphens (`bangforbuck.ts`, `AGENTARIUM_BANGFORBUCK`, `tastetest_runs`).
 - **No AI slop.** Say what the thing does, plainly, with numbers where there are any. Match the voice already in the README and docs: short sentences, concrete examples, light humour in helper names only. Avoid:
   - filler words: delve, seamless, robust, leverage, comprehensive, cutting-edge, powerful, unlock, elevate, empower, streamline, game-changer
   - padding: "It's worth noting", "In today's fast-paced world", "Let's dive in", closing recaps that repeat the section

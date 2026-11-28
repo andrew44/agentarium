@@ -11,7 +11,7 @@ Settings are environment variables. Set them in your shell profile, or in Claude
   "env": {
     "AGENTARIUM_CURRENCY": "USD",
     "AGENTARIUM_BUDGET_DAILY": "20",
-    "AGENTARIUM_PENNYWISE": "warn"
+    "AGENTARIUM_SOMMELIER": "warn"
   }
 }
 ```
@@ -24,7 +24,7 @@ Most people don't need to touch individual settings. Pick a profile:
 
 | Profile | What it changes |
 |---|---|
-| `frugal` | pennywise routes down harder (`SIMPLE=haiku,MEDIUM=haiku,COMPLEX=sonnet,REASONING=opus`) and never up; diet, groundhog and ballast pause rather than warn (ballast from 40,000 tokens); hold-up pauses pastes from 5,000 tokens; too-many-cooks refuses needless subagents; cache-buster asks before an instruction-file edit; budgets warn at 70% |
+| `frugal` | sommelier routes down harder (`SIMPLE=haiku,MEDIUM=haiku,COMPLEX=sonnet,REASONING=opus`) and never up; diet, groundhog and ballast pause rather than warn (ballast from 40,000 tokens); hold-up pauses pastes from 5,000 tokens; too-many-cooks refuses needless subagents; cache-buster asks before an instruction-file edit; budgets warn at 70% |
 | `balanced` | nothing: the defaults |
 | `quality` | never below Sonnet, Fable for reasoning (`SIMPLE=sonnet,MEDIUM=sonnet,COMPLEX=opus,REASONING=fable`); no budget squeeze (the budget's pause still applies); diet, groundhog, ballast and hold-up warn instead of pausing |
 
@@ -73,12 +73,12 @@ A lower-case key is the setting's name without `AGENTARIUM_` (`budget_daily` = `
 
 | Setting | Default | What it does |
 |---|---|---|
-| `AGENTARIUM_PENNYWISE` | `route` | `route` (hand each prompt to a subagent on the model its tier needs), `block` (pause and suggest `/model`), `warn` (notice only), `proxy` (leave routing to `agentarium router serve`) or `off`. |
-| `AGENTARIUM_PENNYWISE_UP` | `on` | `off` stops the hook routing prompts *up* to a stronger model; it then only routes down. |
-| `AGENTARIUM_PENNYWISE_BUDGET` | `on` | Once a budget passes its warning share, pennywise routes down harder and never up. `off` ignores the budget. |
-| `AGENTARIUM_PENNYWISE_OVERHEAD` | `on` | pennywise only routes down when the saving beats the cost of the hand-off. `off` routes anyway. |
-| `AGENTARIUM_PENNYWISE_EVAL` | `hash` | What pennywise keeps of each miss for `router eval --mine`: `hash` (the prompt's hash and score), `text` (the wording too, opt-in) or `off`. |
-| `AGENTARIUM_PENNYWISE_LEARN` | `on` | Use the threshold offsets (and applied tier swaps) that `agentarium router learn` wrote to `~/.agentarium/pennywise_learned.json`. `off` ignores them. |
+| `AGENTARIUM_SOMMELIER` | `route` | `route` (hand each prompt to a subagent on the model its tier needs), `block` (pause and suggest `/model`), `warn` (notice only), `proxy` (leave routing to `agentarium router serve`) or `off`. |
+| `AGENTARIUM_SOMMELIER_UP` | `on` | `off` stops the hook routing prompts *up* to a stronger model; it then only routes down. |
+| `AGENTARIUM_SOMMELIER_BUDGET` | `on` | Once a budget passes its warning share, sommelier routes down harder and never up. `off` ignores the budget. |
+| `AGENTARIUM_SOMMELIER_OVERHEAD` | `on` | sommelier only routes down when the saving beats the cost of the hand-off. `off` routes anyway. |
+| `AGENTARIUM_SOMMELIER_EVAL` | `hash` | What sommelier keeps of each miss for `router eval --mine`: `hash` (the prompt's hash and score), `text` (the wording too, opt-in) or `off`. |
+| `AGENTARIUM_SOMMELIER_LEARN` | `on` | Use the threshold offsets (and applied tier swaps) that `agentarium router learn` wrote to `~/.agentarium/sommelier_learned.json`. `off` ignores them. |
 | `AGENTARIUM_CONTROLLER_TIMING` | `on` | The controller times each prompt-time helper and keeps the last 20,000 step times in `controller_events`, for `agentarium doctor`. `off` records nothing. |
 | `AGENTARIUM_CONTROLLER_SLOW_MS` | `150` | `agentarium doctor` flags a prompt-time helper whose median time is at least this many milliseconds. |
 | `AGENTARIUM_CONTROLLER_SKIP` | none | Prompt-time helpers the controller leaves out entirely, e.g. `parrot,blinkers`. Each helper's own switch is usually what you want instead. |
@@ -129,7 +129,7 @@ A lower-case key is the setting's name without `AGENTARIUM_` (`budget_daily` = `
 | `AGENTARIUM_WAFFLE_LONG` | `500` | Reply length, in tokens, above which waffle counts the excess as avoidable. |
 | `AGENTARIUM_PARROT` | `warn` | Repeated instructions: `warn` (a notice once a rule, correction or prompt reaches a few sessions) or `off`. |
 | `AGENTARIUM_PARROT_MIN` | `3` | Different sessions a phrase must appear in before parrot mentions it (2 to 50). |
-| `AGENTARIUM_FISHINGROD` | `on` | Lessons in the notices (hold-up, ballast, parrot, haggle, pennywise, doggybag, budget): `on` (the why and what to do next time, then a one-line pointer), `always` (the full lesson every time) or `off`. |
+| `AGENTARIUM_FISHINGROD` | `on` | Lessons in the notices (hold-up, ballast, parrot, haggle, sommelier, doggybag, budget): `on` (the why and what to do next time, then a one-line pointer), `always` (the full lesson every time) or `off`. |
 | `AGENTARIUM_FISHINGROD_TIMES` | `3` | How many times each lesson is shown in full before it shrinks to a pointer (at most once per session; 0 to 100). |
 | `AGENTARIUM_PLAN` | (none) | Your Claude plan for all-you-can-eat: `api` (pay-as-you-go), `pro`, `max5`, `max20`, or an id you added in `~/.agentarium/plans.json`. |
 
@@ -141,18 +141,18 @@ A lower-case key is the setting's name without `AGENTARIUM_` (`budget_daily` = `
 | `AGENTARIUM_BLINKERS_FILES` | 3 per named file, at least 6 | Most files one task may change before blinkers asks. |
 | `AGENTARIUM_TELEMETRY` | `on` | `off` stops till storing each hook event in the shared format (`telemetry_events`). Copilot sessions then get no status in split-the-bill and deadwood. |
 | `AGENTARIUM_DEVELOPER` | your user name | Who the work is attributed to in split-the-bill. Set a team handle to share reports; an email address is never used. |
-| `AGENTARIUM_PROJECT` | the repository's name | Attribute every session to this project instead. pennywise also learns its thresholds per project under this name. |
+| `AGENTARIUM_PROJECT` | the repository's name | Attribute every session to this project instead. sommelier also learns its thresholds per project under this name. |
 
 Provider prices, benchmark scores, latency and availability for bazaar and crystal-ball go in `~/.agentarium/providers.json` (see [bazaar](reference.md#bazaar)). Plan prices for all-you-can-eat go in `~/.agentarium/plans.json` (see [all-you-can-eat](reference.md#all-you-can-eat)).
 
-### pennywise router
+### sommelier router
 
 | Setting | Default | What it does |
 |---|---|---|
 | `AGENTARIUM_ROUTER_TIERS` | `SIMPLE=haiku,MEDIUM=sonnet,COMPLEX=opus,REASONING=opus` | Which model each tier goes to. Aliases or full model ids. Also `"tiers"` in `~/.agentarium/router.json`. |
 | `AGENTARIUM_ROUTER_PORT` | `8787` | Port for `agentarium router on` / `serve`. |
 | `AGENTARIUM_ROUTER_UPSTREAM` | `https://api.anthropic.com` | Where the proxy forwards requests. |
-| `AGENTARIUM_ROUTER_MODELS` | `pennywise,auto` | Request model names the proxy routes; `*` routes every main-model request. |
+| `AGENTARIUM_ROUTER_MODELS` | `sommelier,auto` | Request model names the proxy routes; `*` routes every main-model request. |
 | `AGENTARIUM_ROUTER_FALLBACK` | the `COMPLEX` model | Model a failed routed request is retried on. |
 | `AGENTARIUM_ROUTER_STICKY_TOKENS` | `20000` | Above this context, the proxy won't move down to a cheaper model while the cache is warm. |
 
@@ -200,7 +200,7 @@ Score thresholds go in `~/.agentarium/router.json` as `"thresholds": {"MEDIUM": 
 | `AGENTARIUM_CURRENCY` | `GBP` | Currency for every cost shown, to two decimal places up to 25 and in whole units above it: `GBP` (£), `USD` ($) or `EUR` (€). Also saved by `statusline.ts --set-currency`. |
 | `AGENTARIUM_USD_EUR` | `0.86` | Euros per dollar, when the currency is EUR. |
 | `AGENTARIUM_USD_GBP` | `0.76` | Pounds per dollar, when the currency is GBP. |
-| `AGENTARIUM_CACHE_TTL` | auto | Cache lifetime in seconds for the status line's countdown, and for pennywise's warm or cold cache when it prices a hand-off. |
+| `AGENTARIUM_CACHE_TTL` | auto | Cache lifetime in seconds for the status line's countdown, and for sommelier's warm or cold cache when it prices a hand-off. |
 | `AGENTARIUM_ASCII` | off | `1` draws the status line in plain characters (as `--ascii` does). `NO_COLOR=1` (or `--no-color`) drops the colours. |
 | `AGENTARIUM_TIMER_ICONS` | the pie clock | Three icons for the cache countdown, full to empty, e.g. `🟢,🟡,🔴`. |
 | `AGENTARIUM_COPILOT_ALLOWANCE` | not set | Your monthly Copilot premium requests (e.g. 300). Turns on the Copilot status line's forecast row, `agentarium copilot` and the premium guard. |

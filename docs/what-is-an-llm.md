@@ -53,7 +53,7 @@ flowchart LR
 
 Providers usually offer a range of sizes. Claude, for example, comes as **Haiku** (small and fast), **Sonnet** (middle) and **Opus** (largest and most capable).
 
-Think of it like hiring help: you wouldn't pay a senior consultant to tidy a spreadsheet. Bigger models are better at hard problems but cost more per token. For simple jobs a small model is often just as good, at a fraction of the price. agentarium's **pennywise** helper does that matching for you.
+Think of it like hiring help: you wouldn't pay a senior consultant to tidy a spreadsheet. Bigger models are better at hard problems but cost more per token. For simple jobs a small model is often just as good, at a fraction of the price. agentarium's **sommelier** helper does that matching for you.
 
 ### What an LLM is not
 
@@ -134,7 +134,7 @@ Providers ship families of models at different sizes and prices. Broadly:
 | **Medium** (e.g. Claude Sonnet) | Strong all-round, good value. | Most day-to-day coding and writing. |
 | **Large** (e.g. Claude Opus) | Best at long, complex, ambiguous work. | Architecture, hard debugging, long agentic tasks. |
 
-Prices per token can differ by an order of magnitude between tiers, so model choice is often the biggest single lever on cost. The right choice is the cheapest model that **still succeeds** at the task, which is what agentarium's [pennywise](reference.md#pennywise) (routing) and [bang-for-buck](reference.md#bang-for-buck) (cost per successful result) are built around.
+Prices per token can differ by an order of magnitude between tiers, so model choice is often the biggest single lever on cost. The right choice is the cheapest model that **still succeeds** at the task, which is what agentarium's [sommelier](reference.md#sommelier) (routing) and [bang-for-buck](reference.md#bang-for-buck) (cost per successful result) are built around.
 
 ### 2.7 Giving a model knowledge it doesn't have
 

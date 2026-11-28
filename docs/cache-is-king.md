@@ -134,7 +134,7 @@ If you are going to be longer than the cache lasts, coming back to a large, cold
 
 ### 3. Pick the model at the start of a task
 
-Don't flip between models within a conversation. If you want a different model for a different job, start a new session for it. **pennywise** already knows this: it keeps the current model while the cache is warm unless the saving from switching beats the cost of starting cold.
+Don't flip between models within a conversation. If you want a different model for a different job, start a new session for it. **sommelier** already knows this: it keeps the current model while the cache is warm unless the saving from switching beats the cost of starting cold.
 
 ### 4. Make instruction and setup changes between sessions
 

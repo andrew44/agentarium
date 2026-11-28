@@ -24,8 +24,8 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: Run tests (Node built-ins only, nothing to install)
         run: npm test
-      - name: pennywise routes the labelled set as well as before (a scorer regression fails here)
-        run: node scripts/pennywise.ts eval --check --min-accuracy 0.85 --max-under 3
+      - name: sommelier routes the labelled set as well as before (a scorer regression fails here)
+        run: node scripts/sommelier.ts eval --check --min-accuracy 0.85 --max-under 3
 
   typecheck:
     runs-on: ubuntu-latest

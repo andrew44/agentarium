@@ -3,7 +3,7 @@
  * agentarium / fishingrod: teach a habit rather than flag a prompt.
  *
  * Give a man a fish and you feed him for a day. The prompt-time notices (ballast, parrot, haggle,
- * pennywise, doggybag, budget) say what a prompt costs; the first few times each one comes up it
+ * sommelier, doggybag, budget) say what a prompt costs; the first few times each one comes up it
  * also says why, and what to type next time. After that it shrinks to one line pointing here, so
  * the lesson is always a command away. Lessons: agentarium/engine/lessons.ts.
  *

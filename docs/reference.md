@@ -9,7 +9,7 @@ The full detail on every agentarium helper: what it does, how it decides, and wh
 | 🧑‍🏫 | **coach** | skill | [coach](#coach) |
 | 📊 | **spend-report** | skill | [spend-report](#spend-report) |
 | 🧮 | **till** | hook | [till](#till) |
-| 💰 | **pennywise** | hook + skill + tool | [pennywise](#pennywise) |
+| 🍷 | **sommelier** | hook + skill + tool | [sommelier](#sommelier) |
 | 🎛️ | **the controller** | hook | [controller](#the-controller-one-decision-per-prompt) |
 | 🥗 | **diet** | hook | [diet](#diet) |
 | 🍝 | **colander** | hook + tool | [colander](#colander) |
@@ -93,7 +93,7 @@ Say **"spend report"** (or "where did my tokens go this week?") and the skill ru
 - money spent (in your currency) and the OPEX/CAPEX split of that spend
 - top projects and models
 - the costliest sessions
-- what pennywise, doggybag, diet and budget did
+- what sommelier, doggybag, diet and budget did
 - three suggestions tied to your own numbers
 
 Ask for any period: "this month", "today", "all time".
@@ -204,9 +204,9 @@ Tokens are counted once per message. Work done by sub-agents in separate transcr
 
 ---
 
-## pennywise
+## sommelier
 
-**The flagship.** *Penny wise, pound foolish.* A model router (`scripts/pennywise.ts`): every prompt gets a complexity score and goes to the model that suits it, so a hello-world never runs on the priciest model and an architecture question never gets stuck on the cheapest.
+**The flagship.** *The right wine for the dish.* A model router (`scripts/sommelier.ts`): every prompt gets a complexity score and goes to the model that suits it, so a hello-world never runs on the priciest model and an architecture question never gets stuck on the cheapest.
 
 **How it scores.** Weighted signals, in the style of auto-routers such as LiteLLM's complexity router: prompt length, code blocks, simple-task phrases (*typo*, *rename*, *commit message*, *convert JSON*), technical terms, complex work (*refactor*, *debug*, *across the codebase*), reasoning words (*architecture*, *trade-offs*, *root cause*, *prove*, *security*), multi-step structure and stacked questions. The total lands in one of four tiers, each mapped to a model:
 
@@ -230,14 +230,14 @@ Change the map with `AGENTARIUM_ROUTER_TIERS="SIMPLE=haiku,MEDIUM=sonnet,COMPLEX
 
 ### Two ways to route
 
-**1. Hook (default, nothing to set up).** Claude Code doesn't let a hook switch the session's model, so pennywise has your session hand the prompt, word for word, to a subagent on the tier's model (the Agent tool's `model` parameter) and relay the answer. The tool calls, file reads and output, most of a task's tokens, are billed at that model.
+**1. Hook (default, nothing to set up).** Claude Code doesn't let a hook switch the session's model, so sommelier has your session hand the prompt, word for word, to a subagent on the tier's model (the Agent tool's `model` parameter) and relay the answer. The tool calls, file reads and output, most of a task's tokens, are billed at that model.
 
 ```text
-pennywise: routing down to Haiku (SIMPLE, score -0.25, saves ~£0.07 after the hand-off) instead of Opus.
+sommelier: routing down to Haiku (SIMPLE, score -0.25, saves ~£0.07 after the hand-off) instead of Opus.
 Start a prompt with 'keep-model:' to keep it on Opus.
 ```
 
-It routes **down** to save money and **up** when a prompt is harder than your session's model (`AGENTARIUM_PENNYWISE_UP=off` to only ever route down). Because a subagent starts with a blank slate, the hook only hands over prompts that stand on their own: follow-ups like "yes, do it" or "fix that error" stay with your session.
+It routes **down** to save money and **up** when a prompt is harder than your session's model (`AGENTARIUM_SOMMELIER_UP=off` to only ever route down). Because a subagent starts with a blank slate, the hook only hands over prompts that stand on their own: follow-ups like "yes, do it" or "fix that error" stay with your session.
 
 **2. Proxy (a true per-request router, recommended once you're happy with the routing).** A local Anthropic-API proxy; every new turn is scored and the request goes upstream on the chosen model, with the whole conversation, no subagent and so no hand-off cost. One command sets it up:
 
@@ -248,9 +248,9 @@ agentarium router status          # is it running, which way are prompts routed,
 agentarium router off             # stop it and point Claude Code back at the API
 ```
 
-`on` only touches the two keys it owns in `"env"` (`ANTHROPIC_BASE_URL`, `ANTHROPIC_MODEL=pennywise`), and `off` removes only those. A SessionStart hook (`pennywise.ts ensure`) restarts the proxy if Claude Code points at it and it isn't running, for example after a reboot. To run it by hand instead: `agentarium router serve`, then `ANTHROPIC_BASE_URL=http://127.0.0.1:8787 ANTHROPIC_MODEL=pennywise claude`.
+`on` only touches the two keys it owns in `"env"` (`ANTHROPIC_BASE_URL`, `ANTHROPIC_MODEL=sommelier`), and `off` removes only those. A SessionStart hook (`sommelier.ts ensure`) restarts the proxy if Claude Code points at it and it isn't running, for example after a reboot. To run it by hand instead: `agentarium router serve`, then `ANTHROPIC_BASE_URL=http://127.0.0.1:8787 ANTHROPIC_MODEL=sommelier claude`.
 
-- **Only `pennywise` (or `auto`) is routed.** Requests for any other model pass through untouched, including Claude Code's own small background calls. `AGENTARIUM_ROUTER_MODELS="*"` routes every main-model request instead.
+- **Only `sommelier` (or `auto`) is routed.** Requests for any other model pass through untouched, including Claude Code's own small background calls. `AGENTARIUM_ROUTER_MODELS="*"` routes every main-model request instead.
 - **Cache-aware.** Inside a tool loop the model never changes. A new turn can always move **up**; it only moves **down** when the prompt cache has gone cold or the context is small (`AGENTARIUM_ROUTER_STICKY_TOKENS`, default 20,000), because switching models means re-writing the context into the new model's cache.
 - **Fallback.** If a routed request fails (overloaded, rate-limited, model not found), it is retried once on the fallback model (`AGENTARIUM_ROUTER_FALLBACK`, default the `COMPLEX` tier).
 - Your API key or login passes straight through; the proxy listens on `127.0.0.1` only. `AGENTARIUM_ROUTER_UPSTREAM` points it at another Anthropic-compatible endpoint (a gateway, Bedrock/Vertex proxy).
@@ -258,13 +258,13 @@ agentarium router off             # stop it and point Claude Code back at the AP
 
 ### Spending to the budget
 
-When you set a budget (`AGENTARIUM_BUDGET_DAILY`, `AGENTARIUM_BUDGET_SESSION` or `AGENTARIUM_BUDGET_MONTHLY`, see [budget](#budget)), pennywise works to keep you inside it rather than waiting for budget's pause at 100%. Once the tighter limit passes its warning share (`AGENTARIUM_BUDGET_WARN`, default 80%):
+When you set a budget (`AGENTARIUM_BUDGET_DAILY`, `AGENTARIUM_BUDGET_SESSION` or `AGENTARIUM_BUDGET_MONTHLY`, see [budget](#budget)), sommelier works to keep you inside it rather than waiting for budget's pause at 100%. Once the tighter limit passes its warning share (`AGENTARIUM_BUDGET_WARN`, default 80%):
 
 - **It routes down harder.** Every tier threshold rises by 0.35, so a routine prompt that would go to Sonnet goes to Haiku, and a complex one that would go to Opus goes to Sonnet.
 - **It stops routing up.** A hard prompt stays on your session's model instead of moving to a pricier one.
 - **It says so**, e.g. `routing down to Haiku (SIMPLE, score 0.35, today's budget 85% spent)`.
 
-Forcing a model (`opus:`) and `keep-model:` still win. `AGENTARIUM_PENNYWISE_BUDGET=off` turns this off.
+Forcing a model (`opus:`) and `keep-model:` still win. `AGENTARIUM_SOMMELIER_BUDGET=off` turns this off.
 
 The routing proxy does the same. It scores against the raised thresholds, and never moves a conversation above the model it is already on (or the model the request asked for). The daily budget works as is; for the session budget the proxy reads the session from Claude Code's `X-Claude-Code-Session-Id` header (or the session in the request's `metadata.user_id`). The proxy's log gives the reason, e.g. `SIMPLE score 0.35, today's budget 85% spent; not routing up on a tight budget`.
 
@@ -279,9 +279,9 @@ A route in hook mode isn't free. Your session's own model still reads the conver
 | **routed** | the cheaper model does the work from its own fresh, small context |
 | **saving** | stay − hand-off − routed |
 
-A route **down** is only taken when the saving is positive. Opus to Haiku always pays. A small step down with little context (Fable to Opus, say) often doesn't, and stays put (`skipped-overhead` in the log; `AGENTARIUM_PENNYWISE_OVERHEAD=off` routes anyway). A route **up** is logged as what quality cost extra, never as a saving. The proxy has no hand-off: its saving is the price difference on the request, minus a cache re-write when the switch leaves a warm cache behind.
+A route **down** is only taken when the saving is positive. Opus to Haiku always pays. A small step down with little context (Fable to Opus, say) often doesn't, and stays put (`skipped-overhead` in the log; `AGENTARIUM_SOMMELIER_OVERHEAD=off` routes anyway). A route **up** is logged as what quality cost extra, never as a saving. The proxy has no hand-off: its saving is the price difference on the request, minus a cache re-write when the switch leaves a warm cache behind.
 
-The savings show on the status line's forecast row and in the band (`£0.41 saved by pennywise`), in `agentarium router status`, and in the weekly spend report. They are estimates, not a bill.
+The savings show on the status line's forecast row and in the band (`£0.41 saved by sommelier`), in `agentarium router status`, and in the weekly spend report. They are estimates, not a bill.
 
 **Measured, too.** A routed subagent's real usage is in the session transcript (its sidechain, or the per-agent file Claude Code keeps beside it). On your next prompt the hook reads it, prices each of the subagent's turns at its own model, and logs it beside the estimate (`measured_usd`, `measured_saved_usd`, and the task's shape: `m_steps`, `m_input`, `m_output`). `agentarium router status` shows both:
 
@@ -290,31 +290,31 @@ The savings show on the status line's forecast row and in the band (`£0.41 save
 measured: 9 routed subagents: estimated ~£0.11, measured ~£0.14 (+27%); saving estimated ~£0.63, measured ~£0.60
 ```
 
-Once 5 routes are measured, `learn` replaces the typical task shape the estimate starts from (4 steps, 15,000 tokens read, 1,500 written, 2 minutes) with the median of yours, so the next decision is priced on how your own tasks run. `AGENTARIUM_PENNYWISE_LEARN=off` goes back to the typical shape. Nothing but token counts and timestamps are read from the transcript.
+Once 5 routes are measured, `learn` replaces the typical task shape the estimate starts from (4 steps, 15,000 tokens read, 1,500 written, 2 minutes) with the median of yours, so the next decision is priced on how your own tasks run. `AGENTARIUM_SOMMELIER_LEARN=off` goes back to the typical shape. Nothing but token counts and timestamps are read from the transcript.
 
 **The cache, too.** The hook reads from the transcript whether your session's prompt cache is still warm (5 minutes since the last turn, or 1 hour once the session writes the 1-hour cache; `AGENTARIUM_CACHE_TTL` overrides it) and prices the hand-off with it:
 
 - **Cold.** Staying means re-writing the whole context on the first step, at 1.25× the input price. Handing off pays the same re-write, because your model still reads the context to make the Agent call. So a cold cache raises both sides by the same amount, and the message's numbers say so, but it doesn't change whether a route pays.
-- **Warm, with a task that outlasts the cache.** While the subagent works, your session's cache can expire, and then the relay re-writes the whole context, which staying never would. pennywise uses how long your routed tasks really take (from the measured routes) and adds that re-write when they outlast the cache. With a big context this is what stops a route down: `skipped-overhead`, with the reason `...and the task outlasts the 5-minute cache`.
+- **Warm, with a task that outlasts the cache.** While the subagent works, your session's cache can expire, and then the relay re-writes the whole context, which staying never would. sommelier uses how long your routed tasks really take (from the measured routes) and adds that re-write when they outlast the cache. With a big context this is what stops a route down: `skipped-overhead`, with the reason `...and the task outlasts the 5-minute cache`.
 
 Each route logs the cache it saw (`cache`: `warm` or `cold`).
 
 ### Backing off, and learning
 
-- **"That didn't work."** If the last prompt was routed down (within 30 minutes) and the next one says it didn't land (*didn't work*, *still failing*, *tests fail*, *that's wrong*, *try again*), pennywise doesn't hand it over again: your session's model takes it (hook), or the proxy moves the conversation up one tier.
+- **"That didn't work."** If the last prompt was routed down (within 30 minutes) and the next one says it didn't land (*didn't work*, *still failing*, *tests fail*, *that's wrong*, *try again*), sommelier doesn't hand it over again: your session's model takes it (hook), or the proxy moves the conversation up one tier.
 - **Or the evidence says so.** You don't have to say it. In hook mode, the next prompt after a route down also goes to your session's model when the routed work (the subagent's tool calls and the session's since) ended on a failing test, lint or build run, had its change reverted (`git checkout`, `restore`, `reset --hard`, `stash`) or refused, or groundhog caught the session looping. The rules are bang-for-buck's, so a red run followed by a green one is a pass. The proxy reads its own tool loop: on a routed-down conversation, the same checks failing twice in a row, a revert of its own change or a groundhog refusal moves it up one tier straight away, mid-loop, and only fresh evidence moves it again. Both log `escalated` with the evidence as the reason, and the hook's count as misses for learning.
-- **Learning.** `agentarium router learn` runs at every session end (`--quiet`). It counts, per tier, the routes that held and the ones that missed (escalated, or kept on your model with `keep-model:` when pennywise would have routed down). With at least 8 routes in a tier, a miss rate above 20% lowers the threshold above it, so similar prompts route higher; a miss rate under 5% over 20+ routes raises it a little. Offsets stay within −0.3 and +0.2 and are written to `~/.agentarium/pennywise_learned.json`. They are learned **per project** too: a frontend repo and a distributed-systems repo need different thresholds, so each route is logged with the repository's name (never its path; `AGENTARIUM_PROJECT` overrides it), and a project with 8 routes of its own in a tier gets its own offset for that tier, even when it's 0 and the global one isn't. Until then it uses the global offsets. `router learn` lists the projects with their own thresholds, and `router explain` uses the ones for the folder you run it in. `router.json` and `AGENTARIUM_ROUTER_TIERS` still win; `AGENTARIUM_PENNYWISE_LEARN=off` ignores what it learned.
+- **Learning.** `agentarium router learn` runs at every session end (`--quiet`). It counts, per tier, the routes that held and the ones that missed (escalated, or kept on your model with `keep-model:` when sommelier would have routed down). With at least 8 routes in a tier, a miss rate above 20% lowers the threshold above it, so similar prompts route higher; a miss rate under 5% over 20+ routes raises it a little. Offsets stay within −0.3 and +0.2 and are written to `~/.agentarium/sommelier_learned.json`. They are learned **per project** too: a frontend repo and a distributed-systems repo need different thresholds, so each route is logged with the repository's name (never its path; `AGENTARIUM_PROJECT` overrides it), and a project with 8 routes of its own in a tier gets its own offset for that tier, even when it's 0 and the global one isn't. Until then it uses the global offsets. `router learn` lists the projects with their own thresholds, and `router explain` uses the ones for the folder you run it in. `router.json` and `AGENTARIUM_ROUTER_TIERS` still win; `AGENTARIUM_SOMMELIER_LEARN=off` ignores what it learned.
 - **Outcomes.** `learn` also reads bang-for-buck's cost per *successful* result per model. When a cheaper family lands work as often (within 5 points, 5+ successes) for less per success, it suggests a tier swap, e.g. `COMPLEX=sonnet`; `learn --apply-tiers` applies it.
-- **How good is it?** `agentarium router eval` scores the labelled prompts in `data/pennywise-eval.json` and prints the confusion table, with "routed too low" (the costly mistake) and "routed too high" counted separately; `--misses` lists them, `--learned` uses your learned thresholds. Today: 38 of 42 on the right tier, 2 too low. Add your own prompts to the file.
-- **Your own evaluation set.** Every escalation, and every `keep-model:` on a prompt pennywise would have routed down, is kept as a labelled case in `~/.agentarium/pennywise_eval.json`, labelled one tier above where it landed. By default a case holds only the prompt's hash and its score, so `router eval --mine` checks your thresholds against your own misses without storing what you wrote. `AGENTARIUM_PENNYWISE_EVAL=text` also keeps the wording, so the scorer re-reads it (`--mine --export` prints those in `data/pennywise-eval.json`'s shape, to contribute). `off` keeps nothing.
+- **How good is it?** `agentarium router eval` scores the labelled prompts in `data/sommelier-eval.json` and prints the confusion table, with "routed too low" (the costly mistake) and "routed too high" counted separately; `--misses` lists them, `--learned` uses your learned thresholds. Today: 38 of 42 on the right tier, 2 too low. Add your own prompts to the file.
+- **Your own evaluation set.** Every escalation, and every `keep-model:` on a prompt sommelier would have routed down, is kept as a labelled case in `~/.agentarium/sommelier_eval.json`, labelled one tier above where it landed. By default a case holds only the prompt's hash and its score, so `router eval --mine` checks your thresholds against your own misses without storing what you wrote. `AGENTARIUM_SOMMELIER_EVAL=text` also keeps the wording, so the scorer re-reads it (`--mine --export` prints those in `data/sommelier-eval.json`'s shape, to contribute). `off` keeps nothing.
 - **Regressions fail CI.** `router eval --check` exits 1 when the labelled set routes worse than `--min-accuracy` (default 0.85) or puts more than `--max-under` (default 3) too low, and lists the misses. The tests workflow runs it on every push.
 
 ### Overrides and settings
 
 - Start a prompt with `keep-model:` to keep it on your model, or `haiku:`, `sonnet:`, `opus:`, `fable:` to force one. Works in both modes.
 - Slash commands are never routed.
-- `AGENTARIUM_PENNYWISE=block` pauses a down-route instead and suggests `/model haiku` (send the same prompt again to run it anyway). `warn` shows that suggestion without pausing. `proxy` turns the hook off in favour of the proxy. `off` disables pennywise.
-- Each decision is logged to the `pennywise_events` table (`routed`, `routed-up`, `proxy-routed`, `proxy-fallback`, `escalated`, `kept`, `skipped-overhead`, `blocked`, `warned`, `overridden`) with its estimated saving (`saved_usd`), context size, tier and score, and for a hook route the measured subagent cost once it's in. It shows up in the spend report.
+- `AGENTARIUM_SOMMELIER=block` pauses a down-route instead and suggests `/model haiku` (send the same prompt again to run it anyway). `warn` shows that suggestion without pausing. `proxy` turns the hook off in favour of the proxy. `off` disables sommelier.
+- Each decision is logged to the `sommelier_events` table (`routed`, `routed-up`, `proxy-routed`, `proxy-fallback`, `escalated`, `kept`, `skipped-overhead`, `blocked`, `warned`, `overridden`) with its estimated saving (`saved_usd`), context size, tier and score, and for a hook route the measured subagent cost once it's in. It shows up in the spend report.
 - Signals and weights live in `SIGNALS` at the top of the script.
 - The hook is Claude Code only (Copilot CLI ignores hook output on prompt submit).
 
@@ -329,7 +329,7 @@ Every prompt in Claude Code goes through one hook, `controller.ts`, which runs t
 | 1 | till records the prompt | |
 | 2 | budget: a limit reached | ✅ |
 | 3 | hold-up: a huge pasted log, data dump, document or file, or a blatantly broad ask | ✅ (in `block` mode, the default) |
-| 4 | pennywise picks the model (harder down on a tight budget) | ✅ (in `block` mode) |
+| 4 | sommelier picks the model (harder down on a tight budget) | ✅ (in `block` mode) |
 | 5 | haggle prices the task | ✅ |
 | 6 | ballast: a new task carrying the last one's context | ✅ (in `block` mode) |
 | 7 | doggybag: a fresh start from the notes after the cache went cold | ✅ (in `block` mode) |
@@ -436,7 +436,7 @@ export AGENTARIUM_BUDGET_WORKDAYS=mon-fri                    # default
 export AGENTARIUM_BUDGET_DAYS_OFF=2026-12-24..2026-12-31     # holidays, dates or ranges
 ```
 
-Today's limit is *(allowance − spent this period before today) ÷ working days left*, today included. So a month that starts with a fortnight off leaves about twice as much per day for the rest of it, and a heavy week leaves less for the days after. It is a ceiling, not a target. Today's limit holds still while you work (it only counts spend before today), and today always counts as a working day, even on a weekend. Once the allowance is spent, the limit is zero until it resets. Set `AGENTARIUM_BUDGET_DAILY` as well to cap any single day; the lower of the two applies. The status line, pennywise's budget squeeze and `budget.ts status` all use the same figure.
+Today's limit is *(allowance − spent this period before today) ÷ working days left*, today included. So a month that starts with a fortnight off leaves about twice as much per day for the rest of it, and a heavy week leaves less for the days after. It is a ceiling, not a target. Today's limit holds still while you work (it only counts spend before today), and today always counts as a working day, even on a weekend. Once the allowance is spent, the limit is zero until it resets. Set `AGENTARIUM_BUDGET_DAILY` as well to cap any single day; the lower of the two applies. The status line, sommelier's budget squeeze and `budget.ts status` all use the same figure.
 
 - At **80%** of a limit you get one notice.
 - At **100%**, your next prompt is paused with what you've spent and some cheaper ways on (`/compact`, a smaller model, a fresh session).
@@ -571,7 +571,7 @@ Ask *"is the AI worth the money?"* or run `agentarium bang-for-buck` for the las
 
 *Agree a price before work starts.* **haggle** (`scripts/haggle.ts`) quotes substantial tasks the moment you send them (`UserPromptSubmit`), tracks the spend as the work runs (`PreToolUse`), and stops the agent at an agreed maximum.
 
-**The quote** is built from how the task is likely to run, learnt from your own ledger: typical turns per task scaled by how complex the prompt is (the same scoring pennywise uses), the context each request re-reads (cache reads), what each turn adds (tool results: cache writes) and what the model writes (output). The range is half to twice the turns. Once contracts have finished, quotes are calibrated by how far off earlier ones were.
+**The quote** is built from how the task is likely to run, learnt from your own ledger: typical turns per task scaled by how complex the prompt is (the same scoring sommelier uses), the context each request re-reads (cache reads), what each turn adds (tool results: cache writes) and what the model writes (output). The range is half to twice the turns. Once contracts have finished, quotes are calibrated by how far off earlier ones were.
 
 ```text
 haggle: complex task, quoted £1.20 (likely £0.55–£2.90: input £0.40, tools £0.35, output £0.45). Cap £2.40. Set your own price with 'haggle £X: ...'.
@@ -823,7 +823,7 @@ agentarium crystal-ball --devs 10 --tasks 20 --input 50000 --output 5000
 
 - `--cache 0.7` is the share of input read from the prompt cache (agents usually reuse 60-90%; `0` = no caching). Input not read from the cache is written to it, as agents do.
 - `--from-history` takes tasks a day, tokens per task and cache share from your own ledger; any option still overrides.
-- `--mix "haiku=60,sonnet=35,opus=5"` prices a routed mix (as pennywise routes); `--growth 10 --months 12` adds month-by-month adoption growth.
+- `--mix "haiku=60,sonnet=35,opus=5"` prices a routed mix (as sommelier routes); `--growth 10 --months 12` adds month-by-month adoption growth.
 - **What moves the bill**: every run shows the monthly effect of bigger tasks, more output, better caching, no caching and one more developer.
 - `--tier`, `--provider`, `--model` narrow it; `--json` for a spreadsheet.
 
@@ -916,7 +916,7 @@ agentarium waffle --days 7             # every session this week, wordiest first
 | Cause | When | The fix |
 |---|---|---|
 | break | the gap since the last request was longer than the cache lives (5 minutes; 1 hour when the session writes the 1-hour cache; or `AGENTARIUM_CACHE_TTL`) | `/clear` after a break and let the [doggybag](#doggybag) note bring you back, or wrap up before you step away |
-| model switch | the model changed mid-conversation (each model has its own cache) | pick the model when you start a task; the pennywise router keeps it while the cache is warm |
+| model switch | the model changed mid-conversation (each model has its own cache) | pick the model when you start a task; the sommelier router keeps it while the cache is warm |
 | prefix change | none of the above: something early in the context changed (CLAUDE.md, an MCP server, plugin or skill, settings, an edited or rewound message) | make those changes between sessions |
 | compaction | the context shrank by more than 40% (`/compact` or auto-compact) | none: expected, and never counted as avoidable |
 
@@ -967,8 +967,8 @@ agentarium parrot report --here --min 2 --days 90
 | `correction` | parrot, a correction | a correction pays for the wrong work and the redo; say what "done" looks like up front |
 | `repeated-prompt` | parrot, a whole prompt | a slash command with `$ARGUMENTS` sends the same words every time |
 | `big-task` | haggle, a quote; hold-up, a broad ask | cost is mostly reading, and a broad prompt makes the agent explore; name the files, the change and the check |
-| `model-down` | pennywise, routing down | the price gap between the two models (Opus is about 40 times Haiku per input token) and which jobs suit the smaller one |
-| `model-up` | pennywise, routing up | one good answer from a stronger model costs less than three weak ones |
+| `model-down` | sommelier, routing down | the price gap between the two models (Opus is about 40 times Haiku per input token) and which jobs suit the smaller one |
+| `model-up` | sommelier, routing up | one good answer from a stronger model costs less than three weak ones |
 | `big-paste` | hold-up, a huge paste | a prompt stays in the conversation and is re-read at every later step; name the file and what you're after, send terminal output to a file first |
 | `over-budget` | budget, 80% and 100% | where money usually goes, and `agentarium report` to see where today's went |
 | `prefix-change` | cache-buster, an instruction-file edit | the cache keys on the start of each request; change it and the whole conversation is written again; edit at the end of a session |
@@ -1069,7 +1069,7 @@ agentarium receipt --markdown                         # a short table for the pu
 agentarium receipt --branch feat/login --json
 ```
 
-When pennywise routed prompts in those sessions, the line says how many and what it saved. Numbers only: no prompt, file or command text. With `--trailer` and nothing to report it prints nothing and exits 1, so git doesn't get an empty trailer. Costs are at API prices; on a subscription they show the value of the work, not money spent. Claude Code only.
+When sommelier routed prompts in those sessions, the line says how many and what it saved. Numbers only: no prompt, file or command text. With `--trailer` and nothing to report it prints nothing and exits 1, so git doesn't get an empty trailer. Costs are at API prices; on a subscription they show the value of the work, not money spent. Claude Code only.
 
 ---
 
@@ -1251,7 +1251,7 @@ The band's numbers, and what to do about them, in a **pane beside the transcript
 | Tab | Shows |
 |---|---|
 | **Now** | The model, then a card each for spend, tokens, the context window (with a bar, green, amber from 75%, red from 90%) and the cache countdown (a bar that empties as the cache cools). |
-| **Ahead** | The [outlook](#the-outlook-whats-coming-and-what-to-do): the next step's cost with a warm cache, the next 10 steps, the budget left with a bar for how much is used, what a cold cache adds and what pennywise has saved. |
+| **Ahead** | The [outlook](#the-outlook-whats-coming-and-what-to-do): the next step's cost with a warm cache, the next 10 steps, the budget left with a bar for how much is used, what a cold cache adds and what sommelier has saved. |
 | **Advice** | Every change worth making now, the most urgent first: red for `Compact now` (context 90% full), `Cache is cold` and `Over budget`; then the outlook's saving (`→ /compact saves ~£0.20`); then amber for `Context filling up`, `Keep the cache warm` and `Budget running low`. The tab's name counts the red ones (`Advice (2)`). Nothing to do reads `Nothing to change`. |
 
 - **Opens by itself** in the Claude desktop and mobile apps, as soon as the app attaches to the session. Close it and it stays closed in later sessions; `/agentarium-pane` opens it again, in any surface, the terminal included.
@@ -1278,7 +1278,7 @@ A local web UI over the till database: a headline **% OPEX vs % CAPEX** split ba
 
 | Counts as | What | From |
 |---|---|---|
-| **Saved** | Spend a helper stopped and could price: pennywise's routes net of the hand-off (the same figure as the status line and the weekly report), and the cache rebuild behind each edit cache-buster refused (`block` mode). Sending a hard prompt up is shown as what it cost, never subtracted. | `pennywise_events`, `cachebuster_events` |
+| **Saved** | Spend a helper stopped and could price: sommelier's routes net of the hand-off (the same figure as the status line and the weekly report), and the cache rebuild behind each edit cache-buster refused (`block` mode). Sending a hard prompt up is shown as what it cost, never subtracted. | `sommelier_events`, `cachebuster_events` |
 | **At stake** | What a notice priced when carrying on was still an option: kettle's cache at risk, too-many-cooks' subagents, cache-buster's warnings, hold-up's pastes. | `kettle_events`, `toomanycooks_events`, `holdup_events` |
 | **Tokens** | Kept out of the context (diet, and hold-up's pastes not sent again), carried into a new task (ballast), or what a `/clear` from a doggybag skips re-writing. | `diet_events`, `holdup_events`, `ballast_events`, `doggybag_events` |
 | **Times** | Loops broken (groundhog), edits questioned (blinkers), prompts paused (budget, hold-up, Copilot premium), tasks quoted and held to their price (haggle), repeated instructions spotted (parrot). | the matching `<name>_events` table, `contracts` |
@@ -1337,7 +1337,7 @@ sqlite3 ~/.agentarium/till.db "select label, count(*) sessions, sum(input_tokens
 | `outcome_marks` | Outcomes recorded by hand (`bangforbuck.ts mark`) |
 | `contracts` | haggle's quotes, caps and what each task really cost |
 | `tastetest_runs` | Saved taste tests |
-| `pennywise_events`, `doggybag_events`, `diet_events`, `budget_events`, `sherlock_events`, `groundhog_events`, `waistline_events` | What each helper did |
+| `sommelier_events`, `doggybag_events`, `diet_events`, `budget_events`, `sherlock_events`, `groundhog_events`, `waistline_events` | What each helper did |
 
 ---
 

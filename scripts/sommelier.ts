@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * agentarium / pennywise: a model router. "Penny wise, pound foolish": stop paying top-model
- * prices for trivial prompts, and stop sending hard ones to a model that will flounder.
+ * agentarium / sommelier: a model router. It pairs each prompt with the model it needs, as a sommelier
+ * pairs the wine with the dish: stop paying top-model prices for trivial prompts, and stop sending
+ * hard ones to a model that will flounder.
  *
  * Every prompt gets a complexity score from weighted signals (length, code, reasoning words,
  * technical terms, multi-step structure, simple-task phrases, scope) and lands in one of four tiers.
@@ -15,14 +16,14 @@
  * Two ways to route:
  *
  *   Hook (default, nothing to set up). UserPromptSubmit in Claude Code. Hooks can't switch the
- *   session's model, so pennywise has the session hand the prompt to a subagent on the tier's model
+ *   session's model, so sommelier has the session hand the prompt to a subagent on the tier's model
  *   (the Agent tool's `model` parameter) and relay the answer. Routes down to save money, and up when
  *   a prompt is harder than the session's model.
  *   The first few notices also say why the model choice matters and how to pick one yourself
  *   (engine/lessons.ts); a model you chose with 'haiku:' and the like gets no lesson.
  *
- *   Proxy (a true per-request router). `pennywise.ts serve` runs a local Anthropic-API proxy; point
- *   Claude Code at it with ANTHROPIC_BASE_URL=http://127.0.0.1:8787 and ANTHROPIC_MODEL=pennywise.
+ *   Proxy (a true per-request router). `sommelier.ts serve` runs a local Anthropic-API proxy; point
+ *   Claude Code at it with ANTHROPIC_BASE_URL=http://127.0.0.1:8787 and ANTHROPIC_MODEL=sommelier.
  *   Each new user turn is scored and the request's `model` is rewritten before it goes upstream.
  *   Routing is cache-aware: inside a tool loop the model never changes, and it only moves down to a
  *   cheaper model when the prompt cache is cold or the context is small (a switch means re-writing
@@ -32,7 +33,7 @@
  * Savings, net of the hand-off. Every route logs what it is worth (estimateHandoff / estimateRequest):
  *   in hook mode the session's own model still reads the conversation to hand the task over and to
  *   relay the answer, so a route down only happens when the work it moves is worth more than that.
- *   The status line, the band, `status` and the weekly report show what pennywise saved.
+ *   The status line, the band, `status` and the weekly report show what sommelier saved.
  *   Measured, too: on the next prompt the hook reads what the routed subagent really used (its
  *   sidechain in the transcript) and logs it next to the estimate; `status` shows both, and `learn`
  *   calibrates the task shape (WORK) from the measured routes.
@@ -42,7 +43,7 @@
  *   the relay re-writes the whole context, which a big warm context makes too dear to hand off.
  *
  * Moving back up. A routed-down answer followed by "that didn't work" / "still failing" sends the
- *   next prompt back to the session's model (hook) or one tier up (proxy), and pennywise learns from it.
+ *   next prompt back to the session's model (hook) or one tier up (proxy), and sommelier learns from it.
  *   Evidence counts as much as words: in the hook, a routed answer whose last check failed, whose
  *   change was reverted or refused, or that groundhog caught looping; in the proxy's tool loop, the
  *   same checks failing twice in a row, a revert, or a groundhog refusal moves up one tier mid-loop.
@@ -51,12 +52,12 @@
  *   or kept with 'keep-model:') and moves each tier's threshold, within bounds, for every project
  *   (the repository, or AGENTARIUM_PROJECT) with enough routes of its own, and globally for the rest; bang-for-buck's cost
  *   per *successful* result suggests tier swaps (applied with --apply-tiers). `eval` scores the
- *   labelled prompts in data/pennywise-eval.json.
+ *   labelled prompts in data/sommelier-eval.json.
  *
- * A growing evaluation set. Each escalation, and each 'keep-model:' on a prompt pennywise would have
+ * A growing evaluation set. Each escalation, and each 'keep-model:' on a prompt sommelier would have
  *   routed down, is kept as a labelled case (one tier above where it landed) in
- *   ~/.agentarium/pennywise_eval.json: a hash and its score by default, the prompt text only with
- *   AGENTARIUM_PENNYWISE_EVAL=text. `eval --mine` scores them; `eval --check` fails (exit 1) when the
+ *   ~/.agentarium/sommelier_eval.json: a hash and its score by default, the prompt text only with
+ *   AGENTARIUM_SOMMELIER_EVAL=text. `eval --mine` scores them; `eval --check` fails (exit 1) when the
  *   scorer regresses, which CI runs on the shipped set.
  *
  * Per-prompt overrides (both modes): start a prompt with
@@ -64,34 +65,34 @@
  *   haiku: / sonnet: / opus: / fable:   force that model
  *
  * Commands:
- *   pennywise.ts                      hook (reads the hook JSON on stdin)
- *   pennywise.ts explain "prompt"     show the score, the signals and the model it would pick
- *   pennywise.ts serve [--port N]     run the routing proxy (foreground)
- *   pennywise.ts on|off [--project]   start the proxy in the background and point Claude Code at it
+ *   sommelier.ts                      hook (reads the hook JSON on stdin)
+ *   sommelier.ts explain "prompt"     show the score, the signals and the model it would pick
+ *   sommelier.ts serve [--port N]     run the routing proxy (foreground)
+ *   sommelier.ts on|off [--project]   start the proxy in the background and point Claude Code at it
  *                                     (~/.claude/settings.json, or .claude/settings.local.json), or undo it
- *   pennywise.ts status               proxy up?, how prompts are routed, and the last 30 days' savings
- *   pennywise.ts ensure               SessionStart: restart the proxy if Claude Code points at it and it's down
- *   pennywise.ts learn [--dry-run] [--apply-tiers] [--days 60] [--json] [--quiet]
- *   pennywise.ts eval [--mine] [--misses] [--learned] [--json] [--check [--min-accuracy 0.85] [--max-under 3]] [--export]
- *   pennywise.ts env [--port N]       print the shell lines that point Claude Code at the proxy
+ *   sommelier.ts status               proxy up?, how prompts are routed, and the last 30 days' savings
+ *   sommelier.ts ensure               SessionStart: restart the proxy if Claude Code points at it and it's down
+ *   sommelier.ts learn [--dry-run] [--apply-tiers] [--days 60] [--json] [--quiet]
+ *   sommelier.ts eval [--mine] [--misses] [--learned] [--json] [--check [--min-accuracy 0.85] [--max-under 3]] [--export]
+ *   sommelier.ts env [--port N]       print the shell lines that point Claude Code at the proxy
  *
  * Env:
- *   AGENTARIUM_PENNYWISE   route (default) | block (pause once, suggest /model) | warn | off
+ *   AGENTARIUM_SOMMELIER   route (default) | block (pause once, suggest /model) | warn | off
  *                          | proxy (the hook steps aside; the proxy does the routing)
- *   AGENTARIUM_PENNYWISE_UP        on (default) | off: also route prompts UP to a stronger model
- *   AGENTARIUM_PENNYWISE_BUDGET    on (default) | off: once a budget (AGENTARIUM_BUDGET_DAILY/_MONTHLY or
+ *   AGENTARIUM_SOMMELIER_UP        on (default) | off: also route prompts UP to a stronger model
+ *   AGENTARIUM_SOMMELIER_BUDGET    on (default) | off: once a budget (AGENTARIUM_BUDGET_DAILY/_MONTHLY or
  *                                  _SESSION) passes its warning share, route down harder (every tier
  *                                  threshold rises by BUDGET_SQUEEZE) and never route up, so the
  *                                  budget lasts instead of running out mid-task. Both modes: the
  *                                  proxy reads the session from Claude Code's session-id header
- *   AGENTARIUM_PENNYWISE_OVERHEAD  on (default) | off: route down even when the hand-off would eat the saving
- *   AGENTARIUM_PENNYWISE_LEARN     on (default) | off: ignore what `learn` wrote (~/.agentarium/pennywise_learned.json)
- *   AGENTARIUM_PENNYWISE_EVAL      hash (default: keep each miss as a labelled case, hash and score only)
+ *   AGENTARIUM_SOMMELIER_OVERHEAD  on (default) | off: route down even when the hand-off would eat the saving
+ *   AGENTARIUM_SOMMELIER_LEARN     on (default) | off: ignore what `learn` wrote (~/.agentarium/sommelier_learned.json)
+ *   AGENTARIUM_SOMMELIER_EVAL      hash (default: keep each miss as a labelled case, hash and score only)
  *                                  | text (keep the prompt text too, so `eval --mine` can re-score it) | off
  *   AGENTARIUM_ROUTER_TIERS        e.g. "SIMPLE=haiku,MEDIUM=sonnet,COMPLEX=opus,REASONING=fable"
  *   AGENTARIUM_ROUTER_PORT         proxy port (default 8787)
  *   AGENTARIUM_ROUTER_UPSTREAM     where the proxy forwards (default https://api.anthropic.com)
- *   AGENTARIUM_ROUTER_MODELS       request model names the proxy routes (default "pennywise,auto");
+ *   AGENTARIUM_ROUTER_MODELS       request model names the proxy routes (default "sommelier,auto");
  *                                  "*" routes every main-model request
  *   AGENTARIUM_ROUTER_FALLBACK     model to retry on when a routed request fails (default: COMPLEX tier)
  *   AGENTARIUM_ROUTER_STICKY_TOKENS  below this context the proxy may move down while the cache is
@@ -123,9 +124,9 @@ import * as telemetry from '../agentarium/services/telemetry.ts'
 import { argValue, errText, isMain, isObj, logErr, now, readStdin, sha1, type Obj } from '../agentarium/util.ts'
 
 const env = (name: string, fallback = '') => process.env[name] ?? fallback
-const mode = () => env('AGENTARIUM_PENNYWISE', 'route').trim().toLowerCase()
-const routeUp = () => env('AGENTARIUM_PENNYWISE_UP', 'on').trim().toLowerCase() !== 'off'
-const statePath = () => join(dirname(defaultDbPath()), 'pennywise_state.json')
+const mode = () => env('AGENTARIUM_SOMMELIER', 'route').trim().toLowerCase()
+const routeUp = () => env('AGENTARIUM_SOMMELIER_UP', 'on').trim().toLowerCase() !== 'off'
+const statePath = () => join(dirname(defaultDbPath()), 'sommelier_state.json')
 const configPath = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'router.json')
 const PRICES_PATH = join(import.meta.dirname, '..', 'data', 'model-prices.json')
 
@@ -198,9 +199,9 @@ const round2 = (v: number) => Math.round(v * 100) / 100
 
 /** How far every tier threshold rises while a budget is under pressure. */
 export const BUDGET_SQUEEZE = 0.35
-/** AGENTARIUM_PENNYWISE_OVERHEAD=off routes down even when the hand-off would eat the saving. */
-const overheadGate = () => env('AGENTARIUM_PENNYWISE_OVERHEAD', 'on').trim().toLowerCase() !== 'off'
-const budgetAware = () => env('AGENTARIUM_PENNYWISE_BUDGET', 'on').trim().toLowerCase() !== 'off'
+/** AGENTARIUM_SOMMELIER_OVERHEAD=off routes down even when the hand-off would eat the saving. */
+const overheadGate = () => env('AGENTARIUM_SOMMELIER_OVERHEAD', 'on').trim().toLowerCase() !== 'off'
+const budgetAware = () => env('AGENTARIUM_SOMMELIER_BUDGET', 'on').trim().toLowerCase() !== 'off'
 
 /** The budget pressing on this session (see engine/budget.ts `pressure`), or null. Never throws. */
 export function budgetPressure(sid: string): budget.Pressure | null {
@@ -228,10 +229,10 @@ export function squeezed(cfg: RouterConfig): RouterConfig {
 
 export type RouterConfig = { tiers: Record<string, string>, thresholds: Record<string, number> }
 
-/** What `pennywise learn` wrote: threshold offsets from routes that missed or held, and tier
+/** What `sommelier learn` wrote: threshold offsets from routes that missed or held, and tier
  *  swaps from outcomes (only after `learn --apply-tiers`). */
-export const learnedPath = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'pennywise_learned.json')
-const learning = () => env('AGENTARIUM_PENNYWISE_LEARN', 'on').trim().toLowerCase() !== 'off'
+export const learnedPath = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'sommelier_learned.json')
+const learning = () => env('AGENTARIUM_SOMMELIER_LEARN', 'on').trim().toLowerCase() !== 'off'
 
 /** The router's settings. With `project`, a tier whose threshold that project has learned on its
  *  own routes uses the project's offset; every other tier uses the global one. */
@@ -442,7 +443,7 @@ export function estimateRequest(requested: string, chosen: string, ctx: number, 
 
 export type LogExtra = { saved?: number | null, ctx?: number | null, tier?: string | null, score?: number | null, digest?: string | null,
   estRouted?: number | null, cache?: string | null, project?: string | null,
-  /** never logged: carried to the evaluation set when AGENTARIUM_PENNYWISE_EVAL=text */
+  /** never logged: carried to the evaluation set when AGENTARIUM_SOMMELIER_EVAL=text */
   text?: string | null }
 
 // est_routed_usd: the estimate's "routed" part; measured_*: what the routed subagent really used
@@ -450,13 +451,13 @@ const LOG_COLUMNS: [string, string][] = [['saved_usd', 'REAL'], ['ctx', 'INTEGER
   ['est_routed_usd', 'REAL'], ['measured_usd', 'REAL'], ['measured_saved_usd', 'REAL'], ['m_steps', 'INTEGER'], ['m_input', 'INTEGER'],
   ['m_output', 'INTEGER'], ['m_secs', 'INTEGER'], ['cache', 'TEXT'], ['project', 'TEXT']]
 
-/** The pennywise_events table, with the columns newer versions added. */
+/** The sommelier_events table, with the columns newer versions added. */
 export function ensureLog(db: Db): void {
-  db.exec(`CREATE TABLE IF NOT EXISTS pennywise_events(
+  db.exec(`CREATE TABLE IF NOT EXISTS sommelier_events(
     id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, ts TEXT,
     model TEXT, suggested TEXT, reason TEXT, action TEXT)`)
-  const have = new Set(db.all('PRAGMA table_info(pennywise_events)').map((r) => String(r.name)))
-  for (const [c, t] of LOG_COLUMNS) if (!have.has(c)) db.exec(`ALTER TABLE pennywise_events ADD COLUMN ${c} ${t}`)
+  const have = new Set(db.all('PRAGMA table_info(sommelier_events)').map((r) => String(r.name)))
+  for (const [c, t] of LOG_COLUMNS) if (!have.has(c)) db.exec(`ALTER TABLE sommelier_events ADD COLUMN ${c} ${t}`)
 }
 
 /** Log one decision; -> its row id (null when logging failed). */
@@ -464,7 +465,7 @@ function log(sid: string, model: string | null, suggested: string, reason: strin
   try {
     return withDb(defaultDbPath(), (db) => {
       ensureLog(db)
-      db.run('INSERT INTO pennywise_events(session_id,ts,model,suggested,reason,action,saved_usd,ctx,tier,score,prompt_sha,est_routed_usd,cache,project) ' +
+      db.run('INSERT INTO sommelier_events(session_id,ts,model,suggested,reason,action,saved_usd,ctx,tier,score,prompt_sha,est_routed_usd,cache,project) ' +
         'VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)', sid, now(), model, suggested, reason, action, x.saved ?? null, x.ctx ?? null,
       x.tier ?? null, x.score ?? null, x.digest ?? null, x.estRouted ?? null, x.cache ?? null, x.project ?? null)
       return Number(db.get('SELECT last_insert_rowid() AS id')?.id) || null
@@ -474,19 +475,19 @@ function log(sid: string, model: string | null, suggested: string, reason: strin
   }
 }
 
-/** What pennywise saved (USD, net of hand-offs) and what routing up cost extra, for a session
+/** What sommelier saved (USD, net of hand-offs) and what routing up cost extra, for a session
  *  (or every session since `since`, an ISO date). Read-only; zeros when nothing was logged. */
 export function savings(dbPath: string, opts: { session?: string, since?: string } = {}): { saved: number, extra: number, routed: number } {
   const zero = { saved: 0, extra: 0, routed: 0 }
   if (!existsSync(dbPath)) return zero
   try {
     return withDb(dbPath, (db) => {
-      const cols = new Set(db.all('PRAGMA table_info(pennywise_events)').map((r) => String(r.name)))
+      const cols = new Set(db.all('PRAGMA table_info(sommelier_events)').map((r) => String(r.name)))
       if (!cols.has('saved_usd')) return zero
       const where = opts.session ? 'session_id=?' : 'ts>=?'
       const r = db.get(`SELECT COALESCE(SUM(CASE WHEN saved_usd>0 THEN saved_usd END),0) AS saved,
         COALESCE(-SUM(CASE WHEN saved_usd<0 THEN saved_usd END),0) AS extra, COUNT(saved_usd) AS routed
-        FROM pennywise_events WHERE ${where}`, opts.session ?? opts.since ?? '')
+        FROM sommelier_events WHERE ${where}`, opts.session ?? opts.since ?? '')
       return { saved: Number(r?.saved) || 0, extra: Number(r?.extra) || 0, routed: Number(r?.routed) || 0 }
     }, { readOnly: true })
   } catch {
@@ -615,7 +616,7 @@ function measureLast(sid: string, transcript: string | null, last: LastRoute | u
     if (!m) return              // the session did it itself: nothing to compare
     withDb(defaultDbPath(), (db) => {
       ensureLog(db)
-      db.run('UPDATE pennywise_events SET measured_usd=?, measured_saved_usd=ROUND(saved_usd + est_routed_usd - ?, 6), m_steps=?, ' +
+      db.run('UPDATE sommelier_events SET measured_usd=?, measured_saved_usd=ROUND(saved_usd + est_routed_usd - ?, 6), m_steps=?, ' +
         'm_input=?, m_output=?, m_secs=? WHERE id=?', m.usd, m.usd, m.steps, m.input, m.output, m.secs, last.id!)
     })
   } catch {
@@ -629,10 +630,10 @@ export function measuredSummary(dbPath: string, since: string): { n: number, est
   if (!existsSync(dbPath)) return zero
   try {
     return withDb(dbPath, (db) => {
-      if (!db.columns('pennywise_events').has('measured_usd')) return zero
+      if (!db.columns('sommelier_events').has('measured_usd')) return zero
       const r = db.get(`SELECT COUNT(*) AS n, COALESCE(SUM(est_routed_usd),0) AS e, COALESCE(SUM(measured_usd),0) AS m,
         COALESCE(SUM(saved_usd),0) AS es, COALESCE(SUM(measured_saved_usd),0) AS s
-        FROM pennywise_events WHERE ts>=? AND measured_usd IS NOT NULL`, since)
+        FROM sommelier_events WHERE ts>=? AND measured_usd IS NOT NULL`, since)
       return { n: Number(r?.n) || 0, estimated: Number(r?.e) || 0, measured: Number(r?.m) || 0, estSaved: Number(r?.es) || 0, saved: Number(r?.s) || 0 }
     }, { readOnly: true })
   } catch {
@@ -736,7 +737,7 @@ function proxyActive(): boolean {
 
 function routeInstruction(tier: number, why: string, up: boolean): string {
   const reason = up ? "it needs more than this session's model" : 'a cheaper model can do it'
-  return `[agentarium pennywise model router] This prompt was scored ${why}, so it is routed to ` +
+  return `[agentarium sommelier model router] This prompt was scored ${why}, so it is routed to ` +
     `${NAMES[tier]} (${reason}). Do not do the task yourself. Make one call to the Agent tool ` +
     `(the subagent tool) with model: "${ALIASES[tier]}", passing the user's request word for word as its ` +
     'prompt, plus only the facts from this conversation it needs (file paths, names, earlier ' +
@@ -771,7 +772,7 @@ function route(sid: string, model: string, cur: number, tier: number, why: strin
   const est = typeof x.saved === 'number'
     ? (x.saved >= 0 ? `, saves ~${priced(x.saved)} after the hand-off` : `, ~${priced(x.saved)} more for a stronger model`) : ''
   return {
-    systemMessage: `pennywise: routing ${up ? 'up' : 'down'} to ${NAMES[tier]} (${why}${est}) instead of ${NAMES[cur]}. ` +
+    systemMessage: `sommelier: routing ${up ? 'up' : 'down'} to ${NAMES[tier]} (${why}${est}) instead of ${NAMES[cur]}. ` +
       `Start a prompt with 'keep-model:' to keep it on ${NAMES[cur]}.` + (forced ? '' : lesson(sid, model, cur, tier)),
     hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: routeInstruction(tier, why, up) },
   }
@@ -801,9 +802,9 @@ const readState = (): Record<string, string> => readJson(statePath())
 
 type LastRoute = { tier: number, cur: number, ts: number, label: string | null, score: number | null,
   id?: number | null, estRouted?: number | null, measured?: boolean,
-  /** the routed prompt, for the evaluation set: its hash, and its text only with AGENTARIUM_PENNYWISE_EVAL=text */
+  /** the routed prompt, for the evaluation set: its hash, and its text only with AGENTARIUM_SOMMELIER_EVAL=text */
   sha?: string | null, text?: string | null }
-const routesPath = () => join(dirname(defaultDbPath()), 'pennywise_routes.json')
+const routesPath = () => join(dirname(defaultDbPath()), 'sommelier_routes.json')
 
 function rememberRoute(sid: string, r: LastRoute | null): void {
   const all = readJson(routesPath())
@@ -851,13 +852,13 @@ export function handle(d: Obj): Obj | null {
         ? addCase({ tier: up1(last.label), sha: last.sha, score: last.score, prompt: last.text ?? null, from: 'escalated' }) : false
       log(sid, model, NAMES[cur], said ? `the ${NAMES[last.tier]} answer didn't land` : `the ${NAMES[last.tier]} answer: ${ev}`, 'escalated',
         { tier: last.label, score: last.score, project })
-      return { systemMessage: `pennywise: the last answer came from ${NAMES[last.tier]} and ${said ? "it didn't land" : ev}, so ` +
-        `${NAMES[cur]} takes this one itself. pennywise learns from this: similar prompts will route higher.` +
+      return { systemMessage: `sommelier: the last answer came from ${NAMES[last.tier]} and ${said ? "it didn't land" : ev}, so ` +
+        `${NAMES[cur]} takes this one itself. sommelier learns from this: similar prompts will route higher.` +
         (kept ? ' It is kept as a labelled case for `agentarium router eval --mine`.' : '') }
     }
   }
   if (BYPASS_RE.test(prompt)) {
-    // a label for learning: the user kept the model on a prompt pennywise would have routed down
+    // a label for learning: the user kept the model on a prompt sommelier would have routed down
     const r = score(prompt.replace(BYPASS_RE, ''), ctx, cfg)
     const t = tierOf(r.model)
     if (t !== null && t < cur && r.signals.some(([n]) => TASK_SIGNALS.has(n))) {
@@ -904,7 +905,7 @@ export function handle(d: Obj): Obj | null {
     return null
   }
   const cheaper = NAMES[tier]
-  const msg = `pennywise: this prompt scored ${why}, which ${cheaper} can handle, but this session is on ` +
+  const msg = `sommelier: this prompt scored ${why}, which ${cheaper} can handle, but this session is on ` +
     `${model} (${NAMES[cur]}), a pricier tier. Switch with /model ${cheaper.toLowerCase()} and resend, ` +
     `or send the same prompt again (or start it with 'keep-model:') to run it on ${NAMES[cur]} anyway.` +
     lesson(sid, model!, cur, tier)
@@ -973,7 +974,7 @@ export class Router {
   constructor(cfg?: RouterConfig, opts: { pressure?: (sid: string) => budget.Pressure | null } = {}) {
     this.cfg = cfg ?? loadConfig()
     this.pressure = opts.pressure ?? budgetPressure
-    this.match = new Set(env('AGENTARIUM_ROUTER_MODELS', 'pennywise,auto').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean))
+    this.match = new Set(env('AGENTARIUM_ROUTER_MODELS', 'sommelier,auto').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean))
     this.stickyTokens = Number.parseInt(env('AGENTARIUM_ROUTER_STICKY_TOKENS'), 10) || 20000
     this.fallback = resolveModel(env('AGENTARIUM_ROUTER_FALLBACK') || this.cfg.tiers.COMPLEX)
   }
@@ -1002,7 +1003,7 @@ export class Router {
     let from = prev?.from ?? 0
     let choice: string
     let reason: string
-    // escalation only undoes a route down: never above the model asked for (or, for "pennywise", the fallback)
+    // escalation only undoes a route down: never above the model asked for (or, for "sommelier", the fallback)
     const ceilingTier = tierOf(requested) ?? tierOf(this.fallback) ?? 3
     const ev = prev && !turn && (tierOf(prev.model) ?? 3) < ceilingTier ? loopEvidence(body, from) : null
     if (prev && !turn && ev) {
@@ -1055,7 +1056,7 @@ export class Router {
       if (this.match.has(choice.toLowerCase()) || (tierOf(choice) === null && !choice.startsWith('claude'))) choice = this.fallback
     }
     const switched = Boolean(prev) && prev!.model !== choice && warm
-    // the baseline: the model asked for, or (for "pennywise"/"auto") the fallback, what you'd run without routing
+    // the baseline: the model asked for, or (for "sommelier"/"auto") the fallback, what you'd run without routing
     this.lastSaving = turn !== null || !prev ? estimateRequest(tierOf(requested) !== null ? requested : this.fallback, choice, ctx, switched) : 0
     if (turn !== null) from = nMsgs
     this.convs.set(key, { model: choice, ts, ttl, from })
@@ -1124,7 +1125,7 @@ export function serve(port: number, opts: { upstream?: string, router?: Router }
   const srv = createServer(async (req, res) => {
     const method = req.method ?? 'GET'
     const path = (req.url ?? '/').split('?')[0]
-    if (method === 'GET' && req.url === '/pennywise/health') {
+    if (method === 'GET' && req.url === '/sommelier/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ ok: true, upstream, tiers: router.cfg.tiers }))
       return
@@ -1168,10 +1169,10 @@ export function serve(port: number, opts: { upstream?: string, router?: Router }
       }
       await relay(resp, res)
     } catch (e) {
-      logErr(defaultDbPath(), `pennywise proxy\n${errText(e)}`)
+      logErr(defaultDbPath(), `sommelier proxy\n${errText(e)}`)
       try {
         res.writeHead(502, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: `pennywise proxy: ${e instanceof Error ? e.message : e}` } }))
+        res.end(JSON.stringify({ type: 'error', error: { type: 'api_error', message: `sommelier proxy: ${e instanceof Error ? e.message : e}` } }))
       } catch {
         // the client went away
       }
@@ -1185,9 +1186,9 @@ export function serve(port: number, opts: { upstream?: string, router?: Router }
 
 // ------------------------------------------------------------------ learning ----------------
 //
-// pennywise learns from what happened to its routes, never from token counts:
+// sommelier learns from what happened to its routes, never from token counts:
 //   a miss  = a routed-down prompt followed by "that didn't work" (escalated), or a prompt the user
-//             kept on the session's model with 'keep-model:' when pennywise would have routed it down
+//             kept on the session's model with 'keep-model:' when sommelier would have routed it down
 //   a hold  = a routed-down prompt that wasn't escalated
 // For each tier, a miss rate above MISS_HIGH lowers the threshold above it (similar prompts route
 // higher); a rate below MISS_LOW over enough routes raises it (route down more). Offsets are
@@ -1263,7 +1264,7 @@ export async function learn(dbPath = defaultDbPath(), opts: { days?: number, dry
     try {
       rows = withDb(dbPath, (db) => {
         ensureLog(db)
-        return db.all("SELECT session_id, action, tier, project FROM pennywise_events WHERE ts>=? AND tier IS NOT NULL AND " +
+        return db.all("SELECT session_id, action, tier, project FROM sommelier_events WHERE ts>=? AND tier IS NOT NULL AND " +
           "action IN ('routed','escalated','kept') ORDER BY id", since)
       })
     } catch {
@@ -1276,7 +1277,7 @@ export async function learn(dbPath = defaultDbPath(), opts: { days?: number, dry
     try {
       shapes = withDb(dbPath, (db) => {
         ensureLog(db)
-        return db.all('SELECT m_steps, m_input, m_output, m_secs FROM pennywise_events WHERE ts>=? AND m_steps>0 ORDER BY id DESC LIMIT 200', since)
+        return db.all('SELECT m_steps, m_input, m_output, m_secs FROM sommelier_events WHERE ts>=? AND m_steps>0 ORDER BY id DESC LIMIT 200', since)
       })
     } catch {
       shapes = []
@@ -1329,10 +1330,10 @@ export async function learn(dbPath = defaultDbPath(), opts: { days?: number, dry
 
 // ------------------------------------------------------------------ evaluation --------------
 
-export const EVAL_PATH = join(import.meta.dirname, '..', 'data', 'pennywise-eval.json')
+export const EVAL_PATH = join(import.meta.dirname, '..', 'data', 'sommelier-eval.json')
 /** Your own labelled cases, from escalations and 'keep-model:' (see addCase). */
-export const myEvalPath = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'pennywise_eval.json')
-const evalMode = () => env('AGENTARIUM_PENNYWISE_EVAL', 'hash').trim().toLowerCase()
+export const myEvalPath = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'sommelier_eval.json')
+const evalMode = () => env('AGENTARIUM_SOMMELIER_EVAL', 'hash').trim().toLowerCase()
 const MY_EVAL_KEEP = 500
 
 /** One tier up: the label for a prompt that was routed too low. */
@@ -1352,8 +1353,8 @@ export function addCase(c: Case, path = myEvalPath()): boolean {
     } catch {
       // the first case
     }
-    set.about ??= 'Your own labelled prompts, from pennywise escalations and keep-model: overrides. Hash-only cases are ' +
-      'scored by their recorded score; set AGENTARIUM_PENNYWISE_EVAL=text to keep the wording so the scorer can re-read them.'
+    set.about ??= 'Your own labelled prompts, from sommelier escalations and keep-model: overrides. Hash-only cases are ' +
+      'scored by their recorded score; set AGENTARIUM_SOMMELIER_EVAL=text to keep the wording so the scorer can re-read them.'
     const rec: Case = { tier: c.tier, sha: c.sha, score: c.score, from: c.from, ts: now() }
     if (c.prompt) rec.prompt = c.prompt
     set.prompts = [...set.prompts.filter((p) => p.sha !== c.sha), rec].slice(-MY_EVAL_KEEP)
@@ -1368,7 +1369,7 @@ export function addCase(c: Case, path = myEvalPath()): boolean {
 export type EvalResult = { total: number, correct: number, accuracy: number, under: number, over: number,
   confusion: Record<string, Record<string, number>>, misses: { prompt: string, want: string, got: string, score: number }[] }
 
-/** Score the labelled prompts in data/pennywise-eval.json (or your own set) against the default
+/** Score the labelled prompts in data/sommelier-eval.json (or your own set) against the default
  *  thresholds (or `cfg`). A case with text is re-scored; a hash-only case is placed by its recorded
  *  score, so it checks the thresholds, not the signals.
  *  `under` = routed lower than the label (the costly mistake: a model that flounders),
@@ -1399,10 +1400,10 @@ export function evaluate(cfg?: RouterConfig, path = EVAL_PATH): EvalResult {
 const pidPath = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'router.pid')
 const routerLog = () => join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'router.log')
 
-/** True when a pennywise proxy answers on `port`. */
+/** True when a sommelier proxy answers on `port`. */
 export async function healthy(port: number, timeoutMs = 800): Promise<boolean> {
   try {
-    const r = await fetch(`http://127.0.0.1:${port}/pennywise/health`, { signal: AbortSignal.timeout(timeoutMs) })
+    const r = await fetch(`http://127.0.0.1:${port}/sommelier/health`, { signal: AbortSignal.timeout(timeoutMs) })
     return r.ok && Boolean(((await r.json()) as Obj).ok)
   } catch {
     return false
@@ -1415,7 +1416,7 @@ export async function startBackground(port: number): Promise<boolean> {
   mkdirSync(dirname(pidPath()), { recursive: true })
   const fd = openSync(routerLog(), 'a')
   const child = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', import.meta.filename, 'serve', '--port', String(port)],
-    { detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, AGENTARIUM_PENNYWISE: 'proxy' } })
+    { detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, AGENTARIUM_SOMMELIER: 'proxy' } })
   child.unref()
   closeSync(fd)
   writeFileSync(pidPath(), String(child.pid))
@@ -1443,7 +1444,7 @@ export function settingsFile(project: boolean, cwd = process.cwd()): string {
 }
 
 /** Point Claude Code at the proxy (on) or back at the API (off), in `file`'s "env". Only the two
- *  keys pennywise owns are touched; ANTHROPIC_MODEL is only removed when it is "pennywise". */
+ *  keys sommelier owns are touched; ANTHROPIC_MODEL is only removed when it is "sommelier". */
 export function setProxyEnv(file: string, on: boolean, port: number): void {
   let s: Obj = {}
   try {
@@ -1455,10 +1456,10 @@ export function setProxyEnv(file: string, on: boolean, port: number): void {
   const e: Obj = isObj(s.env) ? { ...s.env } : {}
   if (on) {
     e.ANTHROPIC_BASE_URL = `http://127.0.0.1:${port}`
-    e.ANTHROPIC_MODEL = 'pennywise'
+    e.ANTHROPIC_MODEL = 'sommelier'
   } else {
     if (/^https?:\/\/(127\.0\.0\.1|localhost):\d+/.test(String(e.ANTHROPIC_BASE_URL ?? ''))) delete e.ANTHROPIC_BASE_URL
-    if (String(e.ANTHROPIC_MODEL ?? '').toLowerCase() === 'pennywise') delete e.ANTHROPIC_MODEL
+    if (String(e.ANTHROPIC_MODEL ?? '').toLowerCase() === 'sommelier') delete e.ANTHROPIC_MODEL
   }
   if (Object.keys(e).length) s.env = e
   else delete s.env
@@ -1470,12 +1471,12 @@ export function setProxyEnv(file: string, on: boolean, port: number): void {
  *  reboot never leaves the session talking to nothing. Quiet; never fails. */
 export async function ensure(): Promise<void> {
   const m = /^https?:\/\/(127\.0\.0\.1|localhost):(\d+)/.exec(env('ANTHROPIC_BASE_URL'))
-  // only our proxy: the router's port, or a session asking for the "pennywise" model
-  if (!m || (m[2] !== env('AGENTARIUM_ROUTER_PORT', '8787') && env('ANTHROPIC_MODEL').toLowerCase() !== 'pennywise')) return
+  // only our proxy: the router's port, or a session asking for the "sommelier" model
+  if (!m || (m[2] !== env('AGENTARIUM_ROUTER_PORT', '8787') && env('ANTHROPIC_MODEL').toLowerCase() !== 'sommelier')) return
   try {
     await startBackground(Number(m[2]))
   } catch (e) {
-    logErr(defaultDbPath(), `pennywise ensure\n${errText(e)}`)
+    logErr(defaultDbPath(), `sommelier ensure\n${errText(e)}`)
   }
 }
 
@@ -1508,7 +1509,7 @@ export async function main(args: string[]): Promise<number> {
   }
   if (cmd === 'env') {
     const p = portArg(args)
-    process.stdout.write(`export ANTHROPIC_BASE_URL=http://127.0.0.1:${p}\nexport ANTHROPIC_MODEL=pennywise\n`)
+    process.stdout.write(`export ANTHROPIC_BASE_URL=http://127.0.0.1:${p}\nexport ANTHROPIC_MODEL=sommelier\n`)
     return 0
   }
   if (cmd === 'on' || cmd === 'off') {
@@ -1517,16 +1518,16 @@ export async function main(args: string[]): Promise<number> {
     if (cmd === 'off') {
       setProxyEnv(file, false, p)
       const stopped = stopBackground()
-      process.stdout.write(`pennywise proxy off${stopped ? ' (stopped)' : ''}. ${file} points Claude Code back at the API; ` +
+      process.stdout.write(`sommelier proxy off${stopped ? ' (stopped)' : ''}. ${file} points Claude Code back at the API; ` +
         'the hook routes again from your next session.\n')
       return 0
     }
     if (!(await startBackground(p))) {
-      process.stderr.write(`pennywise: the proxy didn't start on port ${p} (see ${routerLog()}). Nothing changed.\n`)
+      process.stderr.write(`sommelier: the proxy didn't start on port ${p} (see ${routerLog()}). Nothing changed.\n`)
       return 1
     }
     setProxyEnv(file, true, p)
-    process.stdout.write(`pennywise proxy on: http://127.0.0.1:${p} (running in the background, log: ${routerLog()}).\n` +
+    process.stdout.write(`sommelier proxy on: http://127.0.0.1:${p} (running in the background, log: ${routerLog()}).\n` +
       `${file} now points Claude Code at it; start a new session to use it. Each request is routed per turn, ` +
       `cache-aware, with fallback, and no subagent hand-off. A SessionStart hook restarts it if it isn't running.\n` +
       `Undo: agentarium router off${args.includes('--project') ? ' --project' : ''}\n`)
@@ -1566,7 +1567,7 @@ export async function main(args: string[]): Promise<number> {
       process.stdout.write(JSON.stringify(r, null, 2) + '\n')
       return 0
     }
-    const L = ['pennywise learn: what routing down did for you', '']
+    const L = ['sommelier learn: what routing down did for you', '']
     for (const [t, st] of Object.entries(r.stats)) {
       const n = st.holds + st.misses
       L.push(`  ${t.padEnd(9)} ${n} routes, ${st.misses} missed (${n ? Math.round(st.misses / n * 100) : 0}%)` +
@@ -1580,18 +1581,18 @@ export async function main(args: string[]): Promise<number> {
       for (const [t, off] of Object.entries(pr.offsets)) L.push(`    ${t.padEnd(9)} ${off > 0 ? '+' : ''}${off}${off ? '' : ' (holding)'}`)
     }
     for (const sug of r.suggestions) L.push('', `  suggestion: ${sug}` + (args.includes('--apply-tiers') ? ' (applied)' : ' (apply with --apply-tiers)'))
-    L.push('', args.includes('--dry-run') ? '(dry run: nothing written)' : `written to ${learnedPath()}  ·  AGENTARIUM_PENNYWISE_LEARN=off ignores it`)
+    L.push('', args.includes('--dry-run') ? '(dry run: nothing written)' : `written to ${learnedPath()}  ·  AGENTARIUM_SOMMELIER_LEARN=off ignores it`)
     process.stdout.write(L.join('\n') + '\n')
     return 0
   }
   if (cmd === 'eval') {
     const mine = args.includes('--mine')
     if (mine && !existsSync(myEvalPath())) {
-      process.stdout.write(`pennywise eval --mine: no cases yet. Each escalation and keep-model: override adds one to ${myEvalPath()}.\n`)
+      process.stdout.write(`sommelier eval --mine: no cases yet. Each escalation and keep-model: override adds one to ${myEvalPath()}.\n`)
       return 0
     }
     if (args.includes('--export')) {
-      // your cases with text, in the shape of data/pennywise-eval.json, to add to the shared set
+      // your cases with text, in the shape of data/sommelier-eval.json, to add to the shared set
       const cases = (JSON.parse(readFileSync(myEvalPath(), 'utf8')).prompts as Case[]).filter((p) => p.prompt)
       process.stdout.write(JSON.stringify({ prompts: cases.map((p) => ({ tier: p.tier, prompt: p.prompt })) }, null, 2) + '\n')
       return 0
@@ -1602,7 +1603,7 @@ export async function main(args: string[]): Promise<number> {
       const minAcc = Number(argValue(args, '--min-accuracy') ?? 0.85)
       const maxUnder = Number(argValue(args, '--max-under') ?? 3)
       const ok = r.accuracy >= minAcc && r.under <= maxUnder
-      process.stdout.write(`pennywise eval --check: ${r.correct}/${r.total} on the right tier (${Math.round(r.accuracy * 100)}%, need ` +
+      process.stdout.write(`sommelier eval --check: ${r.correct}/${r.total} on the right tier (${Math.round(r.accuracy * 100)}%, need ` +
         `${Math.round(minAcc * 100)}%), ${r.under} routed too low (at most ${maxUnder}): ${ok ? 'ok' : 'FAILED'}\n`)
       if (!ok) for (const m of r.misses) process.stdout.write(`  ${m.want} -> ${m.got} (${m.score}): ${m.prompt}\n`)
       return ok ? 0 : 1
@@ -1611,7 +1612,7 @@ export async function main(args: string[]): Promise<number> {
       process.stdout.write(JSON.stringify(r, null, 2) + '\n')
       return 0
     }
-    const L = [`pennywise eval: ${r.correct}/${r.total} prompts on the right tier (${Math.round(r.accuracy * 100)}%)`,
+    const L = [`sommelier eval: ${r.correct}/${r.total} prompts on the right tier (${Math.round(r.accuracy * 100)}%)`,
       `  routed too low: ${r.under}  ·  routed too high: ${r.over}`, '', '  label \\ routed   ' + TIERS.map((t) => t.padEnd(10)).join('')]
     for (const t of TIERS) L.push(`  ${t.padEnd(16)} ` + TIERS.map((g) => String(r.confusion[t]?.[g] ?? 0).padEnd(10)).join(''))
     if (args.includes('--misses')) for (const m of r.misses) L.push(`  ${m.want} -> ${m.got} (${m.score}): ${m.prompt}`)
@@ -1622,9 +1623,9 @@ export async function main(args: string[]): Promise<number> {
     const p = portArg(args)
     await serve(p)
     const tiers = loadConfig().tiers
-    process.stdout.write(`pennywise router on http://127.0.0.1:${p}  ->  ${env('AGENTARIUM_ROUTER_UPSTREAM') || 'https://api.anthropic.com'}\n` +
+    process.stdout.write(`sommelier router on http://127.0.0.1:${p}  ->  ${env('AGENTARIUM_ROUTER_UPSTREAM') || 'https://api.anthropic.com'}\n` +
       `tiers: ${TIERS.map((t) => `${t}=${resolveModel(tiers[t])}`).join(', ')}\n` +
-      `use it:  ANTHROPIC_BASE_URL=http://127.0.0.1:${p} ANTHROPIC_MODEL=pennywise claude\n`)
+      `use it:  ANTHROPIC_BASE_URL=http://127.0.0.1:${p} ANTHROPIC_MODEL=sommelier claude\n`)
     process.on('SIGINT', () => process.exit(0))
     return 0
   }
@@ -1634,7 +1635,7 @@ export async function main(args: string[]): Promise<number> {
     const out = handle(isObj(d) ? d : {})
     if (out) process.stdout.write(JSON.stringify(out) + '\n')
   } catch (e) {
-    logErr(defaultDbPath(), `pennywise hook\n${errText(e)}`)
+    logErr(defaultDbPath(), `sommelier hook\n${errText(e)}`)
   }
   return 0
 }

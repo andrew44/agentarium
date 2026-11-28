@@ -3,7 +3,7 @@
 // Three tabs, hotkeys 1-3 once the pane has the keys:
 //   * Now: model, context fill, tokens, spend and the cache countdown.
 //   * Ahead: the outlook. The next step and the next steps' forecast, the budget left, what a cold
-//     cache adds and what pennywise has saved.
+//     cache adds and what sommelier has saved.
 //   * Advice: every change worth making right now, the most urgent first.
 // Minimised to a widget in the desktop app it shows a glance: spend, context and the top advice.
 // The numbers are the band's (hooks/band.tsx writes `line` from statusline.ts --json), so the pane,
@@ -98,7 +98,7 @@ export function advise(b: Line, t: Timer): Advice[] {
     if (action) out.push({ level: 'tip', title: action, detail: `Saves ~${o.tip.saves}: ${o.tip.why}` })
   }
 
-  if (o?.saved) out.push({ level: 'green', title: `pennywise saved ${o.saved}`, detail: 'This session, net of its hand-offs.' })
+  if (o?.saved) out.push({ level: 'green', title: `sommelier saved ${o.saved}`, detail: 'This session, net of its hand-offs.' })
 
   return out.sort((a, b) => URGENCY[a.level] - URGENCY[b.level])
 }
@@ -287,7 +287,7 @@ export function registerPane(on: On) {
           <Box flexDirection="row" flexWrap="wrap" gap="sm">
             {o.at_risk && card('risk', o.cold ? 'cache cold · next prompt' : 'if the cache goes cold',
               figure(o.cold ? `+${o.at_risk}` : o.at_risk, o.cold ? THEME.red : colour(t.level)))}
-            {card('saved', 'saved by pennywise', figure(o.saved ?? 'nothing yet', o.saved ? THEME.green : undefined))}
+            {card('saved', 'saved by sommelier', figure(o.saved ?? 'nothing yet', o.saved ? THEME.green : undefined))}
           </Box>
         </Box>
       )

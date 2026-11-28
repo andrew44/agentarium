@@ -61,7 +61,7 @@ test('the tabs switch on a press, and Advice counts what is urgent', async ($, o
     await ui.press({ key: 'tab-advice' })
     expect(await ui.find({ type: 'Text', text: /^Compact now$/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /^Budget running low$/ })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /pennywise saved £0\.12/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /sommelier saved £0\.12/ })).toBeDefined()
     await ui.press({ key: 'tab-now' })
     await ui.unmount()
   }

@@ -32,7 +32,7 @@ export type Outlook = {
     steps_left: number | null, over: boolean } | null
   /** The single change that saves most over the forecast. */
   tip: { action: string, saves: string, why: string, kind: 'warm' | 'clear' | 'compact' | 'model' } | null
-  /** What pennywise saved this session, net of its hand-offs; null when nothing yet. */
+  /** What sommelier saved this session, net of its hand-offs; null when nothing yet. */
   saved?: string | null
 }
 

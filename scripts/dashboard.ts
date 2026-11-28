@@ -16,7 +16,7 @@
  *
  * Shows tokens, sessions, prompts and spend (estimated, token-billed sessions only: Copilot's
  * premium requests are never priced) split OPEX / CAPEX by day and project, and what agentarium
- * did: what pennywise and each guard stopped or flagged and what that saved (PolicyEngine.activity).
+ * did: what sommelier and each guard stopped or flagged and what that saved (PolicyEngine.activity).
  * Money is in the display currency (AGENTARIUM_CURRENCY or the status line's saved choice).
  *
  * Read-only: the DB is opened read-only and never written to (except --demo, which uses a
@@ -39,7 +39,7 @@ import * as events from '../agentarium/engine/events.ts'
 import * as store from '../agentarium/engine/store.ts'
 import { PolicyEngine } from '../agentarium/services/index.ts'
 import { ensureHandoffs } from './doggybag.ts'
-import { ensureLog as ensurePennywiseLog } from './pennywise.ts'
+import { ensureLog as ensureSommelierLog } from './sommelier.ts'
 import { copilotStatus } from './statusline.ts'
 import { argValue, isMain, today, type Obj } from '../agentarium/util.ts'
 
@@ -244,7 +244,7 @@ export function seedDemo(path: string): void {
   }
 }
 
-/** What pennywise and the guards would have logged in those sessions, so the demo shows "What agentarium did". */
+/** What sommelier and the guards would have logged in those sessions, so the demo shows "What agentarium did". */
 function seedActivity(db: store.Db, sessions: { sid: string, ts: Date, source: string, cwd: string, prompts: number, ctx: number, usd: number }[],
   stamp: (ts: Date) => string): void {
   const rnd = rng(11)
@@ -253,7 +253,7 @@ function seedActivity(db: store.Db, sessions: { sid: string, ts: Date, source: s
     'kettle_events', 'parrot_events', 'colander_events', 'holdup_events']) {
     db.exec(`CREATE TABLE IF NOT EXISTS ${t}(id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, ${events.TABLES[t]})`)
   }
-  ensurePennywiseLog(db)
+  ensureSommelierLog(db)
   contract.ensure(db)
   ensureHandoffs(db)
   budget.ensure(db)
@@ -267,13 +267,13 @@ function seedActivity(db: store.Db, sessions: { sid: string, ts: Date, source: s
       const at = (mins: number) => stamp(later(s, mins))
       const base = { session_id: s.sid, source: s.source }
       if (s.source === 'claude-code') {
-        // about a third of prompts suit a cheaper model; pennywise routes the ones where the saving beats the hand-off
+        // about a third of prompts suit a cheaper model; sommelier routes the ones where the saving beats the hand-off
         for (let k = 0, n = Math.floor(s.prompts * rnd.uniform(0.1, 0.35)); k < n; k++) {
-          ins('pennywise_events', { session_id: s.sid, ts: at(k * 3), model: 'claude-opus-5-5', suggested: 'Haiku', reason: 'SIMPLE',
+          ins('sommelier_events', { session_id: s.sid, ts: at(k * 3), model: 'claude-opus-5-5', suggested: 'Haiku', reason: 'SIMPLE',
             action: 'routed', saved_usd: rnd.uniform(0.004, 0.05), tier: 'SIMPLE', project: s.cwd.split('/').pop() ?? null })
         }
         if (rnd.random() < 0.15) {
-          ins('pennywise_events', { session_id: s.sid, ts: at(5), model: 'claude-haiku-5-5', suggested: 'Opus', reason: 'REASONING',
+          ins('sommelier_events', { session_id: s.sid, ts: at(5), model: 'claude-haiku-5-5', suggested: 'Opus', reason: 'REASONING',
             action: 'routed-up', saved_usd: -rnd.uniform(0.03, 0.12), tier: 'REASONING', project: s.cwd.split('/').pop() ?? null })
         }
         if (rnd.random() < 0.06) {

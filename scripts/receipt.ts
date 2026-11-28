@@ -5,7 +5,7 @@
  * Claude Code tags every transcript line with the git branch it was on, so receipt adds up exactly the
  * requests made on this branch in this repository, subagents included, across every session:
  *
- *   AI-Cost: £1.42 (3 sessions, 38 requests, 71% cache reads, pennywise routed 12 prompts and saved £0.40)
+ *   AI-Cost: £1.42 (3 sessions, 38 requests, 71% cache reads, sommelier routed 12 prompts and saved £0.40)
  *
  * Numbers only: no prompt, file or command text goes into the line. Claude Code only (Copilot bills
  * premium requests, which agentarium never turns into money).
@@ -104,10 +104,10 @@ export function receipt(repo: string, branch: string, files: string[], dbPath = 
   if (sessions.size && existsSync(dbPath)) {
     try {
       withDb(dbPath, (db) => {
-        if (!db.tables().has('pennywise_events')) return
-        const cols = db.columns('pennywise_events')
+        if (!db.tables().has('sommelier_events')) return
+        const cols = db.columns('sommelier_events')
         const ids = [...sessions]
-        const row = db.get(`SELECT COUNT(*) AS n${cols.has('saved_usd') ? ', COALESCE(SUM(saved_usd),0) AS saved' : ''} FROM pennywise_events ` +
+        const row = db.get(`SELECT COUNT(*) AS n${cols.has('saved_usd') ? ', COALESCE(SUM(saved_usd),0) AS saved' : ''} FROM sommelier_events ` +
           `WHERE action='routed' AND session_id IN (${ids.map(() => '?').join(',')})`, ...ids)
         r.routed = Number(row?.n ?? 0)
         r.saved_usd = Number(row?.saved ?? 0)
@@ -123,7 +123,7 @@ export function line(r: Receipt): string {
   const { fmt } = CostEngine.display()
   const bits = [`${r.sessions} session${r.sessions === 1 ? '' : 's'}`, `${r.requests} requests`]
   if (r.cache_read_share !== null) bits.push(`${Math.round(r.cache_read_share * 100)}% cache reads`)
-  if (r.routed) bits.push(`pennywise routed ${r.routed} prompt${r.routed === 1 ? '' : 's'}${r.saved_usd > 0.005 ? ` and saved ${fmt(r.saved_usd)}` : ''}`)
+  if (r.routed) bits.push(`sommelier routed ${r.routed} prompt${r.routed === 1 ? '' : 's'}${r.saved_usd > 0.005 ? ` and saved ${fmt(r.saved_usd)}` : ''}`)
   return `AI-Cost: ${fmt(r.cost_usd)} (${bits.join(', ')})`
 }
 
@@ -135,7 +135,7 @@ export function markdown(r: Receipt): string {
     '| Sessions | Requests | Tokens read from cache | Tokens written to cache | Uncached input | Output |',
     '|---:|---:|---:|---:|---:|---:|',
     `| ${r.sessions} | ${r.requests} | ${n(r.cache_read_tokens)} | ${n(r.cache_write_tokens)} | ${n(r.input_tokens)} | ${n(r.output_tokens)} |`,
-    ...(r.routed ? ['', `pennywise routed ${r.routed} prompt(s) to a cheaper model${r.saved_usd > 0.005 ? ` and saved ${fmt(r.saved_usd)}` : ''}.`] : []),
+    ...(r.routed ? ['', `sommelier routed ${r.routed} prompt(s) to a cheaper model${r.saved_usd > 0.005 ? ` and saved ${fmt(r.saved_usd)}` : ''}.`] : []),
     '', '<sub>From Claude Code transcripts by agentarium receipt; API prices, numbers only.</sub>',
   ].join('\n')
 }

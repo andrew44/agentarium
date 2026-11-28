@@ -11,7 +11,7 @@
  *   crystalball.ts --from-history [--history-days 30]
  *                   take tasks a day, tokens per task and cache share from your own ledger (bang-for-buck),
  *                   then override any of them with the options above
- *   --mix "haiku=60,sonnet=35,opus=5"   a routed mix (as pennywise would route): its blended cost
+ *   --mix "haiku=60,sonnet=35,opus=5"   a routed mix (as sommelier would route): its blended cost
  *   --growth 10 [--months 12]           adoption growing N% a month: month-by-month and the year's total
  *   --model sonnet                      the offering the growth plan and sensitivities use (default:
  *                                       the cheapest balanced one with a confirmed price)

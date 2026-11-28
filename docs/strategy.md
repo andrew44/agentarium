@@ -23,7 +23,7 @@ and it says what it did and why, with a one-step override every time.
 
 | Moment in the session | What's about to cost you | What steps in, automatically |
 |---|---|---|
-| Before a prompt is sent | The wrong model; a budget about to run out; a whole log pasted in; a new task dragging the last one's context; a task with no agreed price | **pennywise** (routes to the right model, harder as the budget runs down) · budget · hold-up · ballast · haggle · parrot |
+| Before a prompt is sent | The wrong model; a budget about to run out; a whole log pasted in; a new task dragging the last one's context; a task with no agreed price | **sommelier** (routes to the right model, harder as the budget runs down) · budget · hold-up · ballast · haggle · parrot |
 | Before a tool call runs | A context flood; a loop; work nobody asked for; a task over its price | diet · groundhog · blinkers · haggle |
 | Between turns | A cache about to go cold; a context filling up | **the band** (forecast, budget left, cache risk, the saving to make) · doggybag |
 | After the work | Proving the prevention didn't cost quality | bang-for-buck · taste-test · waistline · sherlock |
@@ -39,14 +39,14 @@ Rules that keep prevention trustworthy:
 - **Priced, not preached.** Every intervention says what it saves, in the user's currency.
 - **Quality is a gate, not an afterthought.** A saving that broke tests is not a saving (taste-test).
 
-## 2. pennywise is the flagship
+## 2. sommelier is the flagship
 
-pennywise is the one helper that changes the price of *every* prompt without the user doing anything.
+sommelier is the one helper that changes the price of *every* prompt without the user doing anything.
 It sits at the most valuable decision point in a session (which model does this work?) and it already
 works in both directions: down to save money, up when a prompt needs more. That makes it the clearest
 demonstration of the USP, so it leads the README, the docs and the roadmap.
 
-What pennywise does now:
+What sommelier does now:
 
 - **Routes every prompt** to the tier it needs (Haiku / Sonnet / Opus / Fable), as a hook (nothing to
   set up) or as a per-request routing proxy (cache-aware, with fallback), which `agentarium router on`
@@ -56,7 +56,7 @@ What pennywise does now:
   would eat isn't taken. What it saved, net, shows on the status line, the band and the weekly report,
   and the routed subagent's real cost is measured from the transcript beside the estimate.
 - **Spends to the budget**, in the hook and the proxy. Once a daily or session budget passes its
-  warning share, pennywise routes down harder (every tier threshold rises) and stops routing up, so
+  warning share, sommelier routes down harder (every tier threshold rises) and stops routing up, so
   the budget lasts instead of hitting budget's hard pause mid-task. Forced models (`opus:`) still win.
 - **Backs off and learns.** "That didn't work" after a routed answer, or the evidence (a failing test,
   a revert, groundhog tripping), sends the next prompt back up.
@@ -64,7 +64,7 @@ What pennywise does now:
   project once a repository has enough routes, and
   bang-for-buck's cost per *successful* result suggests tier swaps. `router eval` scores the routing on
   a labelled set (38 of 42 on the right tier, 2 too low).
-- **Decides with the others.** One controller runs pennywise, budget, haggle and the guard-rails in
+- **Decides with the others.** One controller runs sommelier, budget, haggle and the guard-rails in
   one process per prompt: one decision, one message.
 
 Its roadmap, and the rest of the product's, is in the [roadmap](#roadmap) at the end.
@@ -85,7 +85,7 @@ The original line (model, context, tokens, spent, cache countdown) stays above i
 line and the after-reply message (where mods can't run) carry the same outlook. All of it is
 arithmetic on the session's own figures: no model call, nothing stored.
 
-Since then: the outlook is the terminal status line's second row, and both show what pennywise saved
+Since then: the outlook is the terminal status line's second row, and both show what sommelier saved
 this session, net of its hand-offs. Next for the band is in the [roadmap](#roadmap).
 
 ## Copilot compatibility is a strategic asset
@@ -100,7 +100,7 @@ We're honest about the differences rather than pretending they don't exist:
   status line, with a premium-request forecast: requests left this month, the pace, the day they run
   out, and what the next prompts use (`AGENTARIUM_COPILOT_ALLOWANCE`, `agentarium copilot`), each
   prompt counted at its own model's multiplier when Copilot's session state names the model.
-- **What can't yet:** Copilot ignores hook output on prompt submit, so pennywise's hook routing,
+- **What can't yet:** Copilot ignores hook output on prompt submit, so sommelier's hook routing,
   budget's pause and haggle's quote are Claude Code only. Its prompt hook already runs through the
   controller, and the premium-request guard is ready to pause the day Copilot honours the output.
   Copilot's hook reference (read 23 November 2026) still says `modifiedPrompt` is honoured only by SDK
@@ -120,14 +120,14 @@ what the assistant can report, never a second implementation.
 
 | | What | Where it lives |
 |---|---|---|
-| ✅ | **The proxy spends to the budget too.** Squeezed thresholds and no routing up, as in the hook. | `pennywise.ts` `Router.decide` |
+| ✅ | **The proxy spends to the budget too.** Squeezed thresholds and no routing up, as in the hook. | `sommelier.ts` `Router.decide` |
 | ✅ | **The outlook on the terminal status line**, as a second row. | `statusline.ts` `renderOutlook` |
-| ✅ | **pennywise's savings, net of the hand-off.** Every route is priced (stay − hand-off − routed); a route down the hand-off would eat isn't taken; savings are logged per route and shown on the status line, the band, `router status` and the weekly report. Routes up are counted as what quality cost, never as savings. | `estimateHandoff`, `estimateRequest`, `pennywise_events.saved_usd` |
+| ✅ | **sommelier's savings, net of the hand-off.** Every route is priced (stay − hand-off − routed); a route down the hand-off would eat isn't taken; savings are logged per route and shown on the status line, the band, `router status` and the weekly report. Routes up are counted as what quality cost, never as savings. | `estimateHandoff`, `estimateRequest`, `sommelier_events.saved_usd` |
 | ✅ | **Cache- and context-aware hook routing** (part one). The hook reads the session's context size from the transcript, so the hand-off's price, and the decision, scale with it. | `lastTurn`, `estimateHandoff` |
 | ✅ | **The proxy as the recommended way to run.** `agentarium router on / off / status`: the proxy in the background, Claude Code pointed at it, restarted by a SessionStart hook when it's down. | `startBackground`, `setProxyEnv`, `ensure` |
 | ✅ | **One session controller.** The eight prompt-time helpers run in one process, in decision order; the first pause decides alone, otherwise one message. | `controller.ts` |
-| ✅ | **Route by outcome.** Escalations and `keep-model:` overrides tune the tier thresholds (bounded, at every session end); bang-for-buck's cost per successful result suggests tier swaps (`--apply-tiers`). | `learn`, `pennywise_learned.json` |
-| ✅ | **A labelled evaluation set**, and a better scorer from it: 69% → 90% on the right tier, "routed too low" 12 → 2. | `data/pennywise-eval.json`, `router eval` |
+| ✅ | **Route by outcome.** Escalations and `keep-model:` overrides tune the tier thresholds (bounded, at every session end); bang-for-buck's cost per successful result suggests tier swaps (`--apply-tiers`). | `learn`, `sommelier_learned.json` |
+| ✅ | **A labelled evaluation set**, and a better scorer from it: 69% → 90% on the right tier, "routed too low" 12 → 2. | `data/sommelier-eval.json`, `router eval` |
 | ✅ | **Move back up when a routed answer didn't land** (hook: the session's model; proxy: one tier up). | `FAILED_RE`, `ESCALATE_WINDOW` |
 | ✅ | **Profiles and one config file.** `frugal` / `balanced` / `quality`, and `~/.agentarium/config.json` for your own defaults; env > file > profile. | `agentarium/profile.ts`, `agentarium profile` |
 | ✅ | **Fewer things to learn.** Three groups (prevent, look forward, prove and audit) and one `audit` that runs every leak check, biggest money first. | `audit.ts`, the README |
@@ -139,7 +139,7 @@ what the assistant can report, never a second implementation.
 | ✅ | **haggle's agreed price as a budget.** An open contract's cap is a budget the band's forecast counts down against ("£0.80 of £2.00 left this task, ~3 steps") when it's the tightest. | `taskContractUsd`, `budgetLeft(…, task)` |
 | ✅ | **The controller on Copilot too.** One process for Copilot's prompt hook (till, premium, doggybag, blinkers), and a premium-request guard that pauses once the allowance is used up as soon as the adapter reports Copilot honours prompt-hook output; until then it records `would-pause`. | `COPILOT_STEPS`, `premium.ts`, `Capability.PROMPT_DECISION` |
 | ✅ | **Profiles per project and per phase.** `"projects"` in config.json picks a profile by folder (longest prefix wins); with `budget_profile` set, the budget hook marks a day past its warning share and that profile applies for the rest of it. | `projectProfile`, `inBudgetPhase`, `budget.markPhase` |
-| ✅ | **A growing evaluation set.** Each escalation and `keep-model:` is kept as a labelled case (hash and score; the text only with `AGENTARIUM_PENNYWISE_EVAL=text`); `router eval --mine` scores them; `router eval --check` fails CI on a scorer regression. | `addCase`, `pennywise_eval.json`, `tests.yml` |
+| ✅ | **A growing evaluation set.** Each escalation and `keep-model:` is kept as a labelled case (hash and score; the text only with `AGENTARIUM_SOMMELIER_EVAL=text`); `router eval --mine` scores them; `router eval --check` fails CI on a scorer regression. | `addCase`, `sommelier_eval.json`, `tests.yml` |
 | ✅ | **Copilot model multipliers.** The Copilot adapter reads the session's model from Copilot's session state (or config) when it's there; each prompt is recorded at that model's multiplier (`AGENTARIUM_COPILOT_MULTIPLIERS`, your figures: GitHub lists them per plan) and the forecast adds them up. | `sessionModel`, `engine/premium.ts`, `copilotUsage` |
 | ✅ | **Copilot Fusion routing.** When the pick is Copilot Fusion, the adapter reports the model Fusion routed to and Fusion as the router; the prompt counts at the routed model's multiplier and the status line shows `Copilot Fusion → <model>`. | `sessionRoute`, `telemetry_events.router`, `copilotRoute` |
 | ✅ | **Copilot in VS Code.** A `vscode` adapter for VS Code's agent hooks (preview): prompts and tool calls recorded, diet, groundhog and blinkers on tool calls, and the premium guard, which can pause there. `agentarium vscode` installs the hooks into a workspace. | `adapters/vscode.ts`, `vscode-hooks.json`, `premiumBilled` |
@@ -162,7 +162,7 @@ Goal: prevention that works in whichever editor or agent a team uses, so switchi
 | | What | Notes |
 |---|---|---|
 | ⬜ | **A standard adapter interface**, with each adapter's supported capabilities documented and detected at run time. | Designed: see [the adapter interface](#the-adapter-interface) below. Features degrade when a platform doesn't expose them. Claude Code and Copilot CLI keep working unchanged. |
-| ⬜ | **A generic provider integration.** Usage from provider APIs and telemetry, OpenAI-compatible endpoints, local usage logs, gateways or proxies, and imported usage and cost reports. | Designed: see [the generic provider layer](#the-generic-provider-layer) below. It is the way in for JetBrains AI Assistant (no hooks) and for pennywise on any tool with no prompt hook, such as Cline. It builds on the existing proxy, so it is the `proxy_endpoint` capability made real. |
+| ⬜ | **A generic provider integration.** Usage from provider APIs and telemetry, OpenAI-compatible endpoints, local usage logs, gateways or proxies, and imported usage and cost reports. | Designed: see [the generic provider layer](#the-generic-provider-layer) below. It is the way in for JetBrains AI Assistant (no hooks) and for sommelier on any tool with no prompt hook, such as Cline. It builds on the existing proxy, so it is the `proxy_endpoint` capability made real. |
 | ⬜ | **Unified cost reporting** across platforms: spend by model, provider, project and session, cumulative spend, and actual and estimated savings per tool. | Designed: see [unified cost reporting](#unified-cost-reporting) below. Every figure is labelled measured, reported or estimated. No exact token counts or savings are claimed where a platform doesn't expose enough data. |
 | ⬜ | **Priority 1 adapters, in this order:** Codex CLI, then Junie CLI (flagged Early Access), then Cursor at `partial`. | Re-scored against the vendors' docs on 22 November 2026: see [the candidates](#scoring-the-priority-1-candidates). Codex and Junie both use Claude-shaped command hooks, so they share a base class. Codex is designed: see [the Codex CLI adapter](#the-codex-cli-adapter). Its usage comes per request from `PostModelRequest`, and its money waits for OpenAI prices. Junie CLI is designed: see [the Junie CLI adapter](#the-junie-cli-adapter). Its hooks carry no usage, so its money comes through a custom model profile pointed at the router. Cursor is designed: see [the Cursor adapter](#the-cursor-adapter). It moves ahead of Codex for one piece: Cursor already runs agentarium's Claude Code hooks, mislabelled. |
 | ⬜ | **A TypeScript plugin shim** for tools whose hooks are in-process plugins: Cline first, then Kilo Code and OpenCode. | Designed: see [the plugin shim](#the-plugin-shim) below. Cline's command hooks are gone: its hooks are now SDK plugin hooks. One small plugin forwards events to `scripts/run.sh`. It has tool decisions, context, usage and result rewrites; `beforeRun` may serve as its prompt hook, to be confirmed. |
@@ -194,7 +194,7 @@ and `till.ts capabilities` prints the lot as JSON. So the work is closing five g
    twice, token usage, tool events and prompt decision). The rest rely on a builder returning `null`,
    which works but leaves no record of what was skipped and why.
 3. **Capabilities a new platform needs are missing.** Nothing says whether a platform has a status line,
-   can be pointed at a proxy (the route in for pennywise on tools with no prompt hook), can deny a tool
+   can be pointed at a proxy (the route in for sommelier on tools with no prompt hook), can deny a tool
    call before it runs (today folded into `tool_output_interception`), or reports cost itself rather than
    tokens.
 4. **Documented only as JSON.** There's no capability table in the docs, and no test that holds a new
@@ -250,7 +250,7 @@ should be written against the contract test before any of its features.
 **Picking the first new adapter.** The contract makes the Priority 1 choice a scoring exercise. For each
 candidate, before writing code, fill in its column of the capability table from its published hook and
 extension docs, then rank by what agentarium could *prevent* there, not just record: `prompt_decision`
-and `tool_decision` first (guards can act), then `token_usage` or `proxy_endpoint` (pennywise and the
+and `tool_decision` first (guards can act), then `token_usage` or `proxy_endpoint` (sommelier and the
 band have figures), then `transcript`. That research is below.
 
 **New ideas from this pass.**
@@ -286,7 +286,7 @@ unreliable, ✗ none, ? not found in the docs.
 **What changed from the first pass**
 
 - **Cline** lost its command hooks and its prompt hook. They moved into SDK plugins, so the adapter
-  becomes a plugin shim, and pennywise reaches Cline through its base URL, not a prompt hook.
+  becomes a plugin shim, and sommelier reaches Cline through its base URL, not a prompt hook.
 - **Cursor** has no token usage in its hook payloads, so the first pass's "usage on `stop`" was wrong.
   The one number it exposes is context size on `preCompact`.
 - **Codex** renamed its feature flag, added hook trust review, and calls its transcript unstable.
@@ -299,7 +299,7 @@ unreliable, ✗ none, ? not found in the docs.
 
 1. **Codex CLI.** Both decisions, context injection, the model in every payload and a custom base URL.
    Its hook schema has the same shape as Claude Code's, so most of the adapter is translation, and
-   pennywise, budget, haggle, diet, groundhog and the band's forecast could all run. Two things to settle
+   sommelier, budget, haggle, diet, groundhog and the band's forecast could all run. Two things to settle
    first: token usage (now settled: `PostModelRequest`) and the trust step, which means `install` must
    tell the user to open `/hooks`. No money figure: costs are `estimated` from tokens.
 2. **Junie CLI.** Moves up from fourth. Both decisions, context on both events, a custom endpoint and
@@ -334,7 +334,7 @@ item, which moves up the table because two of the six platforms depend on it.
 - Cline's plugin docs show no cost per request, so the first-pass idea of reading its reported cost as a
   check on our price table is parked until a real install shows whether the figure exists.
 - Codex's `PreModelRequest` and `PostModelRequest` give a per-request view that no other candidate has,
-  retries included. pennywise's proxy logic (decide per request, learn from failed attempts) could run
+  retries included. sommelier's proxy logic (decide per request, learn from failed attempts) could run
   as a hook there.
 - Several platforms refuse or gate hooks from repository config: Junie ignores a project's
   `.junie/config.json` unless passed explicitly, Codex runs project hooks only in trusted projects and
@@ -353,7 +353,7 @@ gives agentarium measured usage on any tool that can be pointed at a local endpo
 
 **What's already there.**
 
-- **A proxy, but for one API and one job.** `pennywise.ts serve` listens on `127.0.0.1`, rewrites `model` on
+- **A proxy, but for one API and one job.** `sommelier.ts serve` listens on `127.0.0.1`, rewrites `model` on
   `POST /v1/messages` and passes every other path through untouched. The upstream is one URL
   (`AGENTARIUM_ROUTER_UPSTREAM`, default `https://api.anthropic.com`).
 - **It reads nothing back.** `relay` streams the response straight to the client. The proxy logs what it
@@ -391,7 +391,7 @@ gives agentarium measured usage on any tool that can be pointed at a local endpo
    `AGENTARIUM_PROVIDER_UPSTREAMS=anthropic=https://api.anthropic.com,openai=https://api.openai.com,local=http://127.0.0.1:11434`.
    A client picks one by path prefix (`http://127.0.0.1:8787/openai/v1`), so a tool that only takes one
    base URL still works. Keys pass through in the client's own headers: agentarium never stores one.
-   pennywise's routing stays on Anthropic Messages for now, since its tiers are Claude models. On other
+   sommelier's routing stays on Anthropic Messages for now, since its tiers are Claude models. On other
    paths the proxy meters only, until the tiers can name another vendor's models.
 
 3. **Importers for usage the proxy can't see.** `till.ts import <file>` reads a usage or cost export
@@ -436,7 +436,7 @@ error format. That is a guard like any other (`AGENTARIUM_PROVIDER_BUDGET=off`, 
 
 **New ideas from this pass.**
 
-- The meter fixes a gap that exists today: pennywise's proxy already carries Claude Code's real usage
+- The meter fixes a gap that exists today: sommelier's proxy already carries Claude Code's real usage
   and throws it away, then `measureSidechain` reads it back from the transcript. Step 1 is worth doing
   even if no other provider is ever added.
 - Metering in the proxy gives a per-request latency and error rate for every provider, which is what
@@ -453,13 +453,13 @@ It depends on two pieces from the designs above: the provenance label (adapter i
 **What's already there.** More than the item suggests, spread over three reports that each count a different way.
 
 - **`report.ts`** (the weekly report) prices spend from `cost_events` and the ledger, splits it by project and
-  model, and reports what the helpers did. Only pennywise's saving is in money (`saved_usd`, net of hand-offs,
+  model, and reports what the helpers did. Only sommelier's saving is in money (`saved_usd`, net of hand-offs,
   with routes up shown as extra spend). diet's is in tokens (`est_tokens`), groundhog, budget and doggybag are
   counts, and sherlock's figure is waste found, not waste prevented.
 - **`splitthebill.ts`** has eight dimensions (project, developer, agent, category, model, provider, status and
   worktype), a CSV and several databases merged into one team view. Copilot sessions sit in their own section,
   counted in premium requests and never priced. `platform` is a CSV column but not a `--by` dimension.
-- **pennywise** already keeps estimated and measured side by side: `est_routed_usd` and `saved_usd` when it
+- **sommelier** already keeps estimated and measured side by side: `est_routed_usd` and `saved_usd` when it
   routes, `measured_usd` and `measured_saved_usd` once `measureSidechain` has read the transcript. It is the
   only helper that does.
 - **Other savings are computed but not kept.** ballast logs `step_usd`; coldcache works out what the 1-hour
@@ -491,7 +491,7 @@ So the work is one shared way to count, used by every report, not a fourth repor
 
    | Helper | What is priced | Method | Source |
    |---|---|---|---|
-   | pennywise | stay cost minus hand-off minus routed cost | `route` | `measured` once the transcript is read, `estimated` until then |
+   | sommelier | stay cost minus hand-off minus routed cost | `route` | `measured` once the transcript is read, `estimated` until then |
    | diet | blocked result tokens at the session model's input price, carried for the turns left in the context | `tokens-avoided` | `estimated` |
    | groundhog | the median cost of one loop step, times the steps the loop had already repeated | `loop-step` | `estimated` |
    | ballast, doggybag | context dropped, priced at cache-read for the steps the forecast expected | `context-dropped` | `estimated`; `measured` when the next turn's real context is known |
@@ -501,7 +501,7 @@ So the work is one shared way to count, used by every report, not a fourth repor
    saving is claimed where the data isn't there.
 5. **Savings per tool, actual and estimated.** Reports show the two side by side ("£3.10 measured, about £1.40
    more estimated"), never summed into one figure. Routes up and anything else that cost money for quality
-   show as their own line, as pennywise's do now.
+   show as their own line, as sommelier's do now.
 
 **What it changes for the next step's cost.** Two things. The weekly report can end in a change with a price on it
 ("diet saved about £2.20 on Cline this week, groundhog nothing: it is set to `warn`, try `block`"), which is the rule
@@ -513,7 +513,7 @@ Codex or Cline session sits in the same view, their estimates on that platform c
 1. The `spend()` view over the ledger and Copilot telemetry, with `report.ts` and `splitthebill.ts` moved onto
    it and a test that the two agree on the same database.
 2. `platform` as a dimension, and cumulative and month-to-date totals.
-3. The `savings` table with pennywise moved onto it (its estimated and measured columns map straight across).
+3. The `savings` table with sommelier moved onto it (its estimated and measured columns map straight across).
 4. diet and groundhog pricing, each with a fixture that shows the arithmetic.
 5. `provider_events` in the view, once the provider layer's second step lands.
 
@@ -521,7 +521,7 @@ Codex or Cline session sits in the same view, their estimates on that platform c
 
 - diet's saving depends on how many turns the blocked result would have stayed in the context. The forecast's
   "next 10 steps" is a guess for that. A cap at the session's remaining turns, measured after it ends, would be
-  more honest but means updating a row later, as pennywise does.
+  more honest but means updating a row later, as sommelier does.
 - Teams merge databases with `--db a.db --db b.db`. If two people use the same proxy, its rows could be
   counted twice; the view needs a host or developer key on `provider_events` to tell them apart.
 - Should a saving on a platform that bills by request (Copilot) be shown in premium requests saved? diet
@@ -556,7 +556,7 @@ Fields marked ‡ are named in the docs without a schema and need a recorded pay
 
 | Fact | What it means for agentarium |
 |---|---|
-| `SessionEnd` and `Interrupt` time out after 1 s by default, 3 s at most | Our Claude Code `SessionEnd` runs six hooks with 10 to 20 s timeouts. On Codex the end-of-session work (finalize, doggybag, sherlock, haggle close, pennywise learn) moves to `Stop`, which keeps the 600 s default, or is picked up by the next `SessionStart`. `SessionEnd` only writes a marker. |
+| `SessionEnd` and `Interrupt` time out after 1 s by default, 3 s at most | Our Claude Code `SessionEnd` runs six hooks with 10 to 20 s timeouts. On Codex the end-of-session work (finalize, doggybag, sherlock, haggle close, sommelier learn) moves to `Stop`, which keeps the 600 s default, or is picked up by the next `SessionStart`. `SessionEnd` only writes a marker. |
 | Matching command hooks run at the same time | The Claude Code files list `Stop` hooks in an order (finalize before arm before the message). On Codex each event gets one hook: the controller, which already runs helpers in order in one process. |
 | `PreToolUse` can deny or allow with `updatedInput`, never ask | `askTool` returns `null`. blinkers and haggle, which ask on Claude Code, deny with the override in the reason instead, or warn. |
 | `Stop` with `decision: "block"` starts a new turn | No helper may return a block on `Stop` there: it would cost a turn, not save one. The adapter's `Stop` builders return `null`. |
@@ -600,7 +600,7 @@ every Codex figure shows as tokens only.
 | budget | yes | pauses on `UserPromptSubmit` from measured spend once prices exist |
 | ballast, parrot, doggybag | yes | context on `UserPromptSubmit` and `SessionStart` |
 | the band's forecast | in the after-reply `systemMessage` | no status line to put it on |
-| pennywise | records the tier it would pick, routes nothing | the hook can't change the model and the router only speaks Anthropic Messages; see the ideas below |
+| sommelier | records the tier it would pick, routes nothing | the hook can't change the model and the router only speaks Anthropic Messages; see the ideas below |
 | bang-for-buck, taste-test, sherlock | yes, from `Stop` | not from `SessionEnd`: 1 s is too short |
 
 **Install.** `agentarium codex` writes `~/.codex/hooks.json` (user scope, as the scoring section says, since project
@@ -634,7 +634,7 @@ have been tried by hand.
 - `PostModelRequest` is the per-request meter the provider layer wanted, delivered by the platform. Any tool that
   copies Codex's hook set gets measured usage with no proxy, so the contract test should treat a per-request usage
   event as its own capability (`request_usage`) rather than folding it into `token_usage`.
-- pennywise on Codex has a route that the Claude Code hook doesn't need: Codex takes a custom `model_providers`
+- sommelier on Codex has a route that the Claude Code hook doesn't need: Codex takes a custom `model_providers`
   entry, so once the router can speak the OpenAI Responses format it can pick the model per request in front of
   Codex, as the proxy does for Claude Code now. That puts the router's OpenAI support ahead of the
   importers in the provider layer's order.
@@ -751,7 +751,7 @@ But the payloads are thinner than the scoring table assumed:
 - **The way in for money is a custom model profile, not a hook.** A profile in `~/.junie/models/*.json` takes a full
   `baseUrl`, used as-is with no path added, and `apiType: "Anthropic"` (Messages), as well as two OpenAI formats and
   Google. A profile pointed at `agentarium router` is plain Anthropic Messages, which the proxy already speaks: the
-  provider layer's step 1 (the meter) gives measured usage, and pennywise can route per request, with no new parser.
+  provider layer's step 1 (the meter) gives measured usage, and sommelier can route per request, with no new parser.
 
 **Constraints the reference adds.**
 
@@ -800,7 +800,7 @@ which case a session was in.
 | budget | TUI, BYOK or proxy only | pauses on `UserPromptSubmit` once spend is measured or priced |
 | ballast, parrot, doggybag | TUI | context prepended on `UserPromptSubmit`; `SessionStart` ignores `additionalContext`, so doggybag's notes go in on the first prompt instead |
 | the band's forecast | in a `systemMessage` on `UserPromptSubmit` | `Stop`'s `systemMessage` isn't shown yet, so the outlook comes before the next prompt, not after the reply |
-| pennywise | routes, through the proxy profile | the hook can't change the model, but the router can, per request; Junie's hidden helper calls on the smaller model go through it too when `fasterModel` points at the proxy |
+| sommelier | routes, through the proxy profile | the hook can't change the model, but the router can, per request; Junie's hidden helper calls on the smaller model go through it too when `fasterModel` points at the proxy |
 | bang-for-buck, taste-test, sherlock | from `Stop`, or the next `SessionStart` | not from `SessionEnd`: 2 s is too short |
 
 **Install.** `agentarium junie` merges a `hooks` object into `~/.junie/config.json` (one controller line per event,
@@ -825,7 +825,7 @@ the Junie build is Early Access ‡, whether hooks fired in the last session and
   says), or `SessionStart` writes the id against the Junie process found up the parent chain from the hook, and tool
   hooks look it up. A fallback on `anonSessionId(cwd)` is wrong here: tool payloads have no `cwd` either.
 - Does a custom profile with `apiType: "Anthropic"` send prompt caching headers and `cache_control`? If not, routing a
-  Junie session through the proxy is cheaper to measure but dearer to run than the Junie provider, and pennywise
+  Junie session through the proxy is cheaper to measure but dearer to run than the Junie provider, and sommelier
   should say so.
 - Does the Junie provider's own traffic honour `proxies` in `config.json` (the `kind` field suggests named proxy
   types)? If it does, subscription users get measured tokens too, still without money.
@@ -874,9 +874,9 @@ and need a real install.*
 | | What the docs say | What it means for agentarium |
 |---|---|---|
 | Every payload | `conversation_id`, `generation_id`, `model`, `model_id`, `hook_event_name`, `cursor_version`, `workspace_roots`, `user_email`, `transcript_path` | `conversation_id` is the session key (staff say `generation_id` is unreliable outside the IDE †); `cursor_version` is what `observe()` keys on; `user_email` is never stored |
-| `beforeSubmitPrompt` | `prompt`, `attachments`; output `continue`, `user_message` | `prompt_decision` ◐: budget and haggle can stop a prompt. No `additional_context`, so pennywise can't hand off and ballast and parrot can't add a note |
+| `beforeSubmitPrompt` | `prompt`, `attachments`; output `continue`, `user_message` | `prompt_decision` ◐: budget and haggle can stop a prompt. No `additional_context`, so sommelier can't hand off and ballast and parrot can't add a note |
 | `preToolUse` | `tool_name`, `tool_input`; output `permission` `allow` or `deny` (`ask` isn't enforced), `agent_message`, `updated_input` | `tool_decision` ✅ for diet, groundhog, blinkers and haggle's guard. `askTool` returns `null`, since an ask would pass |
-| `postToolUse`, `postToolUseFailure` | `tool_output`, `duration`, `error_message`, `failure_type`; output `additional_context` | `toolOk` is free (a failure has its own event), which feeds pennywise's `missEvidence` |
+| `postToolUse`, `postToolUseFailure` | `tool_output`, `duration`, `error_message`, `failure_type`; output `additional_context` | `toolOk` is free (a failure has its own event), which feeds sommelier's `missEvidence` |
 | `afterAgentResponse` | `text`; † token counts | the usage row per turn; the reply text is never stored |
 | `stop` | `status` (`completed`, `aborted`, `error`), `loop_count`; output `followup_message` | `turn_end`; `followup_message` is how doggybag or the band could speak after a reply |
 | `preCompact` | `context_tokens`, `context_window_size`, `context_usage_percent` | `context_info` ◐, only when a compaction is near |
@@ -904,7 +904,7 @@ adapter ships at `partial` and leans on `observe()`.
    Cursor's native fields (`permission`, `agent_message`, `continue`, `user_message`) and return `null` for `askTool`
    and for `addContext` on the prompt hook.
 3. **One prompt hook does less on Cursor.** The controller runs the steps whose output Cursor honours: budget,
-   haggle's quote as a pause, till recording. pennywise records the tier it would have picked and the saving it
+   haggle's quote as a pause, till recording. sommelier records the tier it would have picked and the saving it
    would have made as `would-route`, so `router status` can show what Cursor is leaving on the table. Routing proper
    waits for the generic provider layer, and Cursor's base URL override goes through Cursor's servers †, so it may never
    arrive. That is stated on the limitations page.
@@ -938,7 +938,7 @@ message works on Claude Code.
 1. Payload detection in the registry and a test that a Cursor payload with `claude-code` on the command line is
    recorded as `cursor`.
 2. The adapter, its fixtures and the contract test, with tool guards and lifecycle only.
-3. Prompt-hook steps that Cursor honours, and pennywise's `would-route` record.
+3. Prompt-hook steps that Cursor honours, and sommelier's `would-route` record.
 4. Usage from `afterAgentResponse` once a fixture shows the field names.
 5. `agentarium cursor` and an integration page with the CLI's gaps listed.
 
@@ -1003,7 +1003,7 @@ turns each in-process hook call into the command call the rest of agentarium alr
 1. **Cline may have a prompt hook after all.** `beforeRun` can stop a run and add context the model sees on its
    first request. If a run starts once per user message, and `snapshot.messages` ends with that message ‡, then
    `beforeRun` is `UserPromptSubmit` by another name, and the controller (budget, haggle, ballast, parrot and
-   pennywise's advice) can run there. That is the first thing to test.
+   sommelier's advice) can run there. That is the first thing to test.
 2. **`afterTool` can rewrite a result.** No other platform lets agentarium change what a tool returned. diet
    today can only refuse a flooding call before it runs; on Cline it could let the call run and cut the result
    to its head and tail with a note, which costs the model one turn less. That is a new mode for diet
@@ -1024,7 +1024,7 @@ turns each in-process hook call into the command call the rest of agentarium alr
   `addContext` returns `{ appendContext }`, `blockPrompt` and `interrupt` return `{ stop: true, reason }`. The shim
   passes back only those keys and drops anything else, so a bug in agentarium can't rewrite a request.
 - **Less in the payload than Cline offers.** `snapshot.messages` is the whole conversation. The shim never sends
-  it: only the message count, the last user message (for pennywise's and haggle's scoring, the same text Claude
+  it: only the message count, the last user message (for sommelier's and haggle's scoring, the same text Claude
   Code's prompt hook already gets) and the usage totals. Tool inputs go through as Claude Code's do. Storage rules
   don't change: no prompt or file text is kept unless `AGENTARIUM_STORE_PROMPT` is on.
 - **A deadline under Cline's.** The shim kills its child process after 2.5 seconds and returns nothing, so Cline
@@ -1067,10 +1067,10 @@ turns each in-process hook call into the command call the rest of agentarium alr
 | budget, haggle, ballast, parrot | ◐ | only if `beforeRun` is per user message |
 | the band's forecast | ◐ | in `appendContext`, not on a status line |
 | till, report, split-the-bill | ✅ tokens, ◐ money | priced when the model has a row in the price table |
-| pennywise | ◐ | through `agentarium router` as Cline's base URL; in the plugin, only if `beforeModel`'s `options` can set the model ‡ |
+| sommelier | ◐ | through `agentarium router` as Cline's base URL; in the plugin, only if `beforeModel`'s `options` can set the model ‡ |
 | cold-snap, coldcache | ✗ for now | no cache figures |
 
-If `beforeModel` can change the model, pennywise on Cline would route per request inside the plugin, the way the
+If `beforeModel` can change the model, sommelier on Cline would route per request inside the plugin, the way the
 proxy does, with no subagent hand-off to pay for. That would make Cline the cheapest place to route of any
 platform, so it is the second thing to test.
 
@@ -1148,7 +1148,7 @@ Two failure rules matter more than any of the above. Timeouts fail open for ever
 - **Tool-output interception moves from `partial` to `native`.** diet on `postToolUse` can return a trimmed
   result and a note of what was cut. On Copilot the note gives tokens ("cut 38,000 tokens of lockfile"), never
   money or premium requests, since trimming a result doesn't save a request.
-- **pennywise still can't route on Copilot.** A note in the prompt can't change Copilot's model, and the
+- **sommelier still can't route on Copilot.** A note in the prompt can't change Copilot's model, and the
   multiplier is set by the model, not by the prompt. The way in remains the generic provider layer where a
   Copilot client takes a base URL.
 - **A crash now costs the user.** Before, every Copilot hook failed open. A `preToolUse` script that throws
@@ -1233,7 +1233,7 @@ And two aren't adapters at all:
 **The ranking**, by what agentarium could prevent there:
 
 1. **Gemini CLI.** The best fit after Codex, and better than Codex in one way: `BeforeModel` can change the
-   model per request, so pennywise can route inside the hook with no proxy and no subagent hand-off. That is
+   model per request, so sommelier can route inside the hook with no proxy and no subagent hand-off. That is
    the cheapest kind of route there is, since the context isn't re-sent. Both decisions, context on the prompt,
    a transcript and fail-open hooks mean budget, haggle, diet, groundhog and the band's forecast all run. One
    thing to settle first: whether `AfterModel`'s input carries `usageMetadata`. If not, usage comes from the
@@ -1247,7 +1247,7 @@ And two aren't adapters at all:
 3. **Google Antigravity.** Strong guards: tool deny with an ask option, and `PreInvocation`, which fires
    before every model call and can end the run. That is a better place for budget than a prompt hook, since it
    catches the tenth call of a long turn too. `modelName` and `transcriptPath` in every payload give the
-   forecast something to work from. Missing: a prompt hook (pennywise can't route) and a working base URL. Its
+   forecast something to work from. Missing: a prompt hook (sommelier can't route) and a working base URL. Its
    payload is camelCase with its own events, so it needs its own adapter, and its output format (`injectSteps`,
    `terminationBehavior`) its own builders.
 4. **Windsurf / Devin Desktop.** Prompt and tool blocking on paper, but nothing confirmed about context,
@@ -1273,7 +1273,7 @@ it should come in step 3 of the provider layer with the two OpenAI ones.
   Zed users get agentarium with no work; if not, the ACP adapters are the place to ask for it. One install
   each answers it.
 - Gemini CLI's `BeforeModel` can swap the model, but does a mid-turn swap keep the cache? On Gemini the
-  cached prefix is per model, so a route down could pay a cold cache, as a Claude subagent does. pennywise's
+  cached prefix is per model, so a route down could pay a cold cache, as a Claude subagent does. sommelier's
   hand-off pricing should apply to it unchanged.
 - Antigravity's CLI doesn't load hooks from its own `settings.json`, only from `hooks.json`. The installer must
   write the right file, and `doctor` should say when hooks sit in the ignored one.
@@ -1359,7 +1359,7 @@ the top of the roadmap, so it is out.
   the importer records it as credits.
 - Replit and Lovable show a per-request cost in the app. If either adds an export or an API, it takes one column
   map to import, so the integrations page should invite a pull request for it.
-- Replit's "intelligent model routing" on Core and Pro is a pennywise of its own. Nothing about it is exposed,
+- Replit's "intelligent model routing" on Core and Pro is a sommelier of its own. Nothing about it is exposed,
   so we can't measure or tune it, only say that it exists.
 
 **New ideas from this pass.**

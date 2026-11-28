@@ -93,7 +93,7 @@ function plainLine(b: Line, nowSec: number) {
     if (o.budget) parts.push(budgetText(o).figure)
     const action = tipAction(o, t)
     if (action && o.tip) parts.push(`→ ${action} saves ~${o.tip.saves}`)
-    if (o.saved) parts.push(`pennywise saved ${o.saved}`)
+    if (o.saved) parts.push(`sommelier saved ${o.saved}`)
   }
   return parts.join('  ·  ')
 }
@@ -233,7 +233,7 @@ export const register: Register = on => {
           {o.tip && action && stat('tip',
             <Text weight="semibold" wrap="end"><Text color="claude">→ </Text>{action}<Text dimColor> saves ~{o.tip.saves}</Text></Text>,
             o.tip.why)}
-          {o.saved && stat('saved', <Text weight="semibold" tabular color={THEME.green}>{o.saved}</Text>, 'saved by pennywise · this session')}
+          {o.saved && stat('saved', <Text weight="semibold" tabular color={THEME.green}>{o.saved}</Text>, 'saved by sommelier · this session')}
         </Box>
       )
     }

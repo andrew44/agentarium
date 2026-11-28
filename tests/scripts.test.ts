@@ -1,4 +1,4 @@
-/** The standalone scripts: coach, dashboard, doggybag, status line, pennywise, the CLI and launchers. */
+/** The standalone scripts: coach, dashboard, doggybag, status line, sommelier, the CLI and launchers. */
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from 'node:fs'
@@ -12,7 +12,7 @@ import { assistant, fakeClaude, ROOT, runScript, SCRIPTS, USAGE, useTemp, user, 
 
 import * as dashboard from '../scripts/dashboard.ts'
 import * as doggybag from '../scripts/doggybag.ts'
-import * as pennywise from '../scripts/pennywise.ts'
+import * as sommelier from '../scripts/sommelier.ts'
 import * as statusline from '../scripts/statusline.ts'
 import * as store from '../agentarium/engine/store.ts'
 import { VERSION } from '../agentarium/index.ts'
@@ -86,7 +86,7 @@ describe('dashboard', () => {
     assert.ok(Math.abs(sum(data.daily.flatMap((d: any) => ['opex', 'capex', 'mixed', 'unknown'].map((k) => d[k]))) - data.spend_usd) < 1e-6)
     assert.ok(['GBP', 'USD', 'EUR'].includes(data.money.code))
     assert.ok(data.activity.saved_usd > 0 && data.activity.stepped_in > 0)
-    assert.equal(data.activity.helpers[0].helper, 'pennywise')
+    assert.equal(data.activity.helpers[0].helper, 'sommelier')
     assert.ok(data.recent.some((r: any) => r.source === 'claude-code' && r.spend > 0))
     assert.ok(data.recent.filter((r: any) => r.source === 'copilot').every((r: any) => r.spend === 0), 'premium requests are never priced')
   })
@@ -404,28 +404,28 @@ describe('status line install', () => {
   })
 })
 
-describe('pennywise', () => {
+describe('sommelier', () => {
   test('score tiers', () => {
     const tiers = ['create a hello world console app', 'add a /health endpoint to the flask api',
       'refactor the auth module across all services and migrate the database schema',
-      'design the architecture for a distributed queue and compare the trade-offs'].map((p) => pennywise.score(p).tier)
+      'design the architecture for a distributed queue and compare the trade-offs'].map((p) => sommelier.score(p).tier)
     assert.deepEqual(tiers, ['SIMPLE', 'MEDIUM', 'COMPLEX', 'REASONING'])
   })
 
   test('the tier map from env', () => withEnv({ AGENTARIUM_ROUTER_TIERS: 'REASONING=fable' }, () => {
-    const r = pennywise.score('design the architecture and compare the trade-offs', 0, pennywise.loadConfig())
+    const r = sommelier.score('design the architecture and compare the trade-offs', 0, sommelier.loadConfig())
     assert.equal(r.model, 'fable')
-    assert.ok(pennywise.resolveModel('fable').startsWith('claude-fable'))
+    assert.ok(sommelier.resolveModel('fable').startsWith('claude-fable'))
   }))
 
   test('tierOf', () => {
-    assert.deepEqual(['claude-haiku-x', 'Sonnet', 'opus', 'claude-fable-5-2', 'gpt-5'].map(pennywise.tierOf), [1, 2, 3, 4, null])
+    assert.deepEqual(['claude-haiku-x', 'Sonnet', 'opus', 'claude-fable-5-2', 'gpt-5'].map(sommelier.tierOf), [1, 2, 3, 4, null])
   })
 
   const handle = (c: Parameters<typeof useTemp>[0], prompt: string, model = 'claude-opus-5-5', mode = 'route') => {
     const t = useTemp(c)
-    return withEnv({ AGENTARIUM_PENNYWISE: mode, ANTHROPIC_BASE_URL: '', AGENTARIUM_DB: join(t.home, 'db.sqlite') },
-      () => pennywise.handle({ session_id: 's', model, prompt }))
+    return withEnv({ AGENTARIUM_SOMMELIER: mode, ANTHROPIC_BASE_URL: '', AGENTARIUM_DB: join(t.home, 'db.sqlite') },
+      () => sommelier.handle({ session_id: 's', model, prompt }))
   }
 
   test('routes a simple prompt down', async (c) => {
@@ -457,7 +457,7 @@ describe('pennywise', () => {
     assert.equal((await handle(c, 'create a hello world console app', 'claude-opus-5-5', 'block'))!.decision, 'block')
   })
 
-  // A budget running down: pennywise routes down harder and stops routing up, before budget's pause.
+  // A budget running down: sommelier routes down harder and stops routing up, before budget's pause.
   const underBudget = (c: Parameters<typeof useTemp>[0], spentUsd: number, prompt: string, model = 'claude-opus-5-5',
     extra: Record<string, string> = {}) => {
     const t = useTemp(c)
@@ -469,15 +469,15 @@ describe('pennywise', () => {
     } finally {
       db.close()
     }
-    return withEnv({ AGENTARIUM_PENNYWISE: 'route', ANTHROPIC_BASE_URL: '', AGENTARIUM_DB: dbPath, AGENTARIUM_CURRENCY: 'USD',
+    return withEnv({ AGENTARIUM_SOMMELIER: 'route', ANTHROPIC_BASE_URL: '', AGENTARIUM_DB: dbPath, AGENTARIUM_CURRENCY: 'USD',
       AGENTARIUM_BUDGET_DAILY: '10', AGENTARIUM_BUDGET_SESSION: undefined, AGENTARIUM_BUDGET_MODE: undefined, ...extra },
-    () => pennywise.handle({ session_id: 's', model, prompt }))
+    () => sommelier.handle({ session_id: 's', model, prompt }))
   }
   const routine = 'add a /health endpoint to the flask api'           // MEDIUM: Sonnet
 
   test('a budget under pressure squeezes the tiers down', async (c) => {
-    assert.equal(pennywise.score(routine).tier, 'MEDIUM')
-    assert.equal(pennywise.score(routine, 0, pennywise.squeezed(pennywise.loadConfig())).tier, 'SIMPLE')
+    assert.equal(sommelier.score(routine).tier, 'MEDIUM')
+    assert.equal(sommelier.score(routine, 0, sommelier.squeezed(sommelier.loadConfig())).tier, 'SIMPLE')
     const calm = (await underBudget(c, 2, routine))!
     assert.ok(calm.hookSpecificOutput.additionalContext.includes('model: "sonnet"'))
     const pressed = (await underBudget(c, 8.5, routine))!                // 85% of the daily limit
@@ -493,32 +493,32 @@ describe('pennywise', () => {
       .includes('model: "opus"'))                                       // a forced model still wins
   })
 
-  test('AGENTARIUM_PENNYWISE_BUDGET=off ignores the budget', async (c) => {
-    const out = (await underBudget(c, 8.5, routine, 'claude-opus-5-5', { AGENTARIUM_PENNYWISE_BUDGET: 'off' }))!
+  test('AGENTARIUM_SOMMELIER_BUDGET=off ignores the budget', async (c) => {
+    const out = (await underBudget(c, 8.5, routine, 'claude-opus-5-5', { AGENTARIUM_SOMMELIER_BUDGET: 'off' }))!
     assert.ok(out.hookSpecificOutput.additionalContext.includes('model: "sonnet"'))
   })
 
   test('the hook command is quiet on bad input', (c) => {
     const t = useTemp(c)
     for (const input of ['', 'nope', '[1]', '{}']) {
-      const p = runScript('pennywise.ts', [], { input, env: t.env() })
+      const p = runScript('sommelier.ts', [], { input, env: t.env() })
       assert.deepEqual([p.status, p.stdout, p.stderr], [0, '', ''])
     }
   })
 })
 
-describe('pennywise proxy', () => {
+describe('sommelier proxy', () => {
   // The proxy spends to the budget too: a squeezed score, and never up from the conversation's model.
   test('routes to the budget', async () => {
     let p: { kind: 'daily' | 'session', pct: number } | null = null
     const sids: string[] = []
-    const router = new pennywise.Router(pennywise.loadConfig(), { pressure: (sid) => (sids.push(sid), p) })
-    const body = (msgs: object[]) => ({ model: 'pennywise', system: 's', messages: msgs })
+    const router = new sommelier.Router(sommelier.loadConfig(), { pressure: (sid) => (sids.push(sid), p) })
+    const body = (msgs: object[]) => ({ model: 'sommelier', system: 's', messages: msgs })
     const routine = { role: 'user', content: 'add a /health endpoint to the flask api' }
     assert.match(router.decide(body([routine]), 100, 0, 'abc')[0], /sonnet/)
     assert.deepEqual(sids, ['abc'])
     p = { kind: 'daily', pct: 85 }
-    const fresh = new pennywise.Router(pennywise.loadConfig(), { pressure: () => p })
+    const fresh = new sommelier.Router(sommelier.loadConfig(), { pressure: () => p })
     const [m, why] = fresh.decide(body([routine]), 100, 0)
     assert.match(m, /haiku/)
     assert.ok(why.includes("today's budget 85% spent"), why)
@@ -535,9 +535,9 @@ describe('pennywise proxy', () => {
   })
 
   test('reads the session id from the header or the metadata', () => {
-    assert.equal(pennywise.sessionId({ 'x-claude-code-session-id': 'abc-1' }, {}), 'abc-1')
-    assert.equal(pennywise.sessionId({}, { metadata: { user_id: 'user_x_account_y_session_0f0e1d2c-aaaa' } }), '0f0e1d2c-aaaa')
-    assert.equal(pennywise.sessionId({}, {}), null)
+    assert.equal(sommelier.sessionId({ 'x-claude-code-session-id': 'abc-1' }, {}), 'abc-1')
+    assert.equal(sommelier.sessionId({}, { metadata: { user_id: 'user_x_account_y_session_0f0e1d2c-aaaa' } }), '0f0e1d2c-aaaa')
+    assert.equal(sommelier.sessionId({}, {}), null)
   })
 
   // The routing proxy against a fake upstream.
@@ -564,10 +564,10 @@ describe('pennywise proxy', () => {
     await new Promise<void>((r) => up.listen(0, '127.0.0.1', r))
     c.after(() => up.close())
     await withEnv({ AGENTARIUM_DB: join(t.home, 'db.sqlite') }, async () => {
-      const srv = await pennywise.serve(0, { upstream: `http://127.0.0.1:${(up.address() as AddressInfo).port}` })
+      const srv = await sommelier.serve(0, { upstream: `http://127.0.0.1:${(up.address() as AddressInfo).port}` })
       c.after(() => srv.close())
       const port = (srv.address() as AddressInfo).port
-      const call = async (msgs: object[], model = 'pennywise') => (await fetch(`http://127.0.0.1:${port}/v1/messages`, {
+      const call = async (msgs: object[], model = 'sommelier') => (await fetch(`http://127.0.0.1:${port}/v1/messages`, {
         method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model, system: 's', messages: msgs }),
       })).text()
 
@@ -583,7 +583,7 @@ describe('pennywise proxy', () => {
       await call([{ role: 'user', content: 'FAIL fix the typo' }])                // haiku fails -> fallback
       await call([first], 'claude-haiku-5-5')                                      // not ours: untouched
       assert.deepEqual(seen.map((m) => m.split('-')[1]), ['haiku', 'haiku', 'opus', 'opus', 'haiku', 'opus', 'haiku'])
-      const health = await (await fetch(`http://127.0.0.1:${port}/pennywise/health`)).json() as any
+      const health = await (await fetch(`http://127.0.0.1:${port}/sommelier/health`)).json() as any
       assert.equal(health.ok, true)
     })
   })

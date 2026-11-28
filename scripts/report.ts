@@ -10,7 +10,7 @@
  *
  * Covers: spend in your currency (GBP, USD or EUR; token-billed platforms only) and how it splits
  * OPEX / CAPEX, by project and by model; cache efficiency; the costliest sessions; and what the
- * other helpers did: pennywise routing and suggestions, doggybags packed, diet blocks, colander's
+ * other helpers did: sommelier routing and suggestions, doggybags packed, diet blocks, colander's
  * strained output, budget pauses. Read-only (the database is opened read-only).
  */
 import { existsSync, statSync } from 'node:fs'
@@ -61,15 +61,15 @@ export function build(dbPath: string, days = 7, money?: [string, string, number]
         .map((r) => ({ day: r.day, spend: round2(r.usd * rate) }))
     }
     const ev = (table: string, sql: string): Obj[] => (tables.has(table) ? db.all(sql, since) : [])
-    const pennywise = Object.fromEntries(ev('pennywise_events', 'SELECT action, COUNT(*) AS n FROM pennywise_events ' +
+    const sommelier = Object.fromEntries(ev('sommelier_events', 'SELECT action, COUNT(*) AS n FROM sommelier_events ' +
       'WHERE substr(ts,1,10) >= ? GROUP BY action').map((r) => [r.action, r.n]))
-    // what the routes were worth, net of hand-offs (pennywise.savings), in the display currency
-    const pwCols = tables.has('pennywise_events') ? new Set(db.all('PRAGMA table_info(pennywise_events)').map((r) => r.name)) : new Set()
+    // what the routes were worth, net of hand-offs (sommelier.savings), in the display currency
+    const pwCols = tables.has('sommelier_events') ? new Set(db.all('PRAGMA table_info(sommelier_events)').map((r) => r.name)) : new Set()
     if (pwCols.has('saved_usd')) {
       const v = db.get('SELECT COALESCE(SUM(CASE WHEN saved_usd>0 THEN saved_usd END),0) AS saved, ' +
-        'COALESCE(-SUM(CASE WHEN saved_usd<0 THEN saved_usd END),0) AS extra FROM pennywise_events WHERE substr(ts,1,10) >= ?', since)
-      pennywise.saved = round2((Number(v?.saved) || 0) * rate)
-      pennywise.extra = round2((Number(v?.extra) || 0) * rate)
+        'COALESCE(-SUM(CASE WHEN saved_usd<0 THEN saved_usd END),0) AS extra FROM sommelier_events WHERE substr(ts,1,10) >= ?', since)
+      sommelier.saved = round2((Number(v?.saved) || 0) * rate)
+      sommelier.extra = round2((Number(v?.extra) || 0) * rate)
     }
     const ho = ev('doggybag_events', 'SELECT COUNT(*) AS n, COALESCE(SUM(context_tokens),0) AS ctx, ' +
       'COALESCE(SUM(handoff_tokens),0) AS bag FROM doggybag_events WHERE substr(ts,1,10) >= ?')[0] ?? { n: 0, ctx: 0, bag: 0 }
@@ -88,13 +88,13 @@ export function build(dbPath: string, days = 7, money?: [string, string, number]
     const value = ev('ledger', "SELECT COUNT(*) AS n, COALESCE(SUM(CASE WHEN primary_outcome != 'none' THEN 1 ELSE 0 END),0) AS p, " +
       "COALESCE(SUM(cost_usd),0) AS c, COALESCE(SUM(CASE WHEN primary_outcome = 'none' THEN cost_usd ELSE 0 END),0) AS w FROM ledger WHERE day >= ?")[0] ??
       { n: 0, p: 0, c: 0, w: 0 }
-    return { rows, spend, daily, pennywise, ho, diet, colander, budget, groundhog, sherlock, haggle, value }
+    return { rows, spend, daily, sommelier, ho, diet, colander, budget, groundhog, sherlock, haggle, value }
   }, { readOnly: true })
   if (data === null) {
     out.reason = 'no-table'
     return out
   }
-  const { rows, spend, daily, pennywise, ho, diet, colander, budget, groundhog, sherlock, haggle, value } = data
+  const { rows, spend, daily, sommelier, ho, diet, colander, budget, groundhog, sherlock, haggle, value } = data
   if (!rows.length && !spend.size) {
     out.reason = 'no-rows'
     return out
@@ -143,7 +143,7 @@ export function build(dbPath: string, days = 7, money?: [string, string, number]
     top_sessions: top.map((r) => ({ session_id: r.session_id, project: basename(String(r.cwd || '').replace(/[/\\]+$/, '')),
       label: r.label, model: r.model, prompts: r.prompt_count || 0, spend: round2(spend.get(r.session_id)! * rate) })),
     helpers: {
-      pennywise,
+      sommelier,
       doggybag: { written: ho.n, context_tokens: ho.ctx, handoff_tokens: ho.bag,
         tokens_avoided_if_used: Math.max(0, ho.ctx - ho.bag) },
       diet: diet.map((d) => ({ rule: d.rule, denied: d.n, est_tokens: d.t })),
@@ -202,10 +202,10 @@ export function markdown(r: Obj): string {
   }
   const h = r.helpers
   L.push('## What the helpers did', '')
-  const pw = h.pennywise
+  const pw = h.sommelier
   const n = (k: string) => pw[k] ?? 0
   const proxied = n('proxy-routed')
-  L.push(`- pennywise: ${n('routed')} prompts routed to a cheaper model, ${n('routed-up')} routed up to a stronger one, ` +
+  L.push(`- sommelier: ${n('routed')} prompts routed to a cheaper model, ${n('routed-up')} routed up to a stronger one, ` +
     (proxied ? `${proxied} turns routed by the proxy (${n('proxy-fallback')} fallbacks), ` : '') +
     `${n('blocked') + n('warned')} cheaper-model suggestions, ${n('overridden')} overridden` +
     (n('escalated') ? `, ${n('escalated')} moved back up after an answer didn't land` : '') +

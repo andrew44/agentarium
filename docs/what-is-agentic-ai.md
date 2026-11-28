@@ -154,7 +154,7 @@ The prompt cache softens this a great deal (re-sent history is billed at about a
 | **Scope creep** | Changes nobody asked for: extra docs, refactors, dependency bumps. | [blinkers](reference.md#blinkers) |
 | **Redundant work** | Files read twice, searches rephrased into the same results, big outputs never used. | [sherlock](reference.md#sherlock) |
 | **Context floods** | Huge files or logs pulled into the context. | [diet](reference.md#diet) |
-| **Over-specced model** | The largest model doing simple steps. | [pennywise](reference.md#pennywise) |
+| **Over-specced model** | The largest model doing simple steps. | [sommelier](reference.md#sommelier) |
 | **Runaway spend** | A task running far past what it is worth. | [budget](reference.md#budget), [haggle](reference.md#haggle) |
 
 ### 2.5 Subagents and multi-agent systems

@@ -2,7 +2,7 @@
 /**
  * agentarium / audit: every "where is it leaking?" check in one report.
  *
- * pennywise, the band and the guard-rails prevent spend as it happens. The audits find what they
+ * sommelier, the band and the guard-rails prevent spend as it happens. The audits find what they
  * can't: the fixed load every request carries, output nobody needed, cold caches, context dragged
  * between tasks, bloated instruction files, work that produced nothing, loops, repeated
  * instructions and creeping cost per task. Each is still its own helper (and command); this runs

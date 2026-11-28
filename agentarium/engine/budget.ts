@@ -154,7 +154,7 @@ export function check(db: Db, sid: string, prompt: string, l: Limits): Decision 
 export type Pressure = { kind: 'daily' | 'session', pct: number }
 
 /** How hard the budget presses: the tighter limit's share spent, once it passes `warnPct`; null below
- *  that or with no limit set. pennywise reads it to route down harder before the limit is reached,
+ *  that or with no limit set. sommelier reads it to route down harder before the limit is reached,
  *  so the pause at 100% is the last resort, not the first line of defence. */
 /** With AGENTARIUM_BUDGET_PROFILE set (the opt-in), mark today in the phase file once the daily
  *  budget passes its warning share, so profile.ts switches to that profile from the next prompt

@@ -17,7 +17,7 @@ sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" crystalball.ts --devs 10 --tasks 20 --
 
 - `--cache 0.7`: share of input read from the prompt cache (agents usually 0.6-0.9; `0` = no caching). `--days 21`: working days a month.
 - From their own data: `--from-history` (then override any option).
-- A routed mix (as pennywise routes): `--mix "haiku=60,sonnet=35,opus=5"`. Growth: `--growth 10 --months 12`.
+- A routed mix (as sommelier routes): `--mix "haiku=60,sonnet=35,opus=5"`. Growth: `--growth 10 --months 12`.
 - Narrow it: `--tier balanced`, `--provider bedrock`, `--model opus` (the reference for sensitivities and growth). Currency: `--currency USD`.
 - If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name crystalball.ts -path "*agentarium*" 2>/dev/null | head -1`.
 

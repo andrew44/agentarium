@@ -381,7 +381,7 @@ describe('hold-up', () => {
       [['vscode', 'block'], ['copilot', 'none']])
   })
 
-  test('the controller runs it before pennywise, and a pause stops the rest', async (c) => {
+  test('the controller runs it before sommelier, and a pause stops the rest', async (c) => {
     const t = useTemp(c)
     const raw = JSON.stringify({ session_id: 'k1', cwd: t.home, prompt: BIG })
     const vars = { AGENTARIUM_DB: t.db, AGENTARIUM_HOME: join(t.home, '.tk'), AGENTARIUM_CONTROLLER_TIMING: 'off', AGENTARIUM_HOLDUP: undefined,
