@@ -1096,7 +1096,7 @@ sent an event.
 - Windows: `run.sh` needs `sh`. Claude Code always has bash there, but a Cline CLI user may not. The shim could
   look for Git Bash, or the rules could allow one Node.js entry point for in-process hosts. This needs a decision
   before step 3.
-- Plugins can also register tools. A `agentarium_budget` tool the model can call to see what's left would put
+- Plugins can also register tools. An `agentarium_budget` tool the model can call to see what's left would put
   the forecast in front of the model when it plans, not only at prompt time. Worth it only if the model uses it
   unprompted; a test task would show that.
 - OpenCode's docs list plugin locations and config but the hook reference page couldn't be read, and third-party

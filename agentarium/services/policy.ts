@@ -192,9 +192,9 @@ export function activity(db: Db, since: string): Activity {
     const held = Number(r?.held) || 0
     add('haggle', { stopped: held, flagged: n - held })
   }
-  if (on('handoff_events')) {
+  if (on('doggybag_events')) {
     const r = db.get('SELECT COUNT(*) AS n, COALESCE(SUM(context_tokens),0) AS ctx, COALESCE(SUM(handoff_tokens),0) AS bag ' +
-      'FROM handoff_events WHERE substr(ts,1,10) >= ?', since)
+      'FROM doggybag_events WHERE substr(ts,1,10) >= ?', since)
     add('doggybag', { stopped: Number(r?.n) || 0, tokens: Math.max(0, (Number(r?.ctx) || 0) - (Number(r?.bag) || 0)) })
   }
   if (on('kettle_events')) {

@@ -51,16 +51,14 @@
  * Config: ~/.agentarium/statusline.json (or $AGENTARIUM_HOME/statusline.json), all optional:
  *   {"theme": "system", "currency": "GBP", "usd_gbp": 0.76, "usd_eur": 0.86, "cache_ttl": null,
  *    "width": 12, "warn": 75, "crit": 90, "band": true}
- *   (statusbar.json, its name before v1.4, is still read and is renamed at the next session start.)
  * Env overrides: AGENTARIUM_THEME, AGENTARIUM_CURRENCY, AGENTARIUM_USD_GBP, AGENTARIUM_USD_EUR,
  *   AGENTARIUM_CACHE_TTL (seconds), AGENTARIUM_STATUSLINE (auto|ask|off), AGENTARIUM_BAND (on|off),
  *   AGENTARIUM_ASCII=1, AGENTARIUM_TIMER_ICONS="full,half,empty" (replaces the pie clock), NO_COLOR.
- *   (AGENTARIUM_STATUSBAR, the old name of AGENTARIUM_STATUSLINE, still works.)
  */
 import { spawnSync } from 'node:child_process'
 import {
   closeSync, copyFileSync, existsSync, fstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, realpathSync,
-  renameSync, statSync, unlinkSync, writeFileSync,
+  renameSync, statSync, writeFileSync,
 } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
@@ -73,11 +71,7 @@ const HOME = homedir()
 const CFG_DIR = process.env.AGENTARIUM_HOME || join(HOME, '.agentarium')
 const CFG_FILE = join(CFG_DIR, 'statusline.json')
 const STATE_FILE = join(CFG_DIR, 'statusline-state.json')
-// Before v1.4 this was the "statusbar"; before v2.0 it was a Python script (statusline.py). Those
-// names are still recognised, and migrate() moves them to the current ones.
-const OLD_CFG_FILE = join(CFG_DIR, 'statusbar.json')
 const COPY_NAME = 'statusline.mts'
-const OLD_NAMES = ['statusbar.py', 'statusline.py']
 const SELF = fileURLToPath(import.meta.url)
 const HERE = dirname(SELF)
 
@@ -124,11 +118,6 @@ function isDir(p: string): boolean {
 function roundHalfEven(x: number): number {
   const r = Math.round(x)
   return Math.abs(x % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r
-}
-
-/** The config to read: statusline.json, or statusbar.json until it has been renamed. */
-export function cfgFile(): string {
-  return existsSync(CFG_FILE) || !existsSync(OLD_CFG_FILE) ? CFG_FILE : OLD_CFG_FILE
 }
 
 export const DEFAULT_CFG: Obj = { theme: 'system', cache_ttl: null, width: 12, warn: 75, crit: 90 }
@@ -211,7 +200,7 @@ function readJson(path: string): unknown {
 export function loadCfg(): Obj {
   const cfg: Obj = { ...DEFAULT_CFG }
   try {
-    const data = readJson(cfgFile())
+    const data = readJson(CFG_FILE)
     if (isObj(data)) Object.assign(cfg, data)
   } catch {
     // no config: the defaults
@@ -1510,7 +1499,7 @@ function message(): number {
 function saveCfg(changes: Obj): void {
   let cfg: Obj = {}
   try {
-    const data = readJson(cfgFile())
+    const data = readJson(CFG_FILE)
     if (isObj(data)) cfg = data
   } catch {
     // start a new one
@@ -1625,49 +1614,14 @@ export function statusLine(target: string): string | null {
 }
 
 export function isOurs(command: string | null): boolean {
-  return Boolean(command) && command!.includes(CFG_DIR) && [COPY_NAME, ...OLD_NAMES].some((n) => command!.includes(n))
+  return Boolean(command) && command!.includes(CFG_DIR) && command!.includes(COPY_NAME)
 }
 
-/** Ours, but still pointing at an older copy (the pre-v1.4 statusbar.py, or the Python statusline.py). */
-function isOld(command: string | null): boolean {
-  return isOurs(command) && !command!.includes(COPY_NAME)
-}
-
-/** AGENTARIUM_STATUSLINE (or its old name AGENTARIUM_STATUSBAR): auto, ask or off. */
-function statuslineMode(): string {
-  for (const name of ['AGENTARIUM_STATUSLINE', 'AGENTARIUM_STATUSBAR']) {
-    const v = (process.env[name] ?? '').trim().toLowerCase()
-    if (v) return v
-  }
-  return ''
-}
+/** AGENTARIUM_STATUSLINE: auto, ask or off. */
+const statuslineMode = () => (process.env.AGENTARIUM_STATUSLINE ?? '').trim().toLowerCase()
 
 const HINT_FILE = join(CFG_DIR, 'statusline-offered')
 const quiet = () => {}
-
-/** Move an older install to the current names. Quiet; never throws.
- *
- *  statusbar.json -> statusline.json, statusbar-offered -> statusline-offered, the CLIs'
- *  statusLine commands re-pointed at statusline.mts, and the old copies and state removed. */
-export function migrate(): void {
-  try {
-    if (existsSync(OLD_CFG_FILE) && !existsSync(CFG_FILE)) renameSync(OLD_CFG_FILE, CFG_FILE)
-    const oldHint = join(CFG_DIR, 'statusbar-offered')
-    if (existsSync(oldHint) && !existsSync(HINT_FILE)) renameSync(oldHint, HINT_FILE)
-    for (const t of ['claude', 'copilot']) if (isOld(statusLine(t))) install(t, { out: quiet })
-    if (!['claude', 'copilot'].some((t) => isOld(statusLine(t)))) {
-      for (const name of [...OLD_NAMES, 'statusbar-state.json']) {
-        try {
-          unlinkSync(join(CFG_DIR, name))
-        } catch {
-          // not there
-        }
-      }
-    }
-  } catch {
-    // never in the way
-  }
-}
 
 /** The command the CLIs run: this Node.js, and the installed copy. */
 function command(): string {
@@ -1706,18 +1660,7 @@ export function install(target: string, opts: { remove?: boolean, keepExisting?:
     writeSettings(path, data)
     out(`${opts.remove ? 'Removed from' : 'Installed in'} ${path} (backup: settings.json.agentarium.bak)`)
   }
-  if (!opts.remove) {
-    if (!['claude', 'copilot'].some((t) => isOld(statusLine(t)))) {   // older copies, if nothing points at them now
-      for (const name of OLD_NAMES) {
-        try {
-          unlinkSync(join(CFG_DIR, name))
-        } catch {
-          // not there
-        }
-      }
-    }
-    out(`Restart the CLI to pick it up. Preview: node "${dest}" --demo --theme light`)
-  }
+  if (!opts.remove) out(`Restart the CLI to pick it up. Preview: node "${dest}" --demo --theme light`)
 }
 
 function status(): number {
@@ -1772,7 +1715,6 @@ function outOfDate(): boolean {
 function sync(): number {
   readPayload()                                             // the hook payload; not needed
   try {
-    migrate()
     const mode = statuslineMode()
     const cmd = statusLine('claude')
     if (isOurs(cmd) || isOurs(statusLine('copilot'))) {

@@ -298,7 +298,7 @@ function seedActivity(db: store.Db, sessions: { sid: string, ts: Date, source: s
             raw_tokens: raw, kept_tokens: kept, saved_usd: (raw - kept) * 3.75 / 1e6, action: 'strained' })
         }
         if (rnd.random() < 0.22) {
-          ins('handoff_events', { session_id: s.sid, ts: at(45), reason: 'cache-expiry', ttl: 300, context_tokens: rnd.int(50_000, 200_000),
+          ins('doggybag_events', { session_id: s.sid, ts: at(45), reason: 'cache-expiry', ttl: 300, context_tokens: rnd.int(50_000, 200_000),
             handoff_tokens: rnd.int(800, 2_500), path: '.doggybag/latest.md' })
         }
       }

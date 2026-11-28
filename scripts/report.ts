@@ -71,8 +71,8 @@ export function build(dbPath: string, days = 7, money?: [string, string, number]
       pennywise.saved = round2((Number(v?.saved) || 0) * rate)
       pennywise.extra = round2((Number(v?.extra) || 0) * rate)
     }
-    const ho = ev('handoff_events', 'SELECT COUNT(*) AS n, COALESCE(SUM(context_tokens),0) AS ctx, ' +
-      'COALESCE(SUM(handoff_tokens),0) AS bag FROM handoff_events WHERE substr(ts,1,10) >= ?')[0] ?? { n: 0, ctx: 0, bag: 0 }
+    const ho = ev('doggybag_events', 'SELECT COUNT(*) AS n, COALESCE(SUM(context_tokens),0) AS ctx, ' +
+      'COALESCE(SUM(handoff_tokens),0) AS bag FROM doggybag_events WHERE substr(ts,1,10) >= ?')[0] ?? { n: 0, ctx: 0, bag: 0 }
     const colander = ev('colander_events', 'SELECT COUNT(*) AS n, COALESCE(SUM(raw_tokens - kept_tokens),0) AS t, ' +
       "COALESCE(SUM(saved_usd),0) AS usd FROM colander_events WHERE substr(ts,1,10) >= ? AND action='strained'")[0] ?? { n: 0, t: 0, usd: 0 }
     const diet = ev('diet_events', 'SELECT rule, COUNT(*) AS n, COALESCE(SUM(est_tokens),0) AS t FROM diet_events ' +

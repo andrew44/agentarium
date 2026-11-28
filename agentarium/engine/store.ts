@@ -14,6 +14,8 @@ export { Db } from './db.ts'
 
 type LabelFn = (o: number, c: number) => string
 
+/** The sessions columns beyond its CREATE TABLE: migrate() adds any a database lacks, so an older
+ *  one catches up. */
 export const SESSION_COLUMNS: [string, string][] = [
   ['input_tokens', 'INTEGER'], ['output_tokens', 'INTEGER'],
   ['cache_creation_tokens', 'INTEGER'], ['cache_read_tokens', 'INTEGER'],
@@ -21,11 +23,9 @@ export const SESSION_COLUMNS: [string, string][] = [
   ['skill_opex', 'INTEGER'], ['skill_capex', 'INTEGER'], ['skill_detail', 'TEXT'],
   ['label_source', 'TEXT'], ['llm_label', 'TEXT'], ['llm_confidence', 'REAL'],
   ['llm_reason', 'TEXT'], ['llm_model', 'TEXT'], ['llm_input_hash', 'TEXT'],
-  // added with the shared engine (v1.1)
   ['billing_model', 'TEXT'],        // anthropic_tokens | copilot_premium_requests | unknown
   ['usage_status', 'TEXT'],         // reported | unavailable
   ['evidence', 'TEXT'],             // transcript | hook-events
-  // added with budget / spend-report (v1.2)
   ['cost_usd', 'REAL'],             // NULL unless the platform bills tokens and reports usage
   ['model', 'TEXT'],                // last model seen
 ]

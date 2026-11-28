@@ -164,7 +164,7 @@ The plugin needs **Node.js 22.18+** on your computer (no packages, no build step
 
 ### GitHub Copilot CLI, or no Node.js: the one-line installer
 
-Sets up Copilot CLI and/or Claude Code (it installs the same plugin), gets Node.js if you need it, and adds a `agentarium` terminal command (`agentarium dashboard`, `report`, `update`, `uninstall`).
+Sets up Copilot CLI and/or Claude Code (it installs the same plugin), gets Node.js if you need it, and adds an `agentarium` terminal command (`agentarium dashboard`, `report`, `update`, `uninstall`).
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh | sh      # macOS / Linux
@@ -331,7 +331,7 @@ Live, on screen, between turns.
 
 ### ✅ Prove and audit: did it work, and where is it still leaking?
 
-The three proof features, then **`agentarium audit`**, which runs every leak check at once and puts the biggest money first. Each check is also its own command. Since v4.0 the helper names take hyphens (`agentarium bang-for-buck`); the old one-word names still work as commands.
+The three proof features, then **`agentarium audit`**, which runs every leak check at once and puts the biggest money first. Each check is also its own command, by its name (`agentarium bang-for-buck`) or as one word (`agentarium bangforbuck`).
 
 | | Helper | What it does | Kind | Claude Code | Copilot CLI |
 |---|---|---|:---:|:---:|:---:|

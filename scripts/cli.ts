@@ -8,7 +8,7 @@
  *   agentarium dashboard [--demo] open the dashboard (runs in the background; --stop to stop it)
  *   agentarium report [--days N]  spend report in the terminal
  *   agentarium statusline [...]   statusline and band options, e.g. --demo, --set-currency USD,
- *                                 --band-off, --status   ("statusbar", the old name, still works)
+ *                                 --band-off, --status
  *   agentarium router [...]       pennywise model router: on | off [--project] (the proxy, in the
  *                                 background), status, learn, eval, serve [--port N], explain "prompt", env
  *   agentarium profile [name]     show the settings in effect; frugal | balanced | quality sets the profile
@@ -46,10 +46,10 @@
  *   agentarium receipt [...]      what the AI work on this branch cost (--trailer for a commit, --markdown for a PR)
  *   agentarium dry-run [...]      what a skill, plugin or MCP server will cost before you install it
  *   agentarium rate-my-prompt "prompt"  a prompt scored out of 10 for what it will cost (--last; alias: judge)
- *   (the names before v4.0 still work: bangforbuck, tastetest, springclean, splitthebill, crystalball,
- *    packlight, coldsnap, allyoucaneat; so do cachebuster, toomanycooks and dryrun)
+ *   (a hyphenated name also works as one word, the way its setting spells it: bangforbuck, coldsnap ...)
  *
  * Signature features: value-meter (bang-for-buck), agent-forensics (sherlock), quality-gate (taste-test).
+ *   agentarium --version          the version installed
  *   agentarium update             fetch the latest version and refresh everything
  *   agentarium uninstall [--purge]  remove it all (--purge also deletes your recorded data)
  *   agentarium setup              (re)do the setup the installer does; idempotent
@@ -68,6 +68,7 @@ import { homedir, tmpdir } from 'node:os'
 import { basename, delimiter, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { VERSION } from '../agentarium/index.ts'
 import { configFile, FILLED, PROFILES, resolve as resolveProfile } from '../agentarium/profile.ts'
 import * as statusline from './statusline.ts'
 import * as controller from './controller.ts'
@@ -290,7 +291,7 @@ function removeLauncher(): void {
 
 function setup(args: string[]): number {
   const wantPlugin = !args.includes('--no-plugin')
-  const wantLine = !args.includes('--no-statusline') && !args.includes('--no-statusbar')   // --no-statusbar: the old name
+  const wantLine = !args.includes('--no-statusline')
   const found = ['claude', 'copilot'].filter(has)
   say('Setting up agentarium')
   say('')
@@ -311,7 +312,6 @@ function setup(args: string[]): number {
     }
     if (wantLine) {
       const lines: string[] = []
-      statusline.migrate()                                   // an older "statusbar" or Python install
       try {
         statusline.install(cli, { keepExisting: true, out: (s) => lines.push(s) })
       } catch (e) {                                          // e.g. settings.json isn't valid JSON
@@ -416,10 +416,10 @@ function uninstall(args: string[]): number {
     return 0
   }
   rmSync(APP_DIR, { recursive: true, force: true })
-  const runtime = join(TK_HOME, 'runtime')                 // the private Node.js (or older Python), if any
+  const runtime = join(TK_HOME, 'runtime')                 // the private Node.js, if any
   if (WINDOWS && isDir(runtime)) deleteLater(runtime)      // it may be running this command
   else rmSync(runtime, { recursive: true, force: true })
-  for (const name of ['statusline.mts', 'statusline.py', 'statusbar.py', 'model-prices.json', 'node', 'python']) {
+  for (const name of ['statusline.mts', 'model-prices.json', 'node']) {
     try {
       unlinkSync(join(TK_HOME, name))
     } catch {
@@ -559,7 +559,7 @@ const xml = (t: string) => t.replaceAll('&', '&amp;').replaceAll('<', '&lt;').re
 /** The VS Code extension as a .vsix, pointing at `root` and at the plugin's version. */
 export function statusVsix(root = dirname(HERE)): Buffer {
   const src = join(dirname(HERE), 'vscode')
-  const version = String(JSON.parse(readFileSync(join(dirname(HERE), 'plugin.json'), 'utf8')).version)
+  const version = VERSION
   const pkg = { ...JSON.parse(readFileSync(join(src, 'package.json'), 'utf8')), version }
   const path = JSON.stringify(root.replaceAll('\\', '/')).slice(1, -1).replaceAll("'", "\\'")
   const code = readFileSync(join(src, 'extension.js'), 'utf8').replace("'${AGENTARIUM_ROOT}'", `'${path}'`)
@@ -660,6 +660,7 @@ function doc(): string {
 function overview(): number {
   say(doc().split('\n\n')[0])
   say('')
+  say(`  version      ${VERSION}`)
   for (const [cli, name] of [['claude', 'Claude Code'], ['copilot', 'Copilot CLI']]) say(`  ${name.padEnd(12)} ${has(cli) ? 'found' : 'not found'}`)
   script('statusline.ts', '--status')
   const db = process.env.AGENTARIUM_DB || join(TK_HOME, 'till.db')
@@ -705,13 +706,12 @@ const TOOLS: Record<string, [string, string[], string[]]> = {
   'dry-run': ['dryrun.ts', [], []],
   'rate-my-prompt': ['ratemyprompt.ts', [], []],
   judge: ['ratemyprompt.ts', [], []],
-  ratemyprompt: ['ratemyprompt.ts', [], []],
   // the signature features, by what they do
   'value-meter': ['bangforbuck.ts', ['report', 'session', 'mark', 'ingest'], ['report']],
   'agent-forensics': ['sherlock.ts', [], []],
   forensics: ['sherlock.ts', [], []],
   'quality-gate': ['tastetest.ts', ['history'], []],
-  // descriptive names for the new helpers
+  // and the rest, by what they do
   'cost-attribution': ['splitthebill.ts', [], []],
   'provider-arbitrage': ['bazaar.ts', ['quote', 'list'], []],
   'scope-guard': ['blinkers.ts', ['check', 'diff'], ['check']],
@@ -724,19 +724,13 @@ const TOOLS: Record<string, [string, string[], string[]]> = {
   'repeated-instructions': ['parrot.ts', ['report'], ['report']],
   'plan-fit': ['allyoucaneat.ts', [], []],
   lessons: ['fishingrod.ts', [], []],
-  // the names before they took hyphens (v4.0)
-  allyoucaneat: ['allyoucaneat.ts', [], []],
-  bangforbuck: ['bangforbuck.ts', ['report', 'session', 'mark', 'ingest'], ['report']],
-  coldsnap: ['coldsnap.ts', [], []],
-  crystalball: ['crystalball.ts', [], []],
-  packlight: ['packlight.ts', [], []],
-  splitthebill: ['splitthebill.ts', [], []],
-  springclean: ['springclean.ts', [], []],
-  tastetest: ['tastetest.ts', ['history'], []],
-  cachebuster: ['cachebuster.ts', ['check'], ['check']],
-  toomanycooks: ['toomanycooks.ts', ['report'], ['report']],
-  dryrun: ['dryrun.ts', [], []],
   'leak-check': ['audit.ts', [], []],
+}
+// A hyphenated helper also answers to its name as one word, the way its script and setting spell
+// it (bang-for-buck: bangforbuck.ts, AGENTARIUM_BANGFORBUCK). The descriptive names don't.
+for (const [name, tool] of Object.entries(TOOLS)) {
+  const one = name.replaceAll('-', '')
+  if (one !== name && tool[0] === `${one}.ts`) TOOLS[one] ??= tool
 }
 
 export async function main(argv: string[]): Promise<number> {
@@ -744,6 +738,10 @@ export async function main(argv: string[]): Promise<number> {
   if (cmd === '' || cmd === 'status' || cmd === 'doctor') return overview()
   if (cmd === '-h' || cmd === '--help' || cmd === 'help') {
     say(doc())
+    return 0
+  }
+  if (cmd === '--version' || cmd === '-v' || cmd === 'version') {
+    say(`agentarium ${VERSION}`)
     return 0
   }
   if (cmd === 'setup') return setup(rest)
@@ -756,7 +754,7 @@ export async function main(argv: string[]): Promise<number> {
     return script('dashboard.ts', ...args)
   }
   if (cmd === 'report') return script('report.ts', ...rest)
-  if (cmd === 'statusline' || cmd === 'statusbar') return script('statusline.ts', ...(rest.length ? rest : ['--status']))   // statusbar: the name before v1.4
+  if (cmd === 'statusline') return script('statusline.ts', ...(rest.length ? rest : ['--status']))
   if (cmd === 'router' || cmd === 'pennywise') {
     if (!rest.length || !['serve', 'explain', 'env', 'on', 'off', 'status', 'learn', 'eval'].includes(rest[0])) {
       say('Usage: agentarium router on|off [--project] | status | learn [--dry-run] [--apply-tiers] | eval [--misses]\n' +

@@ -1,6 +1,6 @@
 {
   "name": "agentarium",
-  "version": "4.3.2",
+  "version": "0.0.1",
   "description": "Make every AI token earn its keep: automated prevention for the whole AI coding session, in three parts. 1) pennywise, the flagship: routes every prompt to the model it needs (Haiku for a rename, Opus for an architecture question), only when the saving beats the cost of the hand-off, harder down as a budget runs out, back up when an answer didn't land, and learns from both; as a hook or a background proxy (agentarium router on). One prompt-time controller makes one decision per prompt with budget, haggle and the guard-rails (diet, groundhog, blinkers, ballast, doggybag, cache-buster, too-many-cooks), and colander strains the passing tests, progress bars and install chatter out of every successful test run, build and install before the model reads it. 2) The band and statusline look forward: the next steps' cost, the budget left (on Copilot, premium requests left and when they run out), the cache risk, the one saving to make, and what pennywise saved. 3) Proof: bang-for-buck (cost per result), sherlock (wasted steps) and taste-test (a quality gate), plus one audit of every leak (pack-light, waffle, cold-snap, ballast, spring-clean, deadwood, groundhog, parrot, waistline), spend reports, split-the-bill, bazaar, crystal-ball, all-you-can-eat and a dashboard. Profiles (frugal, balanced, quality) set it all with one word. Local only: one SQLite file.",
   "types": "./types/index.d.ts",
   "keywords": [

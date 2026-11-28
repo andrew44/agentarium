@@ -195,11 +195,11 @@ There's nothing to do by hand: **every pull request to `main` carries its own ve
 
 Users install from `main`. The marketplace entry (`.claude-plugin/marketplace.json`), `install.sh`, `install.ps1` and `agentarium update` all fetch it, and each merge is a release, so `main` is always the latest version.
 
-- **The bump happens in the pull request.** [version.yml](../.github/workflows/version.yml) works out the next patch (1.3.0 → 1.3.1) and commits `Release v1.3.1` to your branch, raising `version` in both `.claude-plugin/plugin.json` and `plugin.json`. The version matters: Claude Code only sends plugin users an update when it changes.
-- **Merging publishes it.** [release.yml](../.github/workflows/release.yml) runs the tests on `main`, tags `v1.3.1` and publishes the release with generated notes and the installers attached.
-- **Minor or major release?** Raise `version` in both manifests in your pull request (e.g. to `1.4.0`). A version past `main` and the latest tag is kept as it is.
+- **The bump happens in the pull request.** [version.yml](../.github/workflows/version.yml) works out the next patch (0.0.1 → 0.0.2) and commits `Release v0.0.2` to your branch, raising `version` in both `.claude-plugin/plugin.json` and `plugin.json`. The version matters: Claude Code only sends plugin users an update when it changes.
+- **Merging publishes it.** [release.yml](../.github/workflows/release.yml) runs the tests on `main`, tags `v0.0.2` and publishes the release with generated notes and the installers attached.
+- **Minor or major release?** Raise `version` in both manifests in your pull request (e.g. to `0.1.0`). A version past `main` and the latest tag is kept as it is.
 - **Two pull requests open at once** both take the same number. Update the second from `main` before merging and the check bumps it again; turn on "Require branches to be up to date" to enforce that. If one slips through, nothing is released for it and the next pull request moves past it.
-- **Pull requests from forks** can't be pushed to, so the check fails with the version to set: run `node .github/scripts/next_version.ts --write 1.3.1`.
+- **Pull requests from forks** can't be pushed to, so the check fails with the version to set: run `node .github/scripts/next_version.ts --write 0.0.2`.
 - **Price updates** from the weekly workflow bump the patch in their own commit and are released too.
 - **Required checks?** Commits pushed with the default token start no workflows, so the bump commit gets no test run. Add a `RELEASE_TOKEN` secret that can push to the repo and the version workflow uses it instead.
 

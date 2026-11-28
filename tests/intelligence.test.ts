@@ -604,7 +604,7 @@ describe('wiring', () => {
     assert.ok(readFileSync(join(ROOT, 'scripts', 'controller.ts'), 'utf8').includes("import('./blinkers.ts')).main(['prompt', s])"))   // Copilot too
     assert.ok(readFileSync(join(ROOT, 'scripts', 'controller.ts'), 'utf8').includes("import('./blinkers.ts')).main(['prompt'"))       // Claude Code: via the controller
     const cli = readFileSync(join(ROOT, 'scripts', 'cli.ts'), 'utf8')
-    for (const name of ["'split-the-bill'", 'bazaar', 'blinkers', "'crystal-ball'", 'deadwood', "'value-meter'", "'agent-forensics'", "'quality-gate'", 'splitthebill', 'crystalball']) {
+    for (const name of ["'split-the-bill'", 'bazaar', 'blinkers', "'crystal-ball'", 'deadwood', "'value-meter'", "'agent-forensics'", "'quality-gate'"]) {
       assert.ok(cli.includes(`${name}: [`), name)
     }
     for (const name of ['split-the-bill', 'bazaar', 'blinkers', 'crystal-ball', 'deadwood']) {
@@ -614,7 +614,7 @@ describe('wiring', () => {
     assert.ok(GATE_FAILS.has('false-economy') && !GATE_FAILS.has('safe-saving'))
   })
 
-  test('the CLI runs each new tool', (c) => {
+  test('the CLI runs each tool, by its name or as one word', (c) => {
     const t = useTemp(c)
     for (const args of [['crystal-ball', '--devs', '2'], ['bazaar', 'list'], ['split-the-bill'], ['splitthebill'], ['deadwood'], ['spend-simulator', '--json']]) {
       const p = runScript('cli.ts', args, { env: t.env() })

@@ -2,12 +2,12 @@
  * Cost calculation for token-billed platforms (Anthropic). Platform-independent.
  *
  * Overrides come from the same place as the statusline's: "prices" in ~/.agentarium/statusline.json
- * (or $AGENTARIUM_HOME/statusline.json; statusbar.json, its name before v1.4, until it is renamed).
+ * (or $AGENTARIUM_HOME/statusline.json).
  * Converting to the display currency: engine/currency.ts.
  *
  * Copilot bills premium requests, not tokens: nothing here is ever applied to Copilot sessions.
  */
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -15,9 +15,7 @@ import { isObj, type Obj } from '../util.ts'
 import type { TokenUsage } from './evidence.ts'
 
 export function cfg(): Obj {
-  const home = process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium')
-  let path = join(home, 'statusline.json')
-  if (!existsSync(path)) path = join(home, 'statusbar.json')                   // before v1.4
+  const path = join(process.env.AGENTARIUM_HOME || join(homedir(), '.agentarium'), 'statusline.json')
   try {
     const data = JSON.parse(readFileSync(path, 'utf8'))
     return isObj(data) ? data : {}

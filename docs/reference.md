@@ -525,8 +525,7 @@ Type `/clear` (or start a new session in the folder) and the `SessionStart` hook
 - `agentarium doggybag` (or `node scripts/doggybag.ts write`) packs one on demand for the folder's latest session.
 - `AGENTARIUM_DOGGYBAG_INJECT=0` only tells you a doggybag exists instead of loading it.
 - **Before compaction too.** `/compact` and auto-compact replace the conversation with a summary, and a summary drops file names and decisions. The `PreCompact` hook packs a doggybag first (`reason` `compact` or `auto-compact`), and the `SessionStart` hook that follows compaction loads it back as context, so nothing the summary left out is lost. It prints nothing at `PreCompact`: Claude Code would read it as compaction instructions.
-- Each one is logged to the `handoff_events` table (the old name, kept so your history carries over).
-- The old `AGENTARIUM_HANDOFF_*` settings still work.
+- Each one is logged to the `doggybag_events` table.
 - Copilot CLI support is best effort: its hook payload and transcript format are less documented, so the digest may be thinner.
 
 ---
@@ -1281,7 +1280,7 @@ A local web UI over the till database: a headline **% OPEX vs % CAPEX** split ba
 |---|---|---|
 | **Saved** | Spend a helper stopped and could price: pennywise's routes net of the hand-off (the same figure as the statusline and the weekly report), and the cache rebuild behind each edit cache-buster refused (`block` mode). Sending a hard prompt up is shown as what it cost, never subtracted. | `pennywise_events`, `cachebuster_events` |
 | **At stake** | What a notice priced when carrying on was still an option: kettle's cache at risk, too-many-cooks' subagents, cache-buster's warnings, hold-up's pastes. | `kettle_events`, `toomanycooks_events`, `holdup_events` |
-| **Tokens** | Kept out of the context (diet, and hold-up's pastes not sent again), carried into a new task (ballast), or what a `/clear` from a doggybag skips re-writing. | `diet_events`, `holdup_events`, `ballast_events`, `handoff_events` |
+| **Tokens** | Kept out of the context (diet, and hold-up's pastes not sent again), carried into a new task (ballast), or what a `/clear` from a doggybag skips re-writing. | `diet_events`, `holdup_events`, `ballast_events`, `doggybag_events` |
 | **Times** | Loops broken (groundhog), edits questioned (blinkers), prompts paused (budget, hold-up, Copilot premium), tasks quoted and held to their price (haggle), repeated instructions spotted (parrot). | the matching `<name>_events` table, `contracts` |
 
 The headline compares what you spent with what you would have spent without the saved items. Everything is an estimate at list prices. The same figures are available to scripts as `PolicyEngine.activity(db, since)` in `agentarium/services/policy.ts`, and as `activity` in the page's `/api/data`.
@@ -1338,7 +1337,7 @@ sqlite3 ~/.agentarium/till.db "select label, count(*) sessions, sum(input_tokens
 | `outcome_marks` | Outcomes recorded by hand (`bangforbuck.ts mark`) |
 | `contracts` | haggle's quotes, caps and what each task really cost |
 | `tastetest_runs` | Saved taste tests |
-| `pennywise_events`, `handoff_events`, `diet_events`, `budget_events`, `sherlock_events`, `groundhog_events`, `waistline_events` | What each helper did |
+| `pennywise_events`, `doggybag_events`, `diet_events`, `budget_events`, `sherlock_events`, `groundhog_events`, `waistline_events` | What each helper did |
 
 ---
 

@@ -170,8 +170,6 @@ Score thresholds go in `~/.agentarium/router.json` as `"thresholds": {"MEDIUM": 
 | `AGENTARIUM_DOGGYBAG_COLD` | `warn` | On the first prompt after the cache went cold: `warn`, `block` (pause once) or `off`. |
 | `AGENTARIUM_DOGGYBAG_COLD_MIN_TOKENS` | `20000` | Stay quiet about cold prompts in sessions smaller than this. |
 
-The older `AGENTARIUM_HANDOFF_*` names still work.
-
 ### till and data
 
 | Setting | Default | What it does |
@@ -194,7 +192,7 @@ The older `AGENTARIUM_HANDOFF_*` names still work.
 
 | Setting | Default | What it does |
 |---|---|---|
-| `AGENTARIUM_STATUSLINE` | `auto` | The CLI statusline (terminal): what the plugin does at session start when no status line is set. `auto` (or unset) installs the statusline, `ask` shows a one-time tip instead, `off` stays quiet. Someone else's status line is never replaced, and an installed statusline is always kept up to date. `AGENTARIUM_STATUSBAR`, its old name, still works. |
+| `AGENTARIUM_STATUSLINE` | `auto` | The CLI statusline (terminal): what the plugin does at session start when no status line is set. `auto` (or unset) installs the statusline, `ask` shows a one-time tip instead, `off` stays quiet. Someone else's status line is never replaced, and an installed statusline is always kept up to date. |
 | `AGENTARIUM_BAND` | on | The band: `off` hides the line above the prompt box in the desktop app, the VS Code line and after-reply message that stand in for it, the pane's numbers, and Copilot's numbers (VS Code's status bar item and the `agentarium copilot --window` window); `on` shows them. Overrides `--band-off` / `--band-on`. |
 | `AGENTARIUM_OUTLOOK` | on | The forecast row under the terminal statusline: `off` keeps the statusline to one line; `on` shows the row. Overrides `--outlook-off` / `--outlook-on`. |
 | `AGENTARIUM_THEME` | `system` | Statusline colours in the terminal: `light`, `dark` or `system`. |
@@ -257,8 +255,6 @@ For example, Fable 5.2 is $8/$40 per million input/output tokens, Opus 5.5 $4/$2
 | `cache_ttl` | `3600` | Cache lifetime in seconds for the countdown. |
 | `band` | `false` | Hide the band in the desktop app (`--band-off` writes it, `--band-on` sets it back). |
 | `outlook` | `false` | Hide the forecast row under the terminal statusline (`--outlook-off` writes it, `--outlook-on` sets it back). |
-
-Before v1.4 this file was `statusbar.json`. It is still read, and the plugin renames it at the next session start (`agentarium update` does too).
 
 ---
 

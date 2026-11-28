@@ -32,7 +32,7 @@ The user asked: `$ARGUMENTS` (empty means install the statusline for Claude Code
 
 The `run.sh` launcher finds a working Node.js 22.18+ on any OS (including Windows). If `CLAUDE_PLUGIN_ROOT` is empty, locate the script: `find ~/.claude/plugins ~/.copilot -name statusline.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
-If the user says "status bar" or "statusbar" (the old name), they mean the statusline in a terminal and the band in the desktop app; ask which only if it changes what you run.
+If the user says "status bar" or "statusbar", they mean the statusline in a terminal and the band in the desktop app; ask which only if it changes what you run.
 
 ## Before installing the statusline
 

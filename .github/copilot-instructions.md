@@ -40,7 +40,7 @@ If nothing needs changing, say so in the pull request rather than skipping the c
 - Adapters (`agentarium/adapters/`) only translate a platform's hook messages. No scoring or policy in them. Ask the capability registry before relying on a feature.
 - Copilot premium requests are never converted to tokens or money.
 - Hooks are registered in `hooks/hooks.json` and, where Copilot can support them, `copilot-hooks.json`. Always call them through `scripts/run.sh`, never `node` directly.
-- A hook never blocks the user by crashing: it exits 0 and logs errors. Every guard has a `AGENTARIUM_<NAME>=off` switch and records what it did in a `<name>_events` table.
+- A hook never blocks the user by crashing: it exits 0 and logs errors. Every guard has an `AGENTARIUM_<NAME>=off` switch and records what it did in a `<name>_events` table.
 - Privacy: everything stays in `~/.agentarium/`. Never store prompt text, file contents or command text unless the user has opted in.
 - `scripts/statusline.ts` must stay a single self-contained file: `--install` copies it on its own.
 - Do not bump versions for a patch: the version workflow commits the bump to each pull request, and merging to `main` releases it. For a minor or major release, raise `version` in both `.claude-plugin/plugin.json` and `plugin.json`.

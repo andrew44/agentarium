@@ -23,7 +23,7 @@
  *   doggybag.ts write  [source]  Pack one now (manual use; prints its path).
  * Internal: doggybag.ts watch <jobfile> <token>
  *
- * Env (the older AGENTARIUM_HANDOFF_* names still work):
+ * Env:
  *   AGENTARIUM_DOGGYBAG          on (default) | off
  *   AGENTARIUM_DOGGYBAG_LEAD     seconds before expiry to pack (default 60)
  *   AGENTARIUM_DOGGYBAG_DIR      folder name inside the project (default .doggybag); an absolute path
@@ -62,14 +62,8 @@ const EDIT_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit'])
 const TAIL_BYTES = 1_000_000
 const SELF = fileURLToPath(import.meta.url)
 
-/** AGENTARIUM_DOGGYBAG<name>, falling back to the old AGENTARIUM_HANDOFF<name>. */
-function setting(name: string, fallback: string): string {
-  for (const key of ['AGENTARIUM_DOGGYBAG' + name, 'AGENTARIUM_HANDOFF' + name]) {
-    const v = process.env[key]
-    if (v !== undefined && v !== '') return v
-  }
-  return fallback
-}
+/** AGENTARIUM_DOGGYBAG<name>, or `fallback` when unset or empty. */
+const setting = (name: string, fallback: string): string => process.env['AGENTARIUM_DOGGYBAG' + name] || fallback
 
 function intSetting(v: string | undefined, fallback: number): number {
   return v !== undefined && /^\s*[+-]?\d+\s*$/.test(v) ? Number.parseInt(v, 10) : fallback
@@ -395,9 +389,9 @@ export function pack(d: Obj, source: string, reason: string): Meta | null {
   return meta
 }
 
-/** The handoff_events table: one row per doggybag packed. */
+/** The doggybag_events table: one row per doggybag packed. */
 export function ensureHandoffs(db: Db): void {
-  db.exec(`CREATE TABLE IF NOT EXISTS handoff_events(
+  db.exec(`CREATE TABLE IF NOT EXISTS doggybag_events(
     id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, ts TEXT, reason TEXT,
     ttl INTEGER, context_tokens INTEGER, handoff_tokens INTEGER, path TEXT)`)
 }
@@ -406,7 +400,7 @@ function logDb(m: Meta): void {
   try {
     withDb(defaultDbPath(), (db) => {
       ensureHandoffs(db)
-      db.run('INSERT INTO handoff_events(session_id,ts,reason,ttl,context_tokens,handoff_tokens,path) VALUES(?,?,?,?,?,?,?)',
+      db.run('INSERT INTO doggybag_events(session_id,ts,reason,ttl,context_tokens,handoff_tokens,path) VALUES(?,?,?,?,?,?,?)',
         m.session_id, now(), m.reason, m.ttl, m.ctx_tokens, m.handoff_tokens, m.path)
     })
   } catch {

@@ -301,7 +301,7 @@ describe('statusline', () => {
 
 describe('statusline install', () => {
   // --sync is the plugin's SessionStart hook: it offers, auto-installs and refreshes the CLI
-  // statusline, and moves an older ("statusbar", or Python) install to the current names.
+  // statusline.
   function setup(c: Parameters<typeof useTemp>[0]) {
     const t = useTemp(c)
     const h = t.home
@@ -363,7 +363,6 @@ describe('statusline install', () => {
   test('off never offers', (c) => {
     const { run } = setup(c)
     assert.equal(run(['--sync'], { AGENTARIUM_STATUSLINE: 'off' }), '')
-    assert.equal(run(['--sync'], { AGENTARIUM_STATUSBAR: 'off' }), '')    // the old name still works
   })
 
   test('auto installs and refreshes', (c) => {
@@ -395,40 +394,6 @@ describe('statusline install', () => {
     run(['--uninstall', 'claude'])
     assert.ok(JSON.parse(run(['--sync'])).systemMessage.includes('restart Claude Code'))
   })
-
-  for (const [what, oldName, extra] of [
-    ['a pre-v1.4 statusbar install', 'statusbar.py', true],
-    ['a Python statusline install', 'statusline.py', false],
-  ] as [string, string, boolean][]) {
-    test(`migrates ${what}`, (c) => {
-      const { h, run, settings, copy, cmd } = setup(c)
-      const home = join(h, '.agentarium')
-      mkdirSync(home, { recursive: true })
-      const old = join(home, oldName)
-      writeFileSync(old, '# the old copy\n')
-      writeFileSync(join(home, extra ? 'statusbar.json' : 'statusline.json'), JSON.stringify({ currency: 'EUR' }))
-      if (extra) {
-        writeFileSync(join(home, 'statusbar-offered'), 'x')
-        writeFileSync(join(home, 'statusbar-state.json'), '{}')
-      }
-      const copilot = join(h, '.copilot', 'settings.json')
-      for (const [path, flags] of [[settings, {}], [copilot, { feature_flags: { enabled: ['STATUS_LINE'] } }]] as [string, object][]) {
-        mkdirSync(join(path, '..'), { recursive: true })
-        writeFileSync(path, JSON.stringify({ statusLine: { type: 'command', command: `"python3" "${old}"` }, ...flags }))
-      }
-      // still read as ours, and its config, before anything has moved
-      assert.ok(run(['--status']).includes('claude statusline: installed'))
-      assert.ok(run(['--no-color']).includes('€'))
-
-      assert.equal(run(['--sync']), '')
-      for (const path of [settings, copilot]) assert.ok(cmd(path).includes(copy), path)
-      assert.equal(JSON.parse(readFileSync(join(home, 'statusline.json'), 'utf8')).currency, 'EUR')
-      if (extra) assert.ok(existsSync(join(home, 'statusline-offered')))
-      for (const gone of [oldName, 'statusbar.json', 'statusbar-offered', 'statusbar-state.json']) assert.ok(!existsSync(join(home, gone)), gone)
-      assert.ok(statSync(copy).isFile())
-      assert.ok(run(['--no-color']).includes('€'))
-    })
-  }
 })
 
 describe('pennywise', () => {
@@ -688,6 +653,28 @@ describe('the agentarium command', { skip: !POSIX && 'uses a shell-script stand-
     } finally {
       assert.ok(cli('dashboard', '--stop').includes('Stopped'))
     }
+  })
+})
+
+describe('the agentarium command: version and names', () => {
+  const cli = (env: Env, ...args: string[]) => runScript('cli.ts', args, { env, timeout: 60_000 })
+
+  test('--version is the version in the manifests', (c) => {
+    const t = useTemp(c)
+    const version = JSON.parse(readFileSync(join(ROOT, 'plugin.json'), 'utf8')).version
+    for (const flag of ['--version', '-v', 'version']) assert.equal(cli(t.env(), flag).stdout.trim(), `agentarium ${version}`)
+    assert.ok(cli(t.env()).stdout.includes(`version      ${version}`))         // the overview says it too
+  })
+
+  test('a hyphenated helper answers to one word; a descriptive name does not', (c) => {
+    const t = useTemp(c)
+    for (const name of ['bang-for-buck', 'bangforbuck', 'all-you-can-eat', 'allyoucaneat', 'value-meter']) {
+      const p = cli(t.env(), name, '--json')
+      assert.equal(p.status, 0, `${name}: ${p.stderr}`)
+    }
+    const p = cli(t.env(), 'valuemeter')
+    assert.equal(p.status, 2)
+    assert.ok(p.stdout.includes('Unknown command: valuemeter'))
   })
 })
 

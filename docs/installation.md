@@ -110,11 +110,11 @@ How to open a terminal: on a **Mac** press `Cmd + Space`, type `Terminal`, press
 2. **Downloads agentarium** to `~/.agentarium/app` (a plain download, not a git clone).
 3. **Adds the plugin** to every assistant it finds: Claude Code (`claude plugin install`, user scope) and/or GitHub Copilot CLI (`copilot plugin install`).
 4. **Switches on the statusline** for those assistants. If you already have a status line, it's left alone (replace it later with `agentarium statusline --install claude`).
-5. **Adds a `agentarium` command** (in `~/.local/bin` on macOS/Linux, `~/.agentarium/bin` on Windows, put on your PATH for you).
+5. **Adds an `agentarium` command** (in `~/.local/bin` on macOS/Linux, `~/.agentarium/bin` on Windows, put on your PATH for you).
 
 It's safe to run again: it repairs and updates what's there. Want to look before you run? Read [install.sh](../install.sh) and [install.ps1](../install.ps1).
 
-**Options.** Skip parts with `sh -s -- --no-plugin` or `--no-statusline` (on Windows set `$env:AGENTARIUM_SETUP_ARGS = "--no-statusline"` first). To install from a fork, a tag or a branch, set `AGENTARIUM_REPO=your-org/agentarium` or `AGENTARIUM_REF=v1.2.0`. The default is `main`, which is always the latest release.
+**Options.** Skip parts with `sh -s -- --no-plugin` or `--no-statusline` (on Windows set `$env:AGENTARIUM_SETUP_ARGS = "--no-statusline"` first). To install from a fork, a tag or a branch, set `AGENTARIUM_REPO=your-org/agentarium` or `AGENTARIUM_REF=v0.0.1`. The default is `main`, which is always the latest release.
 
 **Check it worked:** run `agentarium`. It shows which assistants it found and where the statusline is installed. In Claude Code, type `/` and look for `/agentarium:coach`; `/hooks` lists the hooks.
 
@@ -125,12 +125,13 @@ It's safe to run again: it repairs and updates what's there. Want to look before
 | `agentarium` | What's installed and where your data is |
 | `agentarium dashboard` | Opens the dashboard in your browser (`--demo` for sample data, `--stop` to stop it) |
 | `agentarium report` | Spend report in the terminal (`--days 30`, `--json`) |
-| `agentarium statusline ...` | Statusline and band options: `--demo`, `--set-currency USD`, `--install both`, `--uninstall claude`, `--band-off` (the old name, `agentarium statusbar`, still works) |
-| `agentarium vscode [folder]` | Adds the VS Code agent hooks to a workspace (`.github/hooks/agentarium.json`); `--remove` takes them out, `--print` shows them, `--force` replaces a changed file. `--band` adds the band to VS Code's status bar (`--band --remove` takes it out) |
+| `agentarium statusline ...` | Statusline and band options: `--demo`, `--set-currency USD`, `--install both`, `--uninstall claude`, `--band-off` |
+| `agentarium vscode [folder]` | Adds the VS Code agent hooks to a workspace (`.github/hooks/agentarium.json`); `--remove` takes them out, `--print` shows them, `--force` replaces a changed file. `--status-bar` puts Copilot's premium requests in VS Code's status bar (`--status-bar --remove` takes it out) |
 | `agentarium copilot` | Copilot's premium requests: left this month, the pace and when they run out (`--json`); `--window` keeps them in a small window, for the GitHub Copilot app (`--window --stop` to stop it) |
 | `agentarium update` | Downloads the latest version and updates the plugins and statusline |
 | `agentarium uninstall` | Removes the plugins, statusline and command (keeps your data; `--purge` deletes it too) |
-| `agentarium bang-for-buck`, `split-the-bill` ... | Runs a helper by name. The names before v4.0 (`bangforbuck`, `splitthebill`, `crystalball`, `coldsnap` and the rest) still work |
+| `agentarium --version` | The version installed |
+| `agentarium bang-for-buck`, `split-the-bill` ... | Runs a helper by name. Each also answers to its name as one word, the way its setting spells it (`bangforbuck`, `splitthebill`, `coldsnap` ...) |
 
 > **Windows:** the commands below work as they are in PowerShell, as long as `node` is on your PATH (the installer's private copy isn't; use the `agentarium` command instead).
 

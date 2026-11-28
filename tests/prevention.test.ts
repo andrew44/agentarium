@@ -805,7 +805,7 @@ describe('audit', () => {
       assert.ok(existsSync(join(SCRIPTS, `${audit.script(s.name)}.ts`)), s.name)
       assert.ok(existsSync(join(ROOT, 'skills', s.name, 'SKILL.md')), s.name)       // the section is named after its skill
     }
-    assert.equal(audit.script('cold-snap'), audit.script('coldsnap'))            // --only takes the old name too
+    assert.equal(audit.script('cold-snap'), audit.script('coldsnap'))            // --only takes the one-word name too
     assert.equal(audit.headline({ a: { overhead_per_month_usd: 12.5, sessions: 400 }, b: [{ cost_usd: 3 }] }), 12.5)
     assert.equal(audit.headline({ sessions: 40 }), 0)
   })
