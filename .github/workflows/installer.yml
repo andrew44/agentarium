@@ -40,18 +40,23 @@ jobs:
           curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/tests/installer_check.ts" -o "$RUNNER_TEMP/check.mts"
           "$(cat ~/.agentarium/node)" "$RUNNER_TEMP/check.mts" --expect-plugin-log "$RUNNER_TEMP/claude.log" \
             ${{ matrix.node == 'standalone' && '--expect-private-node' || '' }}
-      - name: Running it again repairs, and doesn't duplicate anything
+      - name: Running it again repairs, doesn't duplicate anything and keeps the data
         env:
           AGENTARIUM_REPO: ${{ github.repository }}
           AGENTARIUM_REF: ${{ github.sha }}
         run: |
+          db="$HOME/.agentarium/till.db"                    # recorded by the check above, kept by its uninstall
+          [ -f "$db" ] || { echo "no $db to keep"; exit 1; }
+          before=$(shasum "$db" | cut -d' ' -f1)
           curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh" | sh
           curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh" | sh
+          [ "$(shasum "$db" | cut -d' ' -f1)" = "$before" ] || { echo "till.db changed across re-installs"; exit 1; }
           for rc in ~/.zshrc ~/.bashrc ~/.bash_profile ~/.profile; do
             [ -f "$rc" ] || continue
             n=$(grep -c "agentarium installer" "$rc" || true)
             [ "$n" -le 1 ] || { echo "$rc has $n PATH lines"; exit 1; }
           done
+          ! grep -q statusline.mts ~/.claude/settings.json.agentarium.bak || { echo "the settings backup is agentarium's own"; exit 1; }
 
   windows:
     name: windows · ${{ matrix.shell }} · ${{ matrix.node }}
@@ -93,6 +98,24 @@ jobs:
           if ('${{ matrix.node }}' -eq 'standalone') { $extra += '--expect-private-node' }
           & $node $check --expect-plugin-log "$env:RUNNER_TEMP\claude.log" @extra
           if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Running it again repairs, doesn't duplicate anything and keeps the data
+        env:
+          AGENTARIUM_REPO: ${{ github.repository }}
+          AGENTARIUM_REF: ${{ github.sha }}
+        run: |
+          $db = Join-Path $HOME '.agentarium\till.db'        # recorded by the check above, kept by its uninstall
+          if (-not (Test-Path $db)) { Write-Host "no $db to keep"; exit 1 }
+          $before = (Get-FileHash $db).Hash
+          foreach ($i in 1, 2) {
+            irm "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.ps1" | iex
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+          }
+          if ((Get-FileHash $db).Hash -ne $before) { Write-Host 'till.db changed across re-installs'; exit 1 }
+          $bin = Join-Path $HOME '.agentarium\bin'
+          $n = @([Environment]::GetEnvironmentVariable('Path', 'User') -split ';' | Where-Object { $_ -eq $bin }).Count
+          if ($n -ne 1) { Write-Host "the user PATH has $n entries for $bin"; exit 1 }
+          if (-not (Test-Path (Join-Path $HOME '.agentarium\app\scripts\cli.ts'))) { Write-Host 'no app after the re-run'; exit 1 }
+          if (Get-ChildItem (Join-Path $HOME '.agentarium') -Directory -Filter 'app.old-*') { Write-Host 'an old app was left behind'; exit 1 }
 
   real-claude-code:
     # Informational: the installer against the real Claude Code CLI (no login needed for plugins).

@@ -5,7 +5,8 @@
 #
 # Downloads agentarium to ~/.agentarium/app (no git needed), then sets up whichever assistants it
 # finds: the Claude Code / Copilot CLI plugin (skills + hooks), the status line, and an `agentarium`
-# command. It never replaces a status line you already have. Safe to run again to repair.
+# command. It never replaces a status line you already have. Safe to run again: it repairs the app
+# and leaves your recorded data and settings as they are.
 #
 # agentarium is TypeScript run directly by Node.js 22.18 or newer (no build step, no npm install).
 # No Node.js, or an older one? It downloads a private copy into ~/.agentarium/runtime (no admin
@@ -106,10 +107,17 @@ main() {
     tar -xzf "$tmp/src.tar.gz" -C "$tmp/src" || fail "couldn't unpack the download."
     src="$(find "$tmp/src" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
     [ -f "$src/scripts/cli.ts" ] || fail "the download doesn't look like agentarium."
-    rm -rf "$app.new"
+    # Replace only a folder this installer made, and by renaming: the old copy steps aside before the
+    # new one moves in, so a run that stops half-way still leaves a working app. Nothing else in
+    # $home (your recorded data, your settings) is touched.
+    if [ -e "$app" ] && [ ! -f "$app/scripts/cli.ts" ]; then
+        fail "$app exists but isn't an agentarium install; move it out of the way and run this again."
+    fi
+    rm -rf "$app.new" "$app.old"
     mv "$src" "$app.new"
-    rm -rf "$app"
-    mv "$app.new" "$app"
+    if [ -e "$app" ]; then mv "$app" "$app.old"; fi
+    mv "$app.new" "$app" || { [ -e "$app.old" ] && mv "$app.old" "$app"; fail "couldn't put the new copy in place; the old one is kept."; }
+    rm -rf "$app.old"
 
     # 3. Set everything up (plugin, status line, `agentarium` command)
     say ""

@@ -36,7 +36,7 @@ If the user says "status bar" or "statusbar", they mean the status line in a ter
 
 ## Before installing the status line
 
-Run `--status` first. If it reports **another status line** for that CLI, tell the user which command is set and ask before replacing it (`--install` overwrites it; a backup is saved as `settings.json.agentarium.bak`). The band doesn't need this: it shows in the desktop app either way.
+Run `--status` first. If it reports **another status line** for that CLI, tell the user which command is set and ask before replacing it (`--install` overwrites it; the settings as they were before agentarium first changed them stay in `settings.json.agentarium.bak`). The band row doesn't need this: it shows in the desktop app either way.
 
 ## After installing
 

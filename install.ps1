@@ -4,7 +4,8 @@
 #
 # Downloads agentarium to %USERPROFILE%\.agentarium\app (no git needed), then sets up whichever
 # assistants it finds: the Claude Code / Copilot CLI plugin (skills + hooks), the status line, and a
-# `agentarium` command. It never replaces a status line you already have. Safe to run again.
+# `agentarium` command. It never replaces a status line you already have. Safe to run again: it
+# repairs the app and leaves your recorded data and settings as they are.
 #
 # agentarium is TypeScript run directly by Node.js 22.18 or newer (no build step, no npm install).
 # No Node.js, or an older one? It downloads a private copy into %USERPROFILE%\.agentarium\runtime
@@ -72,6 +73,7 @@
     }
 
     $tmp = Join-Path ([IO.Path]::GetTempPath()) ("agentarium-" + [guid]::NewGuid())
+    $stage = $null
     New-Item -ItemType Directory -Path $tmp, $tkHome -Force | Out-Null
     try {
         # 1. Node.js 22.18+ (built-in modules only; nothing gets npm-installed)
@@ -96,13 +98,32 @@
         $zip = Join-Path $tmp 'src.zip'
         try { Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $zip }
         catch { Stop-WithMessage "download failed: $url (check your internet connection and try again)" }
-        Expand-Archive -Path $zip -DestinationPath (Join-Path $tmp 'src') -Force
-        $src = Get-ChildItem (Join-Path $tmp 'src') -Directory | Select-Object -First 1
-        if (-not (Test-Path (Join-Path $src.FullName 'scripts\cli.ts'))) { Stop-WithMessage "the download doesn't look like agentarium." }
-        if (Test-Path $app) { Remove-Item $app -Recurse -Force }
-        Move-Item $src.FullName $app
+        # Unpacked beside the app folder: Move-Item can't move a folder across drives.
+        $stage = Join-Path $tkHome ('.download-' + [guid]::NewGuid())
+        Expand-Archive -Path $zip -DestinationPath $stage -Force
+        $src = Get-ChildItem $stage -Directory | Select-Object -First 1
+        if (-not $src -or -not (Test-Path (Join-Path $src.FullName 'scripts\cli.ts'))) { Stop-WithMessage "the download doesn't look like agentarium." }
+        # Replace only a folder this installer made, and by renaming: a folder with a file open in it
+        # (VS Code's status bar item running a script, a virus scan) refuses the rename before anything
+        # is deleted, so the old copy keeps working. Your recorded data beside it is never touched.
+        if ((Test-Path $app) -and -not (Test-Path (Join-Path $app 'scripts\cli.ts'))) {
+            Stop-WithMessage "$app exists but isn't an agentarium install; move it out of the way and run this again."
+        }
+        Get-ChildItem $tkHome -Directory -Filter 'app.old-*' -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        $old = Join-Path $tkHome ('app.old-' + [guid]::NewGuid())
+        if (Test-Path $app) {
+            try { Move-Item $app $old -ErrorAction Stop }
+            catch { Stop-WithMessage "couldn't replace $app because something has a file in it open (VS Code, or the dashboard: agentarium dashboard --stop). Close it and run this again; nothing was changed." }
+        }
+        try { Move-Item $src.FullName $app -ErrorAction Stop }
+        catch {
+            if (Test-Path $old) { Move-Item $old $app -ErrorAction SilentlyContinue }
+            Stop-WithMessage "couldn't put the new copy in place; the old one is kept."
+        }
+        Remove-Item $old -Recurse -Force -ErrorAction SilentlyContinue   # in use? the next run clears it
     } finally {
         Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+        if ($stage) { Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue }
     }
 
     # 3. Put the `agentarium` command on PATH (for new terminals and this one)

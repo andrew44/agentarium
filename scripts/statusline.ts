@@ -59,7 +59,7 @@
 import { spawnSync } from 'node:child_process'
 import {
   closeSync, copyFileSync, existsSync, fstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, realpathSync,
-  renameSync, statSync, writeFileSync,
+  renameSync, rmSync, statSync, writeFileSync,
 } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
@@ -1540,10 +1540,31 @@ function readSettings(path: string): Obj {
   }
 }
 
-function writeSettings(path: string, data: Obj): void {
-  if (existsSync(path)) copyFileSync(path, join(dirname(path), basename(path) + '.agentarium.bak'))
+/** Where a CLI's settings are kept as they were before agentarium first changed them. */
+export const backupPath = (path: string) => join(dirname(path), basename(path) + '.agentarium.bak')
+
+/** Write a CLI's settings, only if they change. The first change backs the file up to backupPath(),
+ *  and no later one replaces that copy: a re-run never turns the backup into agentarium's own file. */
+function writeSettings(path: string, data: Obj): boolean {
+  let before: string | null = null
+  try {
+    before = readFileSync(path, 'utf8')
+  } catch {
+    // no file before agentarium: an empty one is what it was, so a later change can't back up ours
+    mkdirSync(dirname(path), { recursive: true })
+    if (!existsSync(backupPath(path))) writeFileSync(backupPath(path), '{}\n', 'utf8')
+  }
+  if (before !== null) {
+    try {
+      if (JSON.stringify(JSON.parse(before)) === JSON.stringify(data)) return false
+    } catch {
+      // readSettings refused a file that isn't JSON before this was reached
+    }
+    if (!existsSync(backupPath(path))) copyFileSync(path, backupPath(path))
+  }
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, JSON.stringify(data, null, 2) + '\n', 'utf8')
+  return true
 }
 
 export function settingsPath(target: string): string {
@@ -1568,14 +1589,28 @@ function samePath(a: string, b: string): boolean {
 function copyFiles(): string {
   mkdirSync(CFG_DIR, { recursive: true })
   const dest = installedCopy()
-  if (!samePath(SELF, dest)) copyFileSync(SELF, dest)
+  if (!samePath(SELF, dest)) replaceFile(SELF, dest)
   for (const prices of MODEL_PRICES_FILES.slice(1)) {        // prices travel with it
     if (isFile(prices)) {
-      copyFileSync(prices, join(CFG_DIR, 'model-prices.json'))
+      replaceFile(prices, join(CFG_DIR, 'model-prices.json'))
       break
     }
   }
   return dest
+}
+
+/** Put a copy of `src` at `dest`, unless it's there already: written beside it and renamed into
+ *  place, so the status line, which runs `dest` every second, never reads half a file. */
+function replaceFile(src: string, dest: string): void {
+  if (same(src, dest)) return
+  const tmp = `${dest}.${process.pid}.tmp`
+  copyFileSync(src, tmp)
+  try {
+    renameSync(tmp, dest)
+  } catch {
+    copyFileSync(tmp, dest)                                  // Windows, with dest open this instant
+    rmSync(tmp, { force: true })
+  }
 }
 
 /** The statusLine command in a CLI's settings, or null. Never throws. */
@@ -1678,6 +1713,7 @@ export function install(target: string, opts: { remove?: boolean, keepExisting?:
     if (!targets.length) return
   }
   const dest = opts.remove ? installedCopy() : copyFiles()
+  let changed = false
   for (const t of targets) {
     const path = settingsPath(t)
     const data = readSettings(path)
@@ -1694,10 +1730,15 @@ export function install(target: string, opts: { remove?: boolean, keepExisting?:
         if (!data.feature_flags.enabled.includes('STATUS_LINE')) data.feature_flags.enabled.push('STATUS_LINE')
       }
     }
-    writeSettings(path, data)
-    out(`${opts.remove ? 'Removed from' : 'Installed in'} ${path} (backup: settings.json.agentarium.bak)`)
+    if (!writeSettings(path, data)) {
+      out(`${opts.remove ? 'Not set in' : 'Already set in'} ${path}`)
+      continue
+    }
+    changed = true
+    const bak = existsSync(backupPath(path)) ? ` (as it was before agentarium: ${basename(backupPath(path))})` : ''
+    out(`${opts.remove ? 'Removed from' : 'Installed in'} ${path}${bak}`)
   }
-  if (!opts.remove) out(`Restart the CLI to pick it up. Preview: node "${dest}" --demo --theme light`)
+  if (!opts.remove && changed) out(`Restart the CLI to pick it up. Preview: node "${dest}" --demo --theme light`)
 }
 
 function status(): number {

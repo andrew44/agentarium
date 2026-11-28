@@ -113,7 +113,7 @@ How to open a terminal: on a **Mac** press `Cmd + Space`, type `Terminal`, press
 4. **Switches on the status line** for those assistants. If you already have a status line, it's left alone (replace it later with `agentarium statusline --install claude`).
 5. **Adds an `agentarium` command** (in `~/.local/bin` on macOS/Linux, `~/.agentarium/bin` on Windows, put on your PATH for you).
 
-It's safe to run again: it repairs and updates what's there. Want to look before you run? Read [install.sh](../install.sh) and [install.ps1](../install.ps1).
+It's safe to run again: it repairs and updates the app and changes nothing that's already right. It replaces only `~/.agentarium/app` (and only if that folder is agentarium's), swapping the new copy in so a run that stops half-way leaves the old one working; your recorded data, your settings and your `config.json` are never touched. The first time it changes a CLI's `settings.json` it keeps the file as it was in `settings.json.agentarium.bak`, and nothing replaces that copy later. Want to look before you run? Read [install.sh](../install.sh) and [install.ps1](../install.ps1).
 
 **Options.** Skip parts with `sh -s -- --no-plugin` or `--no-statusline` (on Windows set `$env:AGENTARIUM_SETUP_ARGS = "--no-statusline"` first). To install from a fork, a tag or a branch, set `AGENTARIUM_REPO=your-org/agentarium` or `AGENTARIUM_REF=v0.0.1`. The default is `main`, which is always the latest release.
 

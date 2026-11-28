@@ -66,8 +66,8 @@ import {
   accessSync, appendFileSync, chmodSync, constants, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync,
   renameSync, rmSync, statSync, unlinkSync, writeFileSync,
 } from 'node:fs'
-import { homedir, tmpdir } from 'node:os'
-import { basename, delimiter, dirname, join, resolve } from 'node:path'
+import { homedir } from 'node:os'
+import { basename, delimiter, dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { defaultDbPath } from '../agentarium/config.ts'
@@ -216,11 +216,33 @@ function rcFiles(): string[] {
   return [join(HOME, '.profile')]
 }
 
+/** Write `text` to `path` unless it already says exactly that, so a re-run changes nothing. On Windows
+ *  that matters: `agentarium update` runs setup while cmd.exe is still reading agentarium.cmd. */
+function writeIfChanged(path: string, text: string): void {
+  try {
+    if (readFileSync(path, 'utf8') === text) return
+  } catch {
+    // not there yet
+  }
+  writeFileSync(path, text, 'utf8')
+}
+
+/** An app folder this installer made: replacing or deleting anything else would lose someone's files. */
+export const isApp = (dir: string) => isFile(join(dir, 'scripts', 'cli.ts'))
+
+/** A folder `--purge` must never delete, whatever AGENTARIUM_HOME says: the home folder, one that
+ *  holds it, or the root of a drive. */
+export function unsafeToPurge(dir: string, home = HOME): boolean {
+  const d = real(dir)
+  const h = real(home)
+  return d === h || h.startsWith(d.endsWith(sep) ? d : d + sep) || dirname(d) === d
+}
+
 /** Record this Node.js for scripts/run.sh and the Copilot hooks, so they never have to guess. */
 function rememberNode(): void {
   try {
     mkdirSync(TK_HOME, { recursive: true })
-    writeFileSync(join(TK_HOME, 'node'), process.execPath.replaceAll('\\', '/') + '\n', 'utf8')
+    writeIfChanged(join(TK_HOME, 'node'), process.execPath.replaceAll('\\', '/') + '\n')
   } catch {
     // run.sh will look for one itself
   }
@@ -233,10 +255,10 @@ function installLauncher(): [string, boolean] {
   let path: string
   if (WINDOWS) {
     path = join(d, 'agentarium.cmd')
-    writeFileSync(path, `@"${process.execPath}" ${NODE_FLAGS.join(' ')} "${SELF}" %*\r\n`, 'utf8')
+    writeIfChanged(path, `@"${process.execPath}" ${NODE_FLAGS.join(' ')} "${SELF}" %*\r\n`)
   } else {
     path = join(d, 'agentarium')
-    writeFileSync(path, `#!/bin/sh\nexec "${process.execPath}" ${NODE_FLAGS.join(' ')} "${SELF}" "$@"\n`, 'utf8')
+    writeIfChanged(path, `#!/bin/sh\nexec "${process.execPath}" ${NODE_FLAGS.join(' ')} "${SELF}" "$@"\n`)
     chmodSync(path, 0o755)
   }
   if (onPath(d)) return [path, false]
@@ -253,7 +275,7 @@ function installLauncher(): [string, boolean] {
   if (basename(process.env.SHELL || '') === 'fish') {
     const fish = join(HOME, '.config', 'fish', 'conf.d')
     mkdirSync(fish, { recursive: true })
-    writeFileSync(join(fish, 'agentarium.fish'), `fish_add_path ${d}  ${RC_MARK}\n`, 'utf8')
+    writeIfChanged(join(fish, 'agentarium.fish'), `fish_add_path ${d}  ${RC_MARK}\n`)
   }
   return [path, true]
 }
@@ -363,10 +385,17 @@ function setup(args: string[]): number {
 
 class CliError extends Error {}
 
-/** Fetch REPO@REF into dest (replacing it). fetch() first, then curl. */
-async function download(dest: string): Promise<void> {
-  const url = `https://github.com/${REPO}/archive/${REF}.tar.gz`
-  const tmp = mkdtempSync(join(tmpdir(), 'agentarium-'))
+/** Fetch REPO@REF (fetch() first, then curl) and swap it in at dest. It is unpacked beside dest, since
+ *  a rename from a /tmp on another filesystem fails; the old copy is renamed aside before the new one
+ *  moves in, and put back if that fails, so there is always a working app; and only a folder that is
+ *  an agentarium app is ever replaced. */
+export async function download(dest: string, url = `https://github.com/${REPO}/archive/${REF}.tar.gz`): Promise<void> {
+  if (existsSync(dest) && !isApp(dest)) throw new CliError(`${dest} exists but isn't an agentarium install; move it out of the way and try again.`)
+  mkdirSync(dirname(dest), { recursive: true })
+  for (const f of readdirSync(dirname(dest))) {             // what an earlier run couldn't delete (Windows)
+    if (f.startsWith(`${basename(dest)}.old-`) || f.startsWith('.download-')) rmSync(join(dirname(dest), f), { recursive: true, force: true })
+  }
+  const tmp = mkdtempSync(join(dirname(dest), '.download-'))
   try {
     const tgz = join(tmp, 'src.tar.gz')
     try {
@@ -386,12 +415,26 @@ async function download(dest: string): Promise<void> {
     mkdirSync(out)
     if (spawnSync('tar', ['-xzf', tgz, '-C', out]).status !== 0) throw new CliError("Couldn't unpack the download.")
     const tops = readdirSync(out).map((f) => join(out, f)).filter(isDir)
-    if (tops.length !== 1) throw new CliError("The download doesn't look like agentarium.")
-    const staged = dest + '.new'
-    rmSync(staged, { recursive: true, force: true })
-    renameSync(tops[0], staged)
-    rmSync(dest, { recursive: true, force: true })
-    renameSync(staged, dest)
+    if (tops.length !== 1 || !isApp(tops[0])) throw new CliError("The download doesn't look like agentarium.")
+    const old = `${dest}.old-${process.pid}`
+    if (existsSync(dest)) {
+      try {
+        renameSync(dest, old)
+      } catch {
+        throw new CliError(`Couldn't replace ${dest}: something has a file in it open (VS Code, the dashboard?). Close it and try again; nothing was changed.`)
+      }
+    }
+    try {
+      renameSync(tops[0], dest)
+    } catch (e) {
+      if (existsSync(old)) renameSync(old, dest)            // never leave no app at all
+      throw e
+    }
+    try {
+      rmSync(old, { recursive: true, force: true })
+    } catch {
+      // in use on Windows: the next update clears it
+    }
   } finally {
     rmSync(tmp, { recursive: true, force: true })
   }
@@ -423,13 +466,20 @@ function uninstall(args: string[]): number {
   for (const c of CODE_CLIS.filter(has)) if (run([c, '--uninstall-extension', EXTENSION_ID])) say(`Removed the status bar item from ${c}.`)
   spawnSync(process.execPath, [...NODE_FLAGS, join(HERE, 'dashboard.ts'), '--stop'], { stdio: 'ignore' })
   if (args.includes('--purge')) {
+    if (unsafeToPurge(TK_HOME)) {
+      say(`Not deleting ${TK_HOME}: AGENTARIUM_HOME points at a folder that holds more than agentarium's data. Delete what you mean to by hand.`)
+      return 1
+    }
     rmSync(TK_HOME, { recursive: true, force: true })
     say(`Deleted ${TK_HOME} (all recorded data).`)
     return 0
   }
-  rmSync(APP_DIR, { recursive: true, force: true })
+  if (isApp(APP_DIR)) rmSync(APP_DIR, { recursive: true, force: true })
+  else if (existsSync(APP_DIR)) say(`Left ${APP_DIR} alone: it isn't an agentarium install.`)
   const runtime = join(TK_HOME, 'runtime')                 // the private Node.js, if any
-  if (WINDOWS && isDir(runtime)) deleteLater(runtime)      // it may be running this command
+  if (!isDir(join(runtime, 'node'))) {
+    // none, or not the installer's: leave it
+  } else if (WINDOWS) deleteLater(runtime)                 // it may be running this command
   else rmSync(runtime, { recursive: true, force: true })
   for (const name of ['statusline.mts', 'model-prices.json', 'node']) {
     try {
