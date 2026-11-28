@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.svg" alt="agentarium: see where your AI tokens go, and stop paying for the ones you don't need" width="100%">
+  <img src="docs/assets/banner.svg" alt="agentarium, the AI agent utility ecosystem: make every AI token earn its keep" width="100%">
 </p>
 
 <p align="center">
@@ -14,8 +14,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue" alt="Apache 2.0 licence"></a>
 </p>
 
-<h2 align="center">Make every AI token earn its keep.</h2>
-<h3 align="center">Stop the spend before it happens.<br>Automated prevention for the whole AI coding session, in Claude Code and GitHub Copilot CLI: the right model for every prompt, a forecast of what's coming, and the one change that saves most, before you pay for it.</h3>
+<h2 align="center">The AI agent utility ecosystem.</h2>
+<h3 align="center">Make every AI token earn its keep: stop the spend before it happens.<br>Automated prevention for the whole AI coding session, in Claude Code and GitHub Copilot CLI: the right model for every prompt, a forecast of what's coming, and the one change that saves most, before you pay for it.</h3>
 
 <p align="center">
   <a href="#-install"><b>Install</b></a> ·

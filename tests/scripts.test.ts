@@ -68,6 +68,13 @@ describe('dashboard', () => {
     assert.ok(Object.values(data.totals).reduce((a: number, v: any) => a + v.sessions, 0) > 0)
   })
 
+  test('a path under the home folder is shown as ~/..., anything else as it is', () => {
+    const home = join(sep, 'home', 'ada')
+    assert.equal(dashboard.tilde(join(home, '.agentarium', 'till.db'), home), join('~', '.agentarium', 'till.db'))
+    assert.equal(dashboard.tilde(join(sep, 'home', 'adam', 'till.db'), home), join(sep, 'home', 'adam', 'till.db'))   // not a prefix match
+    assert.equal(dashboard.tilde(join(sep, 'srv', 'till.db'), home), join(sep, 'srv', 'till.db'))
+  })
+
   test('the demo shows spend and what agentarium did', (c) => {
     const t = useTemp(c)
     dashboard.seedDemo(t.db)

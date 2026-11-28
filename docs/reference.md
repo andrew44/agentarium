@@ -1265,7 +1265,7 @@ The band's numbers, and what to do about them, in a **pane beside the chat** (`h
 
 ## dashboard
 
-A local web UI over the till database: a headline **% OPEX vs % CAPEX** split bar, what you spent and what agentarium saved, **what agentarium did**, daily trend, per-project split, skills used and recent sessions. Switch the measure between spend, tokens, sessions and prompts, and the range between 7d, 30d, 90d and all time. Light and dark mode follow your system.
+A local web UI over the till database: a headline **% OPEX vs % CAPEX** split bar, what you spent and what agentarium saved, **what agentarium did**, daily trend, per-project split, skills used and recent sessions. Switch the measure between spend, tokens, sessions and prompts, and the range between 7d, 30d, 90d and all time. Light and dark mode follow your system. The header names the database with your home folder as `~` (`~/.agentarium/till.db`), so a screenshot doesn't show your username.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/dashboard-dark.png">

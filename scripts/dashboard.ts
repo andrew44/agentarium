@@ -27,7 +27,7 @@ import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, 
 import { createServer } from 'node:http'
 import { connect as netConnect } from 'node:net'
 import { homedir, tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { defaultDbPath } from '../agentarium/config.ts'
@@ -69,8 +69,13 @@ function shiftDays(d: Date, n: number): Date {
   return x
 }
 
+/** A path under the home folder as ~/...: shorter, and a screenshot of the page doesn't show your username. */
+export function tilde(path: string, home = homedir()): string {
+  return path === home || path.startsWith(home + sep) ? `~${path.slice(home.length)}` : path
+}
+
 export function build(dbPath: string, days: number): Obj {
-  if (!(existsSync(dbPath) && statSync(dbPath).isFile())) return { empty: true, db_path: dbPath, reason: 'no-database' }
+  if (!(existsSync(dbPath) && statSync(dbPath).isFile())) return { empty: true, db_path: tilde(dbPath), reason: 'no-database' }
   const cutoff = days ? today(shiftDays(new Date(), -(days - 1))) : null
   const since = cutoff ?? '0000-00-00'
   const got = withDb(dbPath, (db) => {
@@ -84,7 +89,7 @@ export function build(dbPath: string, days: number): Obj {
       ? db.all('SELECT session_id, day, SUM(usd) AS usd FROM cost_events WHERE day >= ? GROUP BY session_id, day', since) : []
     return { rows, costs, activity: PolicyEngine.activity(db, since) }
   }, { readOnly: true })                               // the server is long-running: never leak handles
-  if (got === null) return { empty: true, db_path: dbPath, reason: 'no-table' }
+  if (got === null) return { empty: true, db_path: tilde(dbPath), reason: 'no-table' }
   const { costs, activity } = got
   const bySid = new Map(got.rows.map((r) => [r.session_id, r]))
   const rows = got.rows.filter((r) => !cutoff || String(r.first_seen || '').slice(0, 10) >= cutoff)
@@ -155,7 +160,7 @@ export function build(dbPath: string, days: number): Obj {
   const [code, symbol, rate] = currency.current()
   return {
     empty: !rows.length && !spendUsd && !activity.stepped_in, reason: rows.length || spendUsd || activity.stepped_in ? null : 'no-rows',
-    db_path: dbPath, days,
+    db_path: tilde(dbPath), days,
     generated: new Date().toISOString(),
     money: { code, symbol, rate },
     spend_usd: spendUsd,
