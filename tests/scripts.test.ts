@@ -8,13 +8,14 @@ import { join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, test } from 'node:test'
 
-import { assistant, ROOT, runScript, SCRIPTS, USAGE, useTemp, user, withEnv, writeTranscript, type Env, type TempEnv } from './helpers.ts'
+import { assistant, fakeClaude, ROOT, runScript, SCRIPTS, USAGE, useTemp, user, withEnv, writeTranscript, type Env, type TempEnv } from './helpers.ts'
 
 import * as dashboard from '../scripts/dashboard.ts'
 import * as doggybag from '../scripts/doggybag.ts'
 import * as pennywise from '../scripts/pennywise.ts'
 import * as statusline from '../scripts/statusline.ts'
 import * as store from '../agentarium/engine/store.ts'
+import { VERSION } from '../agentarium/index.ts'
 import { today } from '../agentarium/util.ts'
 
 const POSIX = process.platform !== 'win32'
@@ -594,8 +595,7 @@ describe('the agentarium command', { skip: !POSIX && 'uses a shell-script stand-
     const h = t.home
     const fakebin = t.mkdir('fakebin')
     const log = join(h, 'claude.log')
-    writeFileSync(join(fakebin, 'claude'), `#!/bin/sh\necho "$*" >> "${log}"\n`)
-    chmodSync(join(fakebin, 'claude'), 0o755)
+    fakeClaude(fakebin, log, { latest: VERSION })
     const env: Env = t.env({ AGENTARIUM_HOME: join(h, '.agentarium'), CLAUDE_CONFIG_DIR: join(h, '.claude'),
       COPILOT_HOME: join(h, '.copilot'), SHELL: '/bin/bash', PATH: `${fakebin}:/usr/bin:/bin` })
     const settings = join(h, '.claude', 'settings.json')
@@ -609,7 +609,7 @@ describe('the agentarium command', { skip: !POSIX && 'uses a shell-script stand-
 
   test('setup installs the plugin, the status line and the launcher', (c) => {
     const { h, settings, log, cli } = setup(c)
-    assert.ok(cli('setup').includes('plugin installed'))
+    assert.ok(cli('setup').includes(`plugin ${VERSION} installed`))
     assert.ok(readFileSync(log, 'utf8').includes('plugin install agentarium@agentarium'))
     assert.ok(JSON.parse(readFileSync(settings, 'utf8')).statusLine.command.includes('statusline.mts'))
     const launcher = join(h, '.local', 'bin', 'agentarium')

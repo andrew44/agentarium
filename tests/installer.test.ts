@@ -8,7 +8,7 @@ import type { AddressInfo } from 'node:net'
 import { dirname, join, parse, sep } from 'node:path'
 import { describe, test } from 'node:test'
 
-import { runScript, useTemp, withEnv, type Env } from './helpers.ts'
+import { fakeClaude, runScript, useTemp, withEnv, type Env } from './helpers.ts'
 
 import { guardUpgrade, keepCount, prune, snapshot, versionNumber } from '../agentarium/engine/backup.ts'
 import { Db } from '../agentarium/engine/db.ts'
@@ -19,12 +19,13 @@ import { download, holdsDb, isApp, unsafeToPurge } from '../scripts/cli.ts'
 const POSIX = process.platform !== 'win32'
 
 /** A home with a stand-in `claude`, the way the installer finds one, and the user's own settings. */
-function machine(c: Parameters<typeof useTemp>[0], settings: object | null = { theme: 'dark', env: { MY_VAR: '1' } }) {
+function machine(c: Parameters<typeof useTemp>[0], settings: object | null = { theme: 'dark', env: { MY_VAR: '1' } },
+  plugin: { installed?: string, updates?: boolean } = {}) {
   const t = useTemp(c)
   const h = t.home
   const fakebin = t.mkdir('fakebin')
-  writeFileSync(join(fakebin, 'claude'), '#!/bin/sh\nexit 0\n')
-  chmodSync(join(fakebin, 'claude'), 0o755)
+  const log = join(h, 'claude.log')
+  fakeClaude(fakebin, log, { latest: VERSION, ...plugin })
   const env: Env = t.env({ AGENTARIUM_HOME: join(h, '.agentarium'), CLAUDE_CONFIG_DIR: join(h, '.claude'),
     COPILOT_HOME: join(h, '.copilot'), SHELL: '/bin/bash', PATH: `${fakebin}:/usr/bin:/bin` })
   const claudeSettings = join(h, '.claude', 'settings.json')
@@ -37,7 +38,7 @@ function machine(c: Parameters<typeof useTemp>[0], settings: object | null = { t
     assert.equal(p.status, 0, p.stdout + p.stderr)
     return p.stdout
   }
-  return { t, h, env, claudeSettings, backup: `${claudeSettings}.agentarium.bak`, cli }
+  return { t, h, fakebin, log, env, claudeSettings, backup: `${claudeSettings}.agentarium.bak`, cli }
 }
 
 const mtime = (p: string) => statSync(p).mtimeMs
@@ -84,6 +85,46 @@ describe('running setup again', { skip: !POSIX && 'uses a shell-script stand-in 
     assert.equal(p.status, 1, p.stdout + p.stderr)
     assert.ok(p.stdout.includes('Not deleting'), p.stdout)
     assert.equal(readFileSync(join(h, 'precious.txt'), 'utf8'), 'mine')
+  })
+})
+
+describe('running the installer ends with the latest version', { skip: !POSIX && 'uses shell-script stand-ins for claude and code' }, () => {
+  test('a first run installs the plugin', (c) => {
+    const { log, cli } = machine(c)
+    assert.ok(cli('setup').includes(`plugin ${VERSION} installed`))
+    assert.match(readFileSync(log, 'utf8'), /plugin update agentarium@agentarium\n(.*\n)*plugin install agentarium@agentarium/)
+  })
+
+  test('a re-run updates an older plugin rather than leaving it (install alone keeps the old one)', (c) => {
+    const { log, cli } = machine(c, undefined, { installed: '0.0.0' })
+    const out = cli('setup')
+    assert.ok(out.includes(`plugin ${VERSION} installed`), out)
+    const calls = readFileSync(log, 'utf8')
+    assert.ok(calls.includes('plugin marketplace update agentarium'), 'the latest listing first')
+    assert.ok(calls.includes('plugin update agentarium@agentarium'))
+    assert.ok(!calls.includes('plugin install agentarium@agentarium'), calls)
+  })
+
+  test('says so when Claude Code still has an older one', (c) => {
+    const { cli } = machine(c, undefined, { installed: '0.0.0', updates: false })
+    const out = cli('setup')
+    assert.ok(out.includes(`! Claude Code: plugin 0.0.0 installed, but ${VERSION} is the latest`), out)
+    assert.ok(out.includes('claude plugin update agentarium@agentarium'))
+  })
+
+  test("brings VS Code's status bar item up to date, if it was added", (c) => {
+    const { h, fakebin, cli } = machine(c)
+    const codeLog = join(h, 'code.log')
+    const listed = join(h, 'code-listed')
+    writeFileSync(join(fakebin, 'code'), `#!/bin/sh\necho "$*" >> "${codeLog}"\n[ "$1" = --list-extensions ] && cat "${listed}"\nexit 0\n`)
+    chmodSync(join(fakebin, 'code'), 0o755)
+    writeFileSync(listed, 'ms-python.python@2026.1.0\nagentarium.agentarium-status@0.0.0\n')
+    assert.ok(cli('setup').includes(`status bar item updated to ${VERSION}`))
+    assert.match(readFileSync(codeLog, 'utf8'), /--install-extension .*agentarium-status\.vsix --force/)
+    writeFileSync(listed, `agentarium.agentarium-status@${VERSION}\n`)
+    writeFileSync(codeLog, '')
+    assert.ok(!cli('setup').includes('status bar item updated'))
+    assert.ok(!readFileSync(codeLog, 'utf8').includes('--install-extension'), 'already current: left as it is')
   })
 })
 

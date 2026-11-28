@@ -71,7 +71,8 @@ async function main(args: string[]): Promise<void> {
   const logArg = args.indexOf('--expect-plugin-log')
   if (logArg >= 0) {
     const log = readFileSync(args[logArg + 1], 'utf8')
-    ok(log.includes('plugin install agentarium@agentarium'), 'the installer added the Claude Code plugin', log)
+    // the stand-in exits 0 for everything, so `plugin update` (tried first, for an installed plugin) answers
+    ok(/plugin (update|install) agentarium@agentarium/.test(log), 'the installer added the Claude Code plugin', log)
   }
 
   // 2. The status line renders through the exact command written to settings.json

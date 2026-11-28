@@ -57,8 +57,9 @@
  *                                 setup does it by itself the first time)
  *
  * Setup does, for each assistant it finds on this computer:
- *   Claude Code  -> adds the plugin (skills + hooks + its row in the apps' band) and the status line
- *   Copilot CLI  -> adds the plugin and the status line
+ *   Claude Code  -> adds the plugin, or updates it to the latest (skills + hooks + its row in the apps'
+ *                   band), and the status line
+ *   Copilot CLI  -> adds or updates the plugin, and the status line
  * It never replaces a status line you already have. Node.js 22.18+, built-ins only.
  */
 import { spawn, spawnSync } from 'node:child_process'
@@ -71,6 +72,7 @@ import { basename, delimiter, dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { defaultDbPath } from '../agentarium/config.ts'
+import { versionNumber } from '../agentarium/engine/backup.ts'
 import { VERSION } from '../agentarium/index.ts'
 import { configFile, FILLED, PROFILES, resolve as resolveProfile } from '../agentarium/profile.ts'
 import * as statusline from './statusline.ts'
@@ -132,23 +134,27 @@ export function which(cmd: string): string | null {
   return null
 }
 
-/** Run a command; true on success. Never reads our stdin (the installer may be piped in). */
-function run(cmd: string[], quiet = true): boolean {
+/** Run a command: its exit status and what it printed, or null when it can't start. Never reads our
+ *  stdin (the installer may be piped in). */
+function exec(cmd: string[], quiet = true): { ok: boolean, stdout: string } | null {
   const exe = which(cmd[0])          // on Windows `claude` is often claude.cmd, which needs a shell
-  if (!exe) return false
+  if (!exe) return null
   try {
     const stdio: ('ignore' | 'pipe' | 'inherit')[] = ['ignore', quiet ? 'pipe' : 'inherit', quiet ? 'pipe' : 'inherit']
     // A .cmd/.bat only runs through cmd.exe: hand it one quoted command line (passing an args
     // array with shell: true is deprecated, as the args aren't escaped).
     const p = WINDOWS && /\.(cmd|bat)$/i.test(exe)
       ? spawnSync([exe, ...cmd.slice(1)].map((a) => (/[\s"&|<>^]/.test(a) ? `"${a.replaceAll('"', '""')}"` : a)).join(' '),
-        { stdio, timeout: 300_000, shell: true, windowsHide: true })
-      : spawnSync(exe, cmd.slice(1), { stdio, timeout: 300_000, windowsHide: true })
-    return p.status === 0
+        { stdio, timeout: 300_000, shell: true, windowsHide: true, encoding: 'utf8' })
+      : spawnSync(exe, cmd.slice(1), { stdio, timeout: 300_000, windowsHide: true, encoding: 'utf8' })
+    return { ok: p.status === 0, stdout: String(p.stdout ?? '') }
   } catch {
-    return false
+    return null
   }
 }
+
+/** Run a command; true on success. */
+const run = (cmd: string[], quiet = true): boolean => exec(cmd, quiet)?.ok ?? false
 
 function script(name: string, ...args: string[]): number {
   const p = spawnSync(process.execPath, [...NODE_FLAGS, join(HERE, name), ...args], { stdio: ['ignore', 'inherit', 'inherit'] })
@@ -166,14 +172,12 @@ function piped(name: string, ...args: string[]): number {
 const has = (cli: string) => which(cli) !== null
 
 function claudePlugin(action: 'install' | 'update' | 'uninstall'): boolean {
-  if (action === 'install') {
-    run(['claude', 'plugin', 'marketplace', 'add', REPO])
-    run(['claude', 'plugin', 'marketplace', 'update', MARKETPLACE])
-    return run(['claude', 'plugin', 'install', PLUGIN]) || run(['claude', 'plugin', 'update', PLUGIN])
-  }
-  if (action === 'update') {
-    run(['claude', 'plugin', 'marketplace', 'update', MARKETPLACE])
-    return run(['claude', 'plugin', 'update', PLUGIN])
+  if (action !== 'uninstall') {
+    if (action === 'install') run(['claude', 'plugin', 'marketplace', 'add', REPO])
+    run(['claude', 'plugin', 'marketplace', 'update', MARKETPLACE])          // the latest listing
+    // update first: `plugin install` leaves an installed plugin at its old version and exits 0;
+    // `plugin update` moves it to the latest, and fails when there is none to update
+    return run(['claude', 'plugin', 'update', PLUGIN]) || (action === 'install' && run(['claude', 'plugin', 'install', PLUGIN]))
   }
   const ok = run(['claude', 'plugin', 'uninstall', PLUGIN])
   run(['claude', 'plugin', 'marketplace', 'remove', MARKETPLACE])
@@ -181,9 +185,20 @@ function claudePlugin(action: 'install' | 'update' | 'uninstall'): boolean {
 }
 
 function copilotPlugin(action: 'install' | 'update' | 'uninstall'): boolean {
-  if (action === 'install') return run(['copilot', 'plugin', 'install', REPO]) || run(['copilot', 'plugin', 'update', 'agentarium'])
-  if (action === 'update') return run(['copilot', 'plugin', 'update', 'agentarium']) || run(['copilot', 'plugin', 'install', REPO])
+  // update first here too, so an installed plugin moves to the latest rather than staying put
+  if (action !== 'uninstall') return run(['copilot', 'plugin', 'update', 'agentarium']) || run(['copilot', 'plugin', 'install', REPO])
   return run(['copilot', 'plugin', 'uninstall', 'agentarium'])
+}
+
+/** The agentarium version Claude Code has installed (`claude plugin list --json`), or null. */
+function claudePluginVersion(): string | null {
+  try {
+    const list = JSON.parse(exec(['claude', 'plugin', 'list', '--json'])?.stdout || '[]')
+    const ours = Array.isArray(list) ? list.find((p) => p?.id === PLUGIN) : null
+    return typeof ours?.version === 'string' && ours.version !== 'unknown' ? ours.version : null
+  } catch {
+    return null
+  }
 }
 
 // ---- the `agentarium` launcher ------------------------------------------------------------------
@@ -325,7 +340,7 @@ function setup(args: string[]): number {
   const wantPlugin = !args.includes('--no-plugin')
   const wantLine = !args.includes('--no-statusline')
   const found = ['claude', 'copilot'].filter(has)
-  say('Setting up agentarium')
+  say(`Setting up agentarium ${VERSION}`)
   say('')
   if (!found.length) {
     say("  ! Neither Claude Code ('claude') nor GitHub Copilot CLI ('copilot') was found on PATH.")
@@ -335,7 +350,12 @@ function setup(args: string[]): number {
     const name = cli === 'claude' ? 'Claude Code' : 'Copilot CLI'
     if (wantPlugin) {
       if (cli === 'claude' ? claudePlugin('install') : copilotPlugin('install')) {
-        say(`  ✓ ${name}: plugin installed (skills + hooks)`)
+        const v = cli === 'claude' ? claudePluginVersion() : null
+        if (v && versionNumber(v) < versionNumber(VERSION)) {
+          say(`  ! ${name}: plugin ${v} installed, but ${VERSION} is the latest. Run: claude plugin marketplace update ${MARKETPLACE} && claude plugin update ${PLUGIN}`)
+        } else {
+          say(`  ✓ ${name}: plugin ${v ? `${v} ` : ''}installed (skills + hooks)`)
+        }
       } else {
         const manual = cli === 'claude' ? `claude plugin marketplace add ${REPO} && claude plugin install ${PLUGIN}`
           : `copilot plugin install ${REPO}`
@@ -354,6 +374,14 @@ function setup(args: string[]): number {
       } else {
         say(`  ✓ ${name}: status line installed`)
       }
+    }
+  }
+  // VS Code copies the status bar item's code when it is added, so one added before is brought up to date
+  for (const c of CODE_CLIS.filter(has)) {
+    const listed = (exec([c, '--list-extensions', '--show-versions'])?.stdout ?? '').split(/\r?\n/)
+    const at = listed.find((l) => l.trim().toLowerCase().startsWith(`${EXTENSION_ID}@`))
+    if (at && at.trim().slice(EXTENSION_ID.length + 1) !== VERSION && run([c, '--install-extension', writeVsix(), '--force'])) {
+      say(`  ✓ ${c}: status bar item updated to ${VERSION}`)
     }
   }
   // agentarium was tokenomics until 0.0.1: an install of it comes over once (its own files untouched)
@@ -659,6 +687,14 @@ export function statusVsix(root = dirname(HERE)): Buffer {
     'extension/package.json': JSON.stringify(pkg, null, 2) + '\n', 'extension/extension.js': code })
 }
 
+/** The status bar item, packed for this version at ~/.agentarium/vscode/agentarium-status.vsix. */
+function writeVsix(): string {
+  const vsix = join(TK_HOME, 'vscode', 'agentarium-status.vsix')
+  mkdirSync(dirname(vsix), { recursive: true })
+  writeFileSync(vsix, statusVsix())
+  return vsix
+}
+
 /** `agentarium vscode --status-bar [--remove]`: Copilot's premium requests in VS Code's status bar. */
 function vscodeStatusBar(args: string[]): number {
   const cli = CODE_CLIS.filter(has)
@@ -668,9 +704,7 @@ function vscodeStatusBar(args: string[]): number {
       : `It isn't installed (or VS Code's \`code\` command isn't on your PATH: remove "agentarium: Copilot premium requests" in the Extensions view).`)
     return 0
   }
-  const vsix = join(TK_HOME, 'vscode', 'agentarium-status.vsix')
-  mkdirSync(dirname(vsix), { recursive: true })
-  writeFileSync(vsix, statusVsix())
+  const vsix = writeVsix()
   if (args.includes('--print')) {
     say(vsix)
     return 0

@@ -4,7 +4,7 @@
  * TOKENOMICS_* settings (import.ts reads them), so a tokenomics install never leaks in either.
  */
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -115,4 +115,29 @@ export function useTemp(t: { after: (fn: () => void) => void }): TempEnv {
   const e = new TempEnv()
   t.after(() => e.cleanup())
   return e
+}
+
+/** A stand-in `claude` that behaves as the real one does where the installer cares (checked against
+ *  Claude Code 2.1.332): `plugin update` fails when the plugin isn't installed and moves an installed
+ *  one to `latest`; `plugin install` leaves an installed one at its version and exits 0; `plugin list
+ *  --json` says which version is installed. Every call is logged to `log`. `installed` starts it with
+ *  that version in place; `updates: false` makes `plugin update` succeed without moving it. */
+export function fakeClaude(bin: string, log: string, opts: { latest: string, installed?: string, updates?: boolean }): string {
+  const state = join(bin, '.claude-installed')
+  if (opts.installed) writeFileSync(state, opts.installed)
+  const updates = opts.updates === false ? 'no' : 'yes'
+  const path = join(bin, 'claude')
+  writeFileSync(path, `#!/bin/sh
+echo "$*" >> "${log}"
+state="${state}"
+case "$1 $2" in
+  "plugin update") [ -f "$state" ] || exit 1; [ "${updates}" = yes ] && printf '%s' "${opts.latest}" > "$state"; exit 0 ;;
+  "plugin install") [ -f "$state" ] || printf '%s' "${opts.latest}" > "$state"; exit 0 ;;
+  "plugin list") if [ -f "$state" ]; then printf '[{"id":"agentarium@agentarium","version":"%s","scope":"user"}]\\n' "$(cat "$state")"; else echo '[]'; fi ;;
+  "plugin uninstall") rm -f "$state" ;;
+esac
+exit 0
+`)
+  chmodSync(path, 0o755)
+  return path
 }

@@ -174,7 +174,7 @@ curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh
 irm https://raw.githubusercontent.com/andrew44/agentarium/main/install.ps1 | iex           # Windows (PowerShell)
 ```
 
-It never replaces a status line you already have. Running it again repairs the install and changes nothing that's already right: your recorded data and settings stay as they are. Read it first if you like: [install.sh](install.sh) · [install.ps1](install.ps1).
+It never replaces a status line you already have. Running it again installs the latest version (the plugin too: it is updated, not left as it was) and changes nothing else that's already right: your recorded data and settings stay as they are. Read it first if you like: [install.sh](install.sh) · [install.ps1](install.ps1).
 
 ### The GitHub Copilot app
 
