@@ -32,7 +32,7 @@
  * Savings, net of the hand-off. Every route logs what it is worth (estimateHandoff / estimateRequest):
  *   in hook mode the session's own model still reads the conversation to hand the task over and to
  *   relay the answer, so a route down only happens when the work it moves is worth more than that.
- *   The statusline, the band, `status` and the weekly report show what pennywise saved.
+ *   The status line, the band, `status` and the weekly report show what pennywise saved.
  *   Measured, too: on the next prompt the hook reads what the routed subagent really used (its
  *   sidechain in the transcript) and logs it next to the estimate; `status` shows both, and `learn`
  *   calibrates the task shape (WORK) from the measured routes.
@@ -543,7 +543,7 @@ export function lastTurn(path: string): { model: string | null, ctx: number, ts:
 }
 
 /** The session's cache right now, from its newest turn; AGENTARIUM_CACHE_TTL (seconds) overrides
- *  the TTL, as on the statusline. A session with no turn yet has nothing cached: cold. */
+ *  the TTL, as on the status line. A session with no turn yet has nothing cached: cold. */
 export function cacheState(t: { ts: number | null, ttl: number }, at = Date.now()): Cache {
   const set = Number.parseInt(env('AGENTARIUM_CACHE_TTL'), 10)
   const ttl = set > 0 ? set : t.ttl

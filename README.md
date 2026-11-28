@@ -32,11 +32,11 @@ Every message you send re-sends the **whole conversation**. Long chats, pasted l
 Most cost tools are receipts: they tell you what you already paid. **agentarium works on what you're about to pay.** It steps in automatically before the prompt, before the tool call and before the cache goes cold, and it says what each step will save. ([Why prevention, not reporting →](docs/strategy.md))
 
 <p align="center">
-  <img src="docs/assets/statusline.svg" alt="The agentarium statusline showing model, context fill, tokens, cost and a prompt-cache countdown" width="760">
+  <img src="docs/assets/statusline.svg" alt="The agentarium status line showing model, context fill, tokens, cost and a prompt-cache countdown" width="760">
 </p>
 
 - 💰 **The right model for every prompt: [pennywise](#-the-flagship-pennywise).** Routes each prompt down to Haiku or up to Opus by what it needs, and routes down harder as your budget runs out, so it lasts.
-- 🔭 **See what's coming, not just what's gone.** The band forecasts the next steps, shows the budget left (in steps), prices a cold cache before it happens, and names the one change that saves most. The terminal statusline shows context fill, tokens, cost in £/$/€ and the cache countdown, with the same forecast row under it.
+- 🔭 **See what's coming, not just what's gone.** agentarium's row in the band, above the prompt box, forecasts the next steps, shows the budget left (in steps), prices a cold cache before it happens, and names the one change that saves most. The terminal status line shows context fill, tokens, cost in £/$/€ and the cache countdown, with the same forecast row under it.
 - 🛡️ **Stop waste automatically.** Guard-rails that catch context floods, loops, scope creep and runaway spend *before* they cost you, each with a one-step override.
 - 🍝 **Read the result, not the noise: [colander](#colander-drains-the-test-run).** A green test run reaches the model as its summary, not 353 passing tests: every successful test run, build, lint and install is strained first, warnings and failures kept, the full output one grep away.
 - 🧑‍🏫 **Get better at it.** A coach that reviews your prompts, a weekly spend report with three fixes tied to your own numbers, and audits of what every request carries before you type and of what the agent writes back.
@@ -52,7 +52,7 @@ Most cost tools are receipts: they tell you what you already paid. **agentarium 
 *Penny wise, pound foolish.* pennywise is the decision every prompt goes through: **which model should do this?** It scores each prompt and sends it to the tier it needs, down to Haiku for a rename, up to Opus for an architecture question, with nothing to set up.
 
 - **Down to save, up to succeed.** A hello-world never runs on the priciest model; a hard problem never gets stuck on the cheapest.
-- **Only when it pays.** Handing a prompt to a cheaper model isn't free: your model still reads the conversation to pass it on. pennywise prices that hand-off and only routes down when the saving is bigger, then shows what it saved, net, on the statusline, the band and the weekly report. It also reads what the routed model really used from the transcript, shows estimated against measured in `agentarium router status`, and prices later routes on your own tasks' shape and your session's cache (a hand-off that outlasts a warm cache costs the relay a re-write).
+- **Only when it pays.** Handing a prompt to a cheaper model isn't free: your model still reads the conversation to pass it on. pennywise prices that hand-off and only routes down when the saving is bigger, then shows what it saved, net, on the status line, the band and the weekly report. It also reads what the routed model really used from the transcript, shows estimated against measured in `agentarium router status`, and prices later routes on your own tasks' shape and your session's cache (a hand-off that outlasts a warm cache costs the relay a re-write).
 - **Spends to your budget.** Once a daily or session budget passes 80%, pennywise routes down harder and stops routing up, so the budget lasts the task instead of running out halfway. Forced models (`opus:`) still win.
 - **Backs off when it got it wrong, and learns.** "That didn't work" after a routed answer sends the next prompt back to your model, and so does the evidence when you don't say it: the routed work ended on a failing test, was reverted or tripped groundhog. Those misses, and your `keep-model:` overrides, tune its thresholds at the end of every session, within bounds, per project once a repository has enough routes of its own. `agentarium router eval` scores it on a labelled set of prompts (90% on the right tier today), `--mine` on your own misses (hashes only unless you opt in to the wording), and CI fails if a change to the scorer routes the set worse.
 - **Two ways to run.** As a hook (the default, nothing to set up), or as a per-request routing proxy, which skips the hand-off entirely: `agentarium router on` starts it in the background and points Claude Code at it (`off` undoes it).
@@ -69,7 +69,7 @@ Every prompt gets **one decision and one message**: pennywise, budget, haggle an
 
 ## 🔭 The band: what's coming, and what to do about it
 
-The band (in the desktop app, above the prompt box) doesn't just say what the session has cost. Under the live line sits the **outlook**:
+The band is the strip Claude Code keeps directly above the prompt box, where each mod draws a row. agentarium's row, in the desktop app and VS Code (the terminal has the status line instead), doesn't just say what the session has cost. Under the live line sits the **outlook**:
 
 | | Shows | e.g. |
 |---|---|---|
@@ -79,9 +79,9 @@ The band (in the desktop app, above the prompt box) doesn't just say what the se
 | **Saving** | The one change that saves most, priced | `→ reply within 01:40` saves ~£0.58 · `→ /clear` saves ~£0.83 |
 | **Saved** | What pennywise saved this session, net of its hand-offs | `£0.41` saved by pennywise |
 
-On **Copilot CLI** (and Copilot in VS Code), which bills premium requests rather than tokens, the statusline's second row shows the monthly allowance instead: requests left, the pace, and the day they run out at that pace (`agentarium copilot`). On **Copilot Fusion**, which picks a model for each task, the model pill shows where it sent the work (`Copilot Fusion → claude-sonnet-4.6`) and each prompt counts at that model's multiplier.
+On **Copilot CLI** (and Copilot in VS Code), which bills premium requests rather than tokens, the status line's second row shows the monthly allowance instead: requests left, the pace, and the day they run out at that pace (`agentarium copilot`). On **Copilot Fusion**, which picks a model for each task, the model pill shows where it sent the work (`Copilot Fusion → claude-sonnet-4.6`) and each prompt counts at that model's multiplier.
 
-**The pane** puts the same numbers beside the chat, in three tabs: **Now** (model, context, tokens, spend and the cache countdown), **Ahead** (the outlook above, with a bar for the budget used) and **Advice** (every change worth making now, the most urgent first, e.g. `Compact now`, `Cache is cold`, `Budget running low`). It opens by itself in the Claude desktop and mobile apps until you close it; `/agentarium-pane` opens it anywhere, the terminal included, and says why if the app isn't drawing it. The pane and the band are Claude Code mods, and Copilot has no mods, so the GitHub Copilot app shows neither: there, `agentarium copilot --window` keeps the premium requests beside it.
+**The pane** puts the same numbers beside the transcript, in three tabs: **Now** (model, context, tokens, spend and the cache countdown), **Ahead** (the outlook above, with a bar for the budget used) and **Advice** (every change worth making now, the most urgent first, e.g. `Compact now`, `Cache is cold`, `Budget running low`). It opens by itself in the Claude desktop and mobile apps until you close it; `/agentarium-pane` opens it anywhere, the terminal included, and says why if the app isn't drawing it. The band row and the pane are drawn by agentarium's mod, and Copilot runs no mods, so the GitHub Copilot app shows neither: there, `agentarium copilot --window` keeps the premium requests beside it.
 
 [More about the band →](docs/reference.md#band) · [the pane →](docs/reference.md#pane)
 
@@ -93,7 +93,7 @@ Token counts tell you what AI cost. They don't tell you whether it was worth it.
 
 | | Stage | What it does | Helpers |
 |---|---|---|---|
-| 👁️ | **1. Observe** | Collect costs, tokens, tool calls, task outcomes and agent behaviour, from every assistant, in one event format. | till · statusline · dashboard |
+| 👁️ | **1. Observe** | Collect costs, tokens, tool calls, task outcomes and agent behaviour, from every assistant, in one event format. | till · status line · dashboard |
 | 🧠 | **2. Understand** | Find waste, inefficiency, quality problems and spending patterns. | **sherlock** · **audit** (pack-light · waffle · cold-snap · ballast · spring-clean · deadwood · groundhog · parrot · waistline) · split-the-bill · coach · dry-run · rate-my-prompt |
 | ⚙️ | **3. Optimise** | Prevent spend automatically, or recommend the change that saves most. | **pennywise** · the controller · band · bazaar · blinkers · diet · colander · groundhog · budget · hold-up · haggle · doggybag · ballast · parrot · fishingrod · cache-buster · too-many-cooks · kettle · all-you-can-eat |
 | ✅ | **4. Prove** | Measure savings against task success and output quality. | **bang-for-buck** · **taste-test** · crystal-ball · receipt |
@@ -124,7 +124,7 @@ agentarium is a [Claude Code plugin](https://code.claude.com/docs/en/plugins). I
 
 <sub>On Claude Code older than v2.1.275, use two lines instead: <code>/plugin marketplace add andrew44/agentarium</code> then <code>/plugin install agentarium@agentarium</code>.</sub>
 
-Choose **Install for you (user scope)** so it works in every project. That's it. 🎉 You get every skill, all the hooks and, from your next session, the live statusline (in the desktop app: the band). Now try:
+Choose **Install for you (user scope)** so it works in every project. That's it. 🎉 You get every skill, all the hooks and, from your next session, the live status line (in the desktop app: a row in the band). Now try:
 
 > 💬 *"coach, review my prompts"*  ·  💬 *"spend report"*  ·  💬 `/agentarium:dashboard`
 
@@ -133,7 +133,7 @@ Choose **Install for you (user scope)** so it works in every project. That's it.
 <details>
 <summary><b>Using the Claude desktop app? No terminal needed</b></summary>
 
-In the **Code** tab (a local session), click **+** next to the prompt box → **Add plugins** → add the marketplace `andrew44/agentarium` → install **agentarium**. Desktop and terminal share the same settings, so it works in both. The desktop app has no statusline, so there the same line sits in the **band** above the prompt box.
+In the **Code** tab (a local session), click **+** next to the prompt box → **Add plugins** → add the marketplace `andrew44/agentarium` → install **agentarium**. Desktop and terminal share the same settings, so it works in both. The desktop app has no status line, so there the same line is agentarium's row in the **band**, directly above the prompt box.
 </details>
 
 <details>
@@ -178,7 +178,7 @@ It never replaces a status line you already have, and running it again repairs t
 
 ### The GitHub Copilot app
 
-The desktop app is built on Copilot CLI and takes the same plugin: in **Customize**, add the marketplace `andrew44/agentarium` and install **agentarium**. Prompts and tool calls are recorded under `copilot`, against the same premium-request allowance. The app has no statusline, so `agentarium copilot --window` opens a small window to keep beside it: premium requests left this month and the day they run out at this pace. [Details](docs/installation.md#the-github-copilot-app).
+The desktop app is built on Copilot CLI and takes the same plugin: in **Customize**, add the marketplace `andrew44/agentarium` and install **agentarium**. Prompts and tool calls are recorded under `copilot`, against the same premium-request allowance. The app has no status line, so `agentarium copilot --window` opens a small window to keep beside it: premium requests left this month and the day they run out at this pace. [Details](docs/installation.md#the-github-copilot-app).
 
 ### Copilot in VS Code
 
@@ -206,7 +206,7 @@ Every piece works on its own. Grab just what you want:
 |---|---|
 | 🧑‍🏫 **coach** skill | `npx skills@latest add andrew44/agentarium --skill coach` |
 | 📊 **spend-report** skill | `npx skills@latest add andrew44/agentarium --skill spend-report` *(reads till data, so pair it with the plugin)* |
-| 📟 **statusline** only | Install the plugin and switch the hooks off (below), or without the plugin: `curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh \| sh -s -- --no-plugin` |
+| 📟 **status line** only | Install the plugin and switch the hooks off (below), or without the plugin: `curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh \| sh -s -- --no-plugin` |
 | 📈 **dashboard** | `/agentarium:dashboard` with the plugin, or `agentarium dashboard` after the one-liner |
 | 🛡️ **Some of the hooks** | Install the plugin, then switch off the ones you don't want, e.g. `AGENTARIUM_DIET=off` or `AGENTARIUM_PENNYWISE=block` ([every switch](#-turn-things-on-and-off)) |
 
@@ -267,13 +267,13 @@ Every automatic helper has a switch, and every switch is an environment variable
 | 🧮 till, prompt excerpts | `AGENTARIUM_STORE_PROMPT` | off · `1` (keep the first 200 characters of each prompt) |
 | 🧮 till, AI classifier | `AGENTARIUM_LLM` | off · `1` (an AI model labels OPEX/CAPEX; sends redacted prompt text) |
 
-### The statusline and the band
+### The status line and the band
 
 | What | Setting | Command | Values |
 |---|---|---|---|
-| Install the terminal statusline | `AGENTARIUM_STATUSLINE` | `agentarium statusline --install` / `--uninstall` | `auto` (install when none is set) · `ask` (a one-time tip) · `off` |
-| The band in the desktop app, and Copilot's status bar item and window | `AGENTARIUM_BAND` | `agentarium statusline --band-on` / `--band-off` | `on` · `off` |
-| The forecast row under the terminal statusline | `AGENTARIUM_OUTLOOK` | `agentarium statusline --outlook-on` / `--outlook-off` | `on` · `off` |
+| Install the terminal status line | `AGENTARIUM_STATUSLINE` | `agentarium statusline --install` / `--uninstall` | `auto` (install when none is set) · `ask` (a one-time tip) · `off` |
+| agentarium's row in the band (desktop app, VS Code), and Copilot's status bar item and window | `AGENTARIUM_BAND` | `agentarium statusline --band-on` / `--band-off` | `on` · `off` |
+| The forecast row under the terminal status line | `AGENTARIUM_OUTLOOK` | `agentarium statusline --outlook-on` / `--outlook-off` | `on` · `off` |
 | Colours | `AGENTARIUM_THEME` | `--theme light` | `system` · `light` · `dark` |
 | Currency | `AGENTARIUM_CURRENCY` | `--set-currency USD` | `GBP` · `USD` · `EUR` |
 | Plain characters | `AGENTARIUM_ASCII` | `--ascii` | off · `1` |
@@ -323,7 +323,7 @@ Live, on screen, between turns.
 
 | | Helper | What it does | Kind | Claude Code | Copilot CLI |
 |---|---|---|:---:|:---:|:---:|
-| 📟 | **[statusline](docs/reference.md#statusline)**, **[band](docs/reference.md#band)** and **[pane](docs/reference.md#pane)** | Context fill, tokens, cost and a cache countdown, live: the statusline at the bottom of your assistant in a terminal, the band above the prompt box in the desktop app. For Copilot, premium requests left show in VS Code's status bar (`agentarium vscode --status-bar`) or a small window beside the Copilot app (`agentarium copilot --window`). Both add the outlook (in the terminal, a second row): a forecast of the next steps, budget left, cache risk and the saving to make. The pane shows it all beside the chat in tabs, with the advice in full. On automatically; `/agentarium:statusline` to manage the first two, `/agentarium-pane` to open the pane. | tool | ✅ | ✅ |
+| 📟 | **[status line](docs/reference.md#status-line)**, **[band](docs/reference.md#band)** and **[pane](docs/reference.md#pane)** | Context fill, tokens, cost and a cache countdown, live: the status line at the bottom of your assistant in a terminal, a row in the band above the prompt box in the desktop app and VS Code. For Copilot, premium requests left show in VS Code's status bar (`agentarium vscode --status-bar`) or a small window beside the Copilot app (`agentarium copilot --window`). Both add the outlook (in the terminal, a second row): a forecast of the next steps, budget left, cache risk and the saving to make. The pane shows it all beside the transcript in tabs, with the advice in full. On automatically; `/agentarium:statusline` to manage the first two, `/agentarium-pane` to open the pane. | tool | ✅ | ✅ |
 | 📈 | **[dashboard](docs/reference.md#dashboard)** | A local web view of where your tokens and money went, split by OPEX/CAPEX, project and day, and **what agentarium did**: every prompt pennywise routed and every flood, loop and cache rebuild a guard stopped, with the saving. | tool | ✅ | ✅ |
 | 📊 | **[spend-report](docs/reference.md#spend-report)** | "Spend report" gets you the week's spend, OPEX vs CAPEX, costliest sessions, and three ways to spend less. | skill | ✅ | ❌ |
 | 🧑‍🏫 | **[coach](docs/reference.md#coach)** | Reads your conversation and tells you where tokens were wasted, with the fixes and a rewrite of your weakest prompt. | skill | ✅ | ❌ |
@@ -589,7 +589,7 @@ flowchart LR
     S --> DB[("~/.agentarium/<br/>till.db")]
     DB --> R["📊 spend-report"]
     DB --> W["📈 dashboard"]
-    You -.->|live| B["📟 statusline / band"]
+    You -.->|live| B["📟 status line / band"]
     You -.->|on request| C["🔦 audit: 🧳 pack-light · 🧇 waffle · 🥶 cold-snap · 🧹 spring-clean ...<br/>🧑‍🏫 coach<br/><i>where is it still leaking?</i>"]
     DB --> A["🍽️ all-you-can-eat · 🧪 dry-run<br/><i>right plan? worth installing?</i>"]
     DB --> RC["🏷️ receipt<br/><i>what this branch cost</i>"]

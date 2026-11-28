@@ -22,7 +22,7 @@ const LINE = {
   tokens: '4.1M', cost: '~£1.46', ttl: 300, cold_at: 1_000_120, icons: ['F', 'H', 'E'],
 } as const
 
-test('the band shows the statusline in the desktop and mobile apps', async ($, on) => {
+test('the band shows the status line in the desktop and mobile apps', async ($, on) => {
   seed(on, { line: LINE, now: 1_000_000 })           // 120s of a 300s cache left: half timer
   for (const surface of ['desktop', 'mobile'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
@@ -38,7 +38,7 @@ test('the band shows the statusline in the desktop and mobile apps', async ($, o
   }
 })
 
-test('the terminal keeps the CLI statusline: no band there', async ($, on) => {
+test('the terminal keeps the CLI status line: no band there', async ($, on) => {
   seed(on, { line: LINE, now: 1_000_000 })
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect(await ui.find({ type: 'Text', text: /claude-opus-5-5/ })).toBeUndefined()
@@ -121,7 +121,7 @@ test('VS Code gets it as the status line, fed the same figures as the terminal',
   expect(status.at(-1)).toBe('✦ claude-opus-5-5  ·  ━━━━━━━━━╸── 80% ctx  ·  4.1M tok  ·  ~£1.46  ·  H 01:59 cache')
 })
 
-test('in the terminal alone the timer does nothing: the CLI statusline has it', async ($, on) => {
+test('in the terminal alone the timer does nothing: the CLI status line has it', async ($, on) => {
   const clock = mock.clock(on, { now: 0 })
   const { runs, status } = engine(on, ['terminal'], '{"show":false}')
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })

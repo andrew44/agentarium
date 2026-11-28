@@ -17,7 +17,7 @@
  * Shows tokens, sessions, prompts and spend (estimated, token-billed sessions only: Copilot's
  * premium requests are never priced) split OPEX / CAPEX by day and project, and what agentarium
  * did: what pennywise and each guard stopped or flagged and what that saved (PolicyEngine.activity).
- * Money is in the display currency (AGENTARIUM_CURRENCY or the statusline's saved choice).
+ * Money is in the display currency (AGENTARIUM_CURRENCY or the status line's saved choice).
  *
  * Read-only: the DB is opened read-only and never written to (except --demo, which uses a
  * temp file). Binds to 127.0.0.1 only.

@@ -1,4 +1,4 @@
-/** Price table: parsing Claude's pricing page, merging into the JSON, and statusline lookups. */
+/** Price table: parsing Claude's pricing page, merging into the JSON, and status line lookups. */
 import assert from 'node:assert/strict'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -98,7 +98,7 @@ describe('the shipped price file', () => {
   })
 })
 
-describe('statusline price lookups', () => {
+describe('status line price lookups', () => {
   test('model id normalisation', () => {
     const cases: Record<string, string | null> = {
       'claude-opus-5-5[1m]': 'claude-opus-5-5', 'Opus 5.5': 'claude-opus-5-5',

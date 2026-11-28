@@ -4,7 +4,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh | sh
 #
 # Downloads agentarium to ~/.agentarium/app (no git needed), then sets up whichever assistants it
-# finds: the Claude Code / Copilot CLI plugin (skills + hooks), the statusline, and an `agentarium`
+# finds: the Claude Code / Copilot CLI plugin (skills + hooks), the status line, and an `agentarium`
 # command. It never replaces a status line you already have. Safe to run again to repair.
 #
 # agentarium is TypeScript run directly by Node.js 22.18 or newer (no build step, no npm install).
@@ -111,7 +111,7 @@ main() {
     rm -rf "$app"
     mv "$app.new" "$app"
 
-    # 3. Set everything up (plugin, statusline, `agentarium` command)
+    # 3. Set everything up (plugin, status line, `agentarium` command)
     say ""
     "$node" --disable-warning=ExperimentalWarning "$app/scripts/cli.ts" setup "$@" </dev/null
 }

@@ -14,11 +14,12 @@
  * the terminal to the one line.
  *
  * Three places show it:
- *   * the statusline: the CLIs' own status line (settings.json "statusLine"), in the terminal. Both
+ *   * the status line: the CLIs' own status line (settings.json "statusLine"), in the terminal. Both
  *     CLIs run this script as a command, pipe a JSON payload on stdin and print what we write.
- *   * the band: Claude Code's apps don't draw a status line, so hooks/band.tsx (a mod) draws the
- *     same line in the desktop app's band above the prompt box (VS Code: the plugin's line above
- *     the prompt box), from --json. Where mods can't run, --message posts it after each reply.
+ *   * the band: Claude Code's apps don't draw the status line, so the plugin's mod (hooks/band.tsx)
+ *     draws the same line, from --json, as its row in the band directly above the prompt box (VS Code
+ *     also pins it as the plugin's status line entry, under the prompt box). Where mods can't run,
+ *     --message posts it after each reply.
  *   * Copilot in VS Code and the Copilot app: no status line or mods there, so vscode/extension.js
  *     (a status bar item) and a small window (scripts/dashboard.ts --copilot) show the
  *     premium-request forecast from --copilot --json.
@@ -27,10 +28,10 @@
  *
  * Usage
  *   statusline.ts                     render once from the stdin JSON (what the CLIs do)
- *   statusline.ts --install [claude|copilot|both]  wire the statusline into the CLI settings (backs
+ *   statusline.ts --install [claude|copilot|both]  wire the status line into the CLI settings (backs
  *                                     them up); add --keep-existing to skip a CLI that has another
  *   statusline.ts --uninstall [claude|copilot|both]
- *   statusline.ts --status            say where the statusline is installed, and if the band is on
+ *   statusline.ts --status            say where the status line is installed, and if the band is on
  *   statusline.ts --sync              SessionStart hook (plugin): refresh the installed copy after a
  *                                     plugin update; install it if no status line is set
  *                                     (AGENTARIUM_STATUSLINE=ask only suggests it once, =off stays quiet)
@@ -966,7 +967,7 @@ function tierRank(model: string): number | null {
 // names (AGENTARIUM_COPILOT_MULTIPLIERS; see agentarium/engine/premium.ts), and a prompt with none counts as
 // AGENTARIUM_COPILOT_MULTIPLIER requests (default 1;
 // set it to your model's multiplier). With AGENTARIUM_COPILOT_ALLOWANCE set (e.g. 300 on Pro,
-// 1500 on Pro+), the Copilot statusline gets the band's idea of "what's left, and what's coming":
+// 1500 on Pro+), the Copilot status line gets the band's idea of "what's left, and what's coming":
 // requests left this month, the pace, the day it runs out at that pace, and what the next prompts use.
 // The month is the calendar month (GitHub resets on the 1st, UTC).
 
@@ -1037,7 +1038,7 @@ export function premiumOutlook(prompts: number, a: { monthly: number, multiplier
     runs_out: runsOut, next: Math.round(steps * perPrompt * 100) / 100, steps, over: left <= 0 }
 }
 
-/** The Copilot row under the statusline: '↳ 212 of 300 requests left · ~9/day · runs out ~27 Nov'. */
+/** The Copilot row under the status line: '↳ 212 of 300 requests left · ~9/day · runs out ~27 Nov'. */
 export function renderPremium(p: Premium | null, style: Style): string {
   if (!p) return ''
   const a = style.ascii
@@ -1075,7 +1076,7 @@ export type CopilotStatus = { show: false } | { show: true, platform: 'copilot',
 
 /** Copilot's live numbers (VS Code's status bar item, the Copilot app's window), from the
  *  database alone: Copilot gives no live payload, so there is no context gauge or cache timer, only
- *  the premium requests. `short` fits a status bar; `text` is the statusline's Copilot row. */
+ *  the premium requests. `short` fits a status bar; `text` is the status line's Copilot row. */
 export function copilotStatus(d = new Date()): CopilotStatus {
   if (!bandWanted()) return { show: false }
   const a = copilotAllowance()
@@ -1270,7 +1271,7 @@ export function renderOutlook(o: Outlook | null, info: Info, style: Style): stri
   return parts.join(sep)
 }
 
-/** The outlook row on the terminal statusline: on unless AGENTARIUM_OUTLOOK=off or `outlook: false`. */
+/** The outlook row on the terminal status line: on unless AGENTARIUM_OUTLOOK=off or `outlook: false`. */
 export function outlookWanted(cfg: Obj): boolean {
   const env = (process.env.AGENTARIUM_OUTLOOK ?? '').trim().toLowerCase()
   if (['off', '0', 'false', 'no'].includes(env)) return false
@@ -1387,7 +1388,7 @@ function bandDrawn(sessionId: string): void {
 }
 
 /** The band is on unless AGENTARIUM_BAND=off or "band": false in the config (--band-off).
- *  It doesn't depend on the CLI statusline: a terminal can have its own status line set and the
+ *  It doesn't depend on the CLI status line: a terminal can have its own status line set and the
  *  desktop app still gets the band. */
 export function bandWanted(cfg?: Obj): boolean {
   const env = (process.env.AGENTARIUM_BAND ?? '').trim().toLowerCase()
@@ -1435,7 +1436,7 @@ function asJson(args: string[]): number {
 
 // ----------------------------------------------------------------------------- apps ------
 // Claude Code only draws `statusLine` in the terminal. In the apps, hooks/band.tsx (a mod) shows
-// the line from --json: the desktop app's band above the prompt, VS Code's plugin status line.
+// the line from --json: the mod's row in the band above the prompt box, VS Code's plugin status line entry.
 // Where mods can't run (older Claude Code, mods off), the apps still show a hook's
 // "systemMessage", so the Stop hook posts the line once per reply instead.
 // CLAUDE_CODE_ENTRYPOINT says where Claude Code runs.
@@ -1450,7 +1451,7 @@ export function inApp(): boolean {
 
 /** Stop hook: the band's stand-in where mods can't run. Prints {"systemMessage": <the line as
  *  plain text>} in the desktop app or VS Code while the band is on and hasn't drawn in this
- *  session; otherwise nothing (the terminal has its statusline). Never fails. */
+ *  session; otherwise nothing (the terminal has its status line). Never fails. */
 function message(): number {
   try {
     const payload = readPayload()
@@ -1639,7 +1640,7 @@ export function tokenomicsPluginOn(): boolean {
 function tokenomicsNote(moved: string[]): string | null {
   if (existsSync(TOLD_FILE)) return null
   const parts: string[] = []
-  if (moved.length) parts.push("The statusline is agentarium's now.")
+  if (moved.length) parts.push("The status line is agentarium's now.")
   if (tokenomicsPluginOn()) parts.push('tokenomics is still installed, so every prompt is checked twice: /plugin uninstall tokenomics@tokenomics removes it.')
   if (isFile(join(TOKENOMICS_DIR, 'spendlens.db')) && !existsSync(IMPORTED_FILE)) {
     const where = TOKENOMICS_DIR.startsWith(HOME) ? `~${TOKENOMICS_DIR.slice(HOME.length)}` : TOKENOMICS_DIR
@@ -1704,25 +1705,25 @@ function status(): number {
   for (const t of ['claude', 'copilot']) {
     const cmd = statusLine(t)
     const where = settingsPath(t)
-    if (isOurs(cmd)) lines.push(`${t} statusline: installed (${where})`)
-    else if (isTokenomics(cmd)) lines.push(`${t} statusline: tokenomics's copy (agentarium's replaces it at the next session start)`)
-    else if (cmd) lines.push(`${t} statusline: another status line is set in ${where}: ${cmd}`)
-    else lines.push(`${t} statusline: not installed`)
+    if (isOurs(cmd)) lines.push(`${t} status line: installed (${where})`)
+    else if (isTokenomics(cmd)) lines.push(`${t} status line: tokenomics's copy (agentarium's replaces it at the next session start)`)
+    else if (cmd) lines.push(`${t} status line: another status line is set in ${where}: ${cmd}`)
+    else lines.push(`${t} status line: not installed`)
   }
-  lines.push('claude band (desktop app): ' + (bandWanted() ? 'on' : 'off') + (process.env.AGENTARIUM_BAND ? ' (AGENTARIUM_BAND)' : ''))
+  lines.push('claude band row (desktop app, VS Code): ' + (bandWanted() ? 'on' : 'off') + (process.env.AGENTARIUM_BAND ? ' (AGENTARIUM_BAND)' : ''))
   process.stdout.write(lines.join('\n') + '\n')
   return 0
 }
 
 function setOutlook(on: boolean): number {
   saveCfg({ outlook: on })
-  process.stdout.write(`The forecast row under the terminal statusline is now ${on ? 'on' : 'off'}. Saved to ${CFG_FILE}\n`)
+  process.stdout.write(`The forecast row under the terminal status line is now ${on ? 'on' : 'off'}. Saved to ${CFG_FILE}\n`)
   return 0
 }
 
 function setBand(on: boolean): number {
   saveCfg({ band: on })
-  process.stdout.write(`The band in the Claude desktop app is now ${on ? 'on' : 'off'}; it changes at the next ` +
+  process.stdout.write(`agentarium's row in the band (desktop app, VS Code) is now ${on ? 'on' : 'off'}; it changes at the next ` +
     `reply. Saved to ${CFG_FILE}\n`)
   return 0
 }
@@ -1745,7 +1746,7 @@ function outOfDate(): boolean {
 /** SessionStart hook. Quiet and fast; never fails the session.
  *
  *  * Installed already: refresh ~/.agentarium/statusline.mts and the price list from the plugin, so
- *    the statusline updates whenever the plugin does.
+ *    the status line updates whenever the plugin does.
  *  * No status line at all: install it (AGENTARIUM_STATUSLINE=ask only says once how to; =off
  *    does nothing).
  *  * Someone else's status line: leave it alone. */
@@ -1753,7 +1754,7 @@ function sync(): number {
   readPayload()                                             // the hook payload; not needed
   const said: string[] = []
   try {
-    const note = tokenomicsNote(migrate())                  // a statusline still on tokenomics's copy moves first
+    const note = tokenomicsNote(migrate())                  // a status line still on tokenomics's copy moves first
     if (note) said.push(note)
     const mode = statuslineMode()
     const cmd = statusLine('claude')
@@ -1765,12 +1766,12 @@ function sync(): number {
       install('claude', { out: quiet })
       const where = inApp() ? 'it shows at the bottom of Claude Code in a terminal; here, in the band above the prompt box'
         : 'restart Claude Code to see it'
-      said.unshift(`agentarium: statusline installed; ${where}. Tip: to get agentarium updates automatically, ` +
+      said.unshift(`agentarium: status line installed; ${where}. Tip: to get agentarium updates automatically, ` +
         'open /plugin > Marketplaces > agentarium and turn on auto-update.')
     } else if (!existsSync(HINT_FILE)) {
       mkdirSync(CFG_DIR, { recursive: true })
       writeFileSync(HINT_FILE, new Date().toISOString(), 'utf8')
-      said.unshift('agentarium: want the live cost and cache statusline? Run /agentarium:statusline. This tip shows once.')
+      said.unshift('agentarium: want the live cost and cache status line? Run /agentarium:statusline. This tip shows once.')
     }
   } catch {
     // never in the way
@@ -1816,7 +1817,7 @@ async function main(args: string[]): Promise<number> {
     const info = gather(readPayload(), cfg, state)
     let line = render(info, style, cfg)
     if (outlookWanted(cfg)) {
-      // the band's forecast row, as a second statusline row (Claude Code draws each line)
+      // the band's forecast row, as a second status line row (Claude Code draws each line)
       try {
         const row = renderOutlook(outlook(info, cfg), info, style)
         if (row) line += '\n' + row

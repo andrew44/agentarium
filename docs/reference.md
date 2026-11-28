@@ -43,7 +43,7 @@ The full detail on every agentarium helper: what it does, how it decides, and wh
 | 🧪 | **dry-run** | skill + tool | [dry-run](#dry-run) |
 | ⚖️ | **rate-my-prompt** (alias **judge**) | skill + tool | [rate-my-prompt](#rate-my-prompt) |
 | 🐙 | **Copilot premium requests** | tool | [Copilot allowance](#copilot-premium-requests) |
-| 📟 | **statusline**, **band** and **pane** | tool | [statusline](#statusline) · [band](#band) · [pane](#pane) |
+| 📟 | **status line**, **band** and **pane** | tool | [status line](#status-line) · [band](#band) · [pane](#pane) |
 | 📈 | **dashboard** | tool | [dashboard](#dashboard) |
 | 🗄️ | **your data** | | [Looking at your data](#looking-at-your-data) |
 
@@ -281,7 +281,7 @@ A route in hook mode isn't free. Your session's own model still reads the conver
 
 A route **down** is only taken when the saving is positive. Opus to Haiku always pays. A small step down with little context (Fable to Opus, say) often doesn't, and stays put (`skipped-overhead` in the log; `AGENTARIUM_PENNYWISE_OVERHEAD=off` routes anyway). A route **up** is logged as what quality cost extra, never as a saving. The proxy has no hand-off: its saving is the price difference on the request, minus a cache re-write when the switch leaves a warm cache behind.
 
-The savings show on the statusline's forecast row and in the band (`£0.41 saved by pennywise`), in `agentarium router status`, and in the weekly spend report. They are estimates, not a bill.
+The savings show on the status line's forecast row and in the band (`£0.41 saved by pennywise`), in `agentarium router status`, and in the weekly spend report. They are estimates, not a bill.
 
 **Measured, too.** A routed subagent's real usage is in the session transcript (its sidechain, or the per-agent file Claude Code keeps beside it). On your next prompt the hook reads it, prices each of the subagent's turns at its own model, and logs it beside the estimate (`measured_usd`, `measured_saved_usd`, and the task's shape: `m_steps`, `m_input`, `m_output`). `agentarium router status` shows both:
 
@@ -436,7 +436,7 @@ export AGENTARIUM_BUDGET_WORKDAYS=mon-fri                    # default
 export AGENTARIUM_BUDGET_DAYS_OFF=2026-12-24..2026-12-31     # holidays, dates or ranges
 ```
 
-Today's limit is *(allowance − spent this period before today) ÷ working days left*, today included. So a month that starts with a fortnight off leaves about twice as much per day for the rest of it, and a heavy week leaves less for the days after. It is a ceiling, not a target. Today's limit holds still while you work (it only counts spend before today), and today always counts as a working day, even on a weekend. Once the allowance is spent, the limit is zero until it resets. Set `AGENTARIUM_BUDGET_DAILY` as well to cap any single day; the lower of the two applies. The statusline, pennywise's budget squeeze and `budget.ts status` all use the same figure.
+Today's limit is *(allowance − spent this period before today) ÷ working days left*, today included. So a month that starts with a fortnight off leaves about twice as much per day for the rest of it, and a heavy week leaves less for the days after. It is a ceiling, not a target. Today's limit holds still while you work (it only counts spend before today), and today always counts as a working day, even on a weekend. Once the allowance is spent, the limit is zero until it resets. Set `AGENTARIUM_BUDGET_DAILY` as well to cap any single day; the lower of the two applies. The status line, pennywise's budget squeeze and `budget.ts status` all use the same figure.
 
 - At **80%** of a limit you get one notice.
 - At **100%**, your next prompt is paused with what you've spent and some cheaper ways on (`/compact`, a smaller model, a fresh session).
@@ -444,7 +444,7 @@ Today's limit is *(allowance − spent this period before today) ÷ working days
 - `AGENTARIUM_BUDGET_MODE=warn` only ever shows notices.
 - Check where you are with `node scripts/budget.ts status`.
 
-Spend is worked out from the token counts till records at the end of each turn, priced per model like the statusline (so it is at most one turn behind, and an estimate, not your invoice). Each increase is stored with its date, so a session that runs past midnight counts towards the right day. Copilot bills premium requests, which hooks can't see, so Copilot sessions never count towards a budget. Copilot also ignores prompt-hook output, so budget is Claude Code only.
+Spend is worked out from the token counts till records at the end of each turn, priced per model like the status line (so it is at most one turn behind, and an estimate, not your invoice). Each increase is stored with its date, so a session that runs past midnight counts towards the right day. Copilot bills premium requests, which hooks can't see, so Copilot sessions never count towards a budget. Copilot also ignores prompt-hook output, so budget is Claude Code only.
 
 ---
 
@@ -582,7 +582,7 @@ haggle: complex task, quoted £1.20 (likely £0.55–£2.90: input £0.40, tools
 - Automatic quotes (complex prompts, or any estimate over £0.50) tell you when the task passes its estimate and its cap, but never stop anything.
 - Start a prompt with **`haggle £2:`** to agree a price yourself. That is a hard cap: when it's reached, the agent's next tool call is refused with an instruction to stop, report what's done and what's left, and ask you to approve more.
 - Reply **`haggle +£1`** (or `approve` once it has stopped) to raise the cap; **`haggle off`** drops the contract.
-- **The band counts it down.** While a contract is open, its cap is a budget for the band and the statusline's forecast row: `£0.80 of £2.00 left this task · ~3 steps`, whenever it's tighter than your daily or session budget. When it won't last the next 10 steps and you're on Opus or above, the tip prices a cheaper model. A quote's cap counts too, even though only a price you set is enforced.
+- **The band counts it down.** While a contract is open, its cap is a budget for the band and the status line's forecast row: `£0.80 of £2.00 left this task · ~3 steps`, whenever it's tighter than your daily or session budget. When it won't last the next 10 steps and you're on Opus or above, the tip prices a cheaper model. A quote's cap counts too, even though only a price you set is enforced.
 - `AGENTARIUM_HAGGLE=strict` enforces every quote's cap; `off` turns it all off. `AGENTARIUM_HAGGLE_MIN` (0.50) and `AGENTARIUM_HAGGLE_CAP_X` (2) tune when a contract starts and how much headroom it gets.
 
 **"Is this task worth £2?"** `agentarium haggle quote "migrate the auth module to the new token API" --price 2` answers yes / probably / tight / unlikely, with the breakdown. `agentarium haggle status` lists recent contracts, quoted against actual.
@@ -1121,7 +1121,7 @@ The verdict bands: 8.5 and up is lean, 6.5 good, 4.5 leaky, below that costly. I
 
 ## Copilot premium requests
 
-Copilot CLI bills premium requests against a monthly allowance, not tokens, and its hooks don't report the model. Tell agentarium your allowance and the statusline's second row becomes a forecast, the way the band shows a budget:
+Copilot CLI bills premium requests against a monthly allowance, not tokens, and its hooks don't report the model. Tell agentarium your allowance and the status line's second row becomes a forecast, the way the band shows a budget:
 
 ```text
 ↳ 120 of 300 premium requests left this month  ·  ~8.8/day  ·  ~263 by month end  ·  next 10 prompts use 10
@@ -1133,26 +1133,26 @@ When the pace would use it all up before the month ends, the row says on which d
 - `AGENTARIUM_COPILOT_MULTIPLIERS`: premium requests per prompt for each model, e.g. `claude-haiku-4.5=0.33,gpt-4.1=0,claude-opus=10` (a key matches any model id containing it; the longest key wins). GitHub sets these per plan and changes them, so agentarium ships no table: copy yours from GitHub's billing docs.
 - `AGENTARIUM_COPILOT_MULTIPLIER`: the multiplier for any other model, and for prompts whose model isn't known (default 1).
 - **Each prompt at its own model.** Copilot's hooks don't say which model a prompt ran on, so till reads it, best effort, from Copilot's own files: the newest model in `~/.copilot/session-state/<session>/events.jsonl`, else `"model"` in `~/.copilot/config.json` (`AGENTARIUM_COPILOT_HOME` moves both). Only the model id is read. Each prompt is recorded with its model and multiplier (`telemetry_events.model`, `.premium`), the month adds them up, and "next 10 prompts use" is priced at the latest prompt's multiplier. Those files aren't a documented format, so when they don't name a model, the prompt counts at `AGENTARIUM_COPILOT_MULTIPLIER`.
-- **Copilot Fusion.** Fusion is a router in the model picker, not a model: it sends each task to a model of its choosing and bills that model at its usual rate. When the pick is Fusion (any id containing `fusion`, e.g. `copilot-fusion-high`), the prompt is recorded with the model Fusion last ran a request on as `model`, and the Fusion id as `telemetry_events.router`, so it counts at the routed model's multiplier. The statusline's model pill reads `Copilot Fusion → gpt-5` and `agentarium copilot` adds a `routing` line. Two limits: the hook fires before the turn is routed, so a prompt is counted at the model of the turn before it, and Fusion High and Max can call several models per task, of which only the newest is counted. Before anything is routed, the prompt counts at the multiplier for the Fusion id itself (add a `fusion=` key to `AGENTARIUM_COPILOT_MULTIPLIERS` to set it).
+- **Copilot Fusion.** Fusion is a router in the model picker, not a model: it sends each task to a model of its choosing and bills that model at its usual rate. When the pick is Fusion (any id containing `fusion`, e.g. `copilot-fusion-high`), the prompt is recorded with the model Fusion last ran a request on as `model`, and the Fusion id as `telemetry_events.router`, so it counts at the routed model's multiplier. The status line's model pill reads `Copilot Fusion → gpt-5` and `agentarium copilot` adds a `routing` line. Two limits: the hook fires before the turn is routed, so a prompt is counted at the model of the turn before it, and Fusion High and Max can call several models per task, of which only the newest is counted. Before anything is routed, the prompt counts at the multiplier for the Fusion id itself (add a `fusion=` key to `AGENTARIUM_COPILOT_MULTIPLIERS` to set it).
 - Counted from the Copilot prompts till records, by calendar month. An estimate; GitHub's billing page is the source of truth.
 
 **The premium guard** (`scripts/premium.ts`, run by the controller on Copilot) is budget's counterpart for premium requests. Once the month's requests are used up, it pauses the next prompt and says so; send the same prompt again to carry on, and it won't ask again that session. Copilot ignores prompt-hook output today (the adapter reports no `prompt_decision` capability), so for now the guard records `would-pause` once a session in `premium_events` and stays quiet. When Copilot honours the output, only the adapter changes. `AGENTARIUM_PREMIUM=warn` shows a notice instead of a pause; `off` turns it off.
 
 ---
 
-## statusline
+## status line
 
 One live line: model, how full the conversation is, tokens, cost and a countdown to when the prompt cache goes cold. It shows in these places:
 
 | | Where | What it is | Manage it |
 |---|---|---|---|
-| **statusline** | The bottom of Claude Code or GitHub Copilot CLI **in a terminal** | The CLI's own status line: a `statusLine` entry in its `settings.json` | `/agentarium:statusline` installs or removes it, per CLI |
-| **[band](#band)** | The **Claude desktop app**, above the prompt box | A row the plugin draws in the app's band (the app doesn't draw a status line) | On with the plugin; `/agentarium:statusline band off` hides it |
+| **status line** | The bottom of Claude Code or GitHub Copilot CLI **in a terminal** | The CLI's own status line: a `statusLine` entry in its `settings.json` | `/agentarium:statusline` installs or removes it, per CLI |
+| **[band](#band)** | The **Claude desktop app** and **VS Code**, directly above the prompt box | agentarium's row in the band, the strip where each mod draws a row (neither draws the status line) | On with the plugin; `/agentarium:statusline band off` hides it |
 | **[Copilot](#copilot-in-vs-code-and-the-copilot-app)** | **VS Code's status bar**, or a **small window** beside the GitHub Copilot app | Copilot's premium requests: left this month, the pace and when they run out | `agentarium vscode --status-bar`, `agentarium copilot --window` |
 
 Both show the same line, worked out by the same script (`scripts/statusline.ts`). The band adds the [outlook](#the-outlook-whats-coming-and-what-to-do) under it: what the next steps will cost and the one change that saves most.
 
-<p align="center"><img src="assets/statusline.svg" alt="The agentarium statusline at 8%, 76% and 92% context" width="720"></p>
+<p align="center"><img src="assets/statusline.svg" alt="The agentarium status line at 8%, 76% and 92% context" width="720"></p>
 
 | Part | What it tells you |
 |---|---|
@@ -1162,7 +1162,7 @@ Both show the same line, worked out by the same script (`scripts/statusline.ts`)
 | `£1.37` | What the session has cost, in your currency. A `~` in front (`~£1.37`) means it is an estimate. |
 | `◕ 04:12 cache` | A countdown to when the prompt cache expires. While it runs, repeated context is cheap. The pie clock empties as it runs down (`● ◕ ◑ ◔`), fading from **green** through **amber** to **red**. `○ cache cold` means the cache has gone cold, and `--:--` means nothing has been cached yet. |
 
-### Install the statusline
+### Install the status line
 
 Node.js 22.18+, nothing else. With the plugin, in Claude Code:
 
@@ -1179,31 +1179,31 @@ agentarium statusline --uninstall claude   # to remove
 agentarium statusline --status             # where is it installed, and is the band on?
 ```
 
-**Light or dark.** The statusline follows your computer's setting by default. To force one, put `{"theme": "dark"}` (or `"light"`) in `~/.agentarium/statusline.json`. Preview every state with `agentarium statusline --demo --theme light`. For very plain terminals use `--ascii` or set `NO_COLOR=1`.
+**Light or dark.** The status line follows your computer's setting by default. To force one, put `{"theme": "dark"}` (or `"light"`) in `~/.agentarium/statusline.json`. Preview every state with `agentarium statusline --demo --theme light`. For very plain terminals use `--ascii` or set `NO_COLOR=1`.
 
 **Currency and prices:** see [Configuration](configuration.md#currency).
 
 <details>
-<summary><b>Good to know about the statusline's countdown</b></summary>
+<summary><b>Good to know about the status line's countdown</b></summary>
 
 - It counts from the last request that used the cache. The cache lasts 5 minutes, or 1 hour if your session uses the 1-hour cache. Override with `"cache_ttl"` (seconds).
-- Claude Code redraws the statusline every second (this needs a recent version; on older ones it updates after each message).
+- Claude Code redraws the status line every second (this needs a recent version; on older ones it updates after each message).
 - Copilot CLI doesn't say how often it redraws or when its cache expires, so there the countdown is approximate and may only move when Copilot redraws.
 - For a smoothly ticking countdown in any assistant, run `node scripts/statusline.ts --watch` in a spare terminal pane.
 </details>
 
 ### band
 
-The same figures in the **Claude desktop app** (and the mobile app), in the **band above the prompt box**, laid out as a strip of stats: each figure large, with a small caption under it, the context as a rounded bar with the statusline's green-to-red colours, and the cache countdown as a ring that runs down. Captions turn amber or red when something needs you (`context · compact soon`, `cache going cold`), in the app's own theme colours. The app doesn't draw the CLI's status line, so the plugin draws this row itself (`hooks/band.tsx`, a [mod](https://code.claude.com/docs/en/plugins/mods/interface)).
+The same figures in the **Claude desktop app** (the mobile app too) and **VS Code**, as agentarium's row in the **band**, the strip Claude Code keeps directly above the prompt box, laid out as a line of stats: each figure large, with a small caption under it, the context as a rounded bar with the status line's green-to-red colours, and the cache countdown as a ring that runs down. Captions turn amber or red when something needs you (`context · compact soon`, `cache going cold`), in the app's own theme colours. The apps don't draw the CLI's status line, so agentarium's [mod](https://code.claude.com/docs/en/plugins/mods/interface) draws this row itself (`hooks/band.tsx`).
 
-- **On with the plugin.** It doesn't depend on the statusline: the band shows even if your terminal has another status line, or none.
+- **On with the plugin.** It doesn't depend on the status line: the row shows even if your terminal has another status line, or none.
 - **Exact.** It uses the same figures Claude Code gives the terminal's status line, so the cost has no `~`. The countdown ticks every second, and the numbers update as replies and tool results land.
-- **VS Code** has no band, so the line shows there as the plugin's status line above the prompt box.
+- **VS Code** gets the row in its band too, and the same line pinned as the plugin's own status line entry, under the prompt box.
 - **Where mods can't run** (an older Claude Code, or mods turned off), the desktop app and VS Code get the line as a short message after each reply instead, e.g. `✦ Opus 5.5  ·  ━━━━━━━╸──── 64% ctx  ·  1.7M tok  ·  ~£0.81  ·  ● 04:58 cache (cold at 12:37)`. It's a snapshot, so the countdown also tells you the clock time the cache goes cold.
 
 #### The outlook: what's coming, and what to do
 
-The line above says what the session *has* cost. The outlook, a second row of the band, says what it is *about to* cost, so you can change course before paying for it:
+The line above says what the session *has* cost. The outlook, a second line in agentarium's row, says what it is *about to* cost, so you can change course before paying for it:
 
 | Stat | What it tells you |
 |---|---|
@@ -1212,9 +1212,9 @@ The line above says what the session *has* cost. The outlook, a second row of th
 | **at risk** | What a cold cache would add to the next prompt: the whole context written to the cache again instead of read. Coloured like the countdown. Once the cache has gone cold it reads `+£0.58` · `cache cold · next prompt`. |
 | **→ saving** | The single change that saves most over the forecast, with its price: **reply within 01:40** (the cache is half gone), **/clear** (the cache is cold; [doggybag](#doggybag) keeps your notes), **/compact** (the context is 75% full or over 100k tokens) or **/model sonnet** (the budget won't last the forecast, and switching costs less than re-caching). Nothing shows when nothing saves at least a penny. |
 
-All of it is arithmetic on the session's own figures and the prices in `data/model-prices.json`: no model call, nothing stored. VS Code's status line and the after-reply message carry the same outlook as text, e.g. `next 10 ~£0.65  ·  £0.29 left  ·  → /compact saves ~£0.04`.
+All of it is arithmetic on the session's own figures and the prices in `data/model-prices.json`: no model call, nothing stored. The plugin's status line entry in VS Code and the after-reply message carry the same outlook as text, e.g. `next 10 ~£0.65  ·  £0.29 left  ·  → /compact saves ~£0.04`.
 
-**In the terminal** the outlook is the statusline's second row, under the line:
+**In the terminal** the outlook is the status line's second row, under the line:
 
 ```text
 ✦ Opus 5.5  ·  ━━━━━━━╸──── 62% ctx  ·  1.7M tok  ·  £0.91  ·  ◑ 01:40 cache
@@ -1228,11 +1228,11 @@ The budget turns amber and an over-budget or cold cache red, as in the band. `ag
 /agentarium:statusline band on        # show it again
 ```
 
-`AGENTARIUM_BAND=off` (or `on`) overrides the saved choice. The band turns on or off at the next reply.
+`AGENTARIUM_BAND=off` (or `on`) overrides the saved choice. agentarium's row turns on or off at the next reply.
 
 #### Copilot in VS Code and the Copilot app
 
-Copilot in VS Code and the GitHub Copilot app don't draw a status line or run mods, and their hooks carry no token counts, so there is no context gauge or cache timer to show. What they do have is a monthly premium-request allowance, so agentarium shows that, in VS Code's status bar and in a small window beside the Copilot app: the same numbers as `agentarium copilot` and the Copilot CLI statusline's second row, from `statusline.ts --copilot --json`.
+Copilot in VS Code and the GitHub Copilot app don't draw a status line or run mods, and their hooks carry no token counts, so there is no context gauge or cache timer to show. What they do have is a monthly premium-request allowance, so agentarium shows that, in VS Code's status bar and in a small window beside the Copilot app: the same numbers as `agentarium copilot` and the Copilot CLI status line's second row, from `statusline.ts --copilot --json`.
 
 | Where | Set it up | What you see |
 |---|---|---|
@@ -1242,11 +1242,11 @@ Copilot in VS Code and the GitHub Copilot app don't draw a status line or run mo
 - Without `AGENTARIUM_COPILOT_ALLOWANCE` it counts today's prompts and says how to get the forecast.
 - The status bar item is a small extension (`vscode/`). `agentarium vscode --status-bar` packs it as `~/.agentarium/vscode/agentarium-status.vsix` and installs it with VS Code's `code` command; if that isn't on your PATH, run **Extensions: Install from VSIX...** and pick the file. `agentarium vscode --status-bar --remove` (or `agentarium uninstall`) takes it out.
 - The window is served by the dashboard's local server (`/copilot`), so `agentarium copilot --window --stop` stops the dashboard too.
-- `AGENTARIUM_BAND=off` and `--band-off` hide both, as they hide the band.
+- `AGENTARIUM_BAND=off` and `--band-off` hide both, as they hide the band row.
 
 ### pane
 
-The band's numbers, and what to do about them, in a **pane beside the chat** (`hooks/pane.tsx`, a [mod pane](https://code.claude.com/docs/en/plugins/mods/interface#build-a-pane-with-tabs)). Three tabs, `1`, `2` and `3` once the pane has the keys:
+The band's numbers, and what to do about them, in a **pane beside the transcript** (`hooks/pane.tsx`, a [mod pane](https://code.claude.com/docs/en/plugins/mods/interface#build-a-pane-with-tabs)). Three tabs, `1`, `2` and `3` once the pane has the keys:
 
 | Tab | Shows |
 |---|---|
@@ -1255,10 +1255,10 @@ The band's numbers, and what to do about them, in a **pane beside the chat** (`h
 | **Advice** | Every change worth making now, the most urgent first: red for `Compact now` (context 90% full), `Cache is cold` and `Over budget`; then the outlook's saving (`→ /compact saves ~£0.20`); then amber for `Context filling up`, `Keep the cache warm` and `Budget running low`. The tab's name counts the red ones (`Advice (2)`). Nothing to do reads `Nothing to change`. |
 
 - **Opens by itself** in the Claude desktop and mobile apps, as soon as the app attaches to the session. Close it and it stays closed in later sessions; `/agentarium-pane` opens it again, in any surface, the terminal included.
-- **Says why it isn't showing.** The app decides whether to draw a pane, and one that doesn't tell Claude Code how it lays panes out never draws it. Then `/agentarium-pane` replies `Agentarium pane opened, but nothing here draws it yet:` and the reason, and a pane that opened by itself and is still undrawn after 10 seconds gets one line in the transcript saying so. The band has the same numbers meanwhile; `claude --debug` logs each open that waits.
-- **Claude Code only.** Copilot has no mods, so the GitHub Copilot app has no pane or band: [`agentarium copilot --window`](#copilot-in-vs-code-and-the-copilot-app) is its small window instead.
+- **Says why it isn't showing.** The app decides whether to draw a pane, and one that doesn't tell Claude Code how it lays panes out never draws it. Then `/agentarium-pane` replies `Agentarium pane opened, but nothing here draws it yet:` and the reason, and a pane that opened by itself and is still undrawn after 10 seconds gets one line in the transcript saying so. agentarium's row in the band has the same numbers meanwhile; `claude --debug` logs each open that waits.
+- **Claude Code only.** Copilot runs no mods, so the GitHub Copilot app has no pane or band row: [`agentarium copilot --window`](#copilot-in-vs-code-and-the-copilot-app) is its small window instead.
 - **Minimised** to a widget in the desktop app it shows a glance: spend, context, the cache countdown and the top piece of advice.
-- **The same numbers** as the band and the statusline, from `statusline.ts --json`: one source, so they never disagree. `AGENTARIUM_BAND=off` (or `--band-off`) turns them off for the pane too, and it says how to bring them back.
+- **The same numbers** as the band and the status line, from `statusline.ts --json`: one source, so they never disagree. `AGENTARIUM_BAND=off` (or `--band-off`) turns them off for the pane too, and it says how to bring them back.
 - **Advice is arithmetic**, not a model call: the context level, the cache countdown, the budget and the outlook's tip, each said once (a `/compact` tip stands in for `Compact now`).
 
 ---
@@ -1272,13 +1272,13 @@ A local web UI over the till database: a headline **% OPEX vs % CAPEX** split ba
   <img src="assets/dashboard-light.png" alt="The agentarium dashboard: OPEX vs CAPEX split of spend, spend and savings, and what each helper did, priced">
 </picture>
 
-**Spend** is in your display currency (`AGENTARIUM_CURRENCY`, or the statusline's saved choice), from the cost till records per day, so a long session's spend lands on the days it was spent. It covers token-billed sessions only: Copilot's premium requests are counted elsewhere and never priced. It opens on spend when there is any, and on tokens otherwise.
+**Spend** is in your display currency (`AGENTARIUM_CURRENCY`, or the status line's saved choice), from the cost till records per day, so a long session's spend lands on the days it was spent. It covers token-billed sessions only: Copilot's premium requests are counted elsewhere and never priced. It opens on spend when there is any, and on tokens otherwise.
 
 **What agentarium did** reads each helper's own event table back for the range and gives one line per helper that stepped in, biggest saving first:
 
 | Counts as | What | From |
 |---|---|---|
-| **Saved** | Spend a helper stopped and could price: pennywise's routes net of the hand-off (the same figure as the statusline and the weekly report), and the cache rebuild behind each edit cache-buster refused (`block` mode). Sending a hard prompt up is shown as what it cost, never subtracted. | `pennywise_events`, `cachebuster_events` |
+| **Saved** | Spend a helper stopped and could price: pennywise's routes net of the hand-off (the same figure as the status line and the weekly report), and the cache rebuild behind each edit cache-buster refused (`block` mode). Sending a hard prompt up is shown as what it cost, never subtracted. | `pennywise_events`, `cachebuster_events` |
 | **At stake** | What a notice priced when carrying on was still an option: kettle's cache at risk, too-many-cooks' subagents, cache-buster's warnings, hold-up's pastes. | `kettle_events`, `toomanycooks_events`, `holdup_events` |
 | **Tokens** | Kept out of the context (diet, and hold-up's pastes not sent again), carried into a new task (ballast), or what a `/clear` from a doggybag skips re-writing. | `diet_events`, `holdup_events`, `ballast_events`, `doggybag_events` |
 | **Times** | Loops broken (groundhog), edits questioned (blinkers), prompts paused (budget, hold-up, Copilot premium), tasks quoted and held to their price (haggle), repeated instructions spotted (parrot). | the matching `<name>_events` table, `contracts` |

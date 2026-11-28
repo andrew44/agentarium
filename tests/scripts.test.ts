@@ -1,4 +1,4 @@
-/** The standalone scripts: coach, dashboard, doggybag, statusline, pennywise, the CLI and launchers. */
+/** The standalone scripts: coach, dashboard, doggybag, status line, pennywise, the CLI and launchers. */
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from 'node:fs'
@@ -306,9 +306,9 @@ describe('statusline', () => {
   })
 })
 
-describe('statusline install', () => {
+describe('status line install', () => {
   // --sync is the plugin's SessionStart hook: it offers, auto-installs and refreshes the CLI
-  // statusline.
+  // status line.
   function setup(c: Parameters<typeof useTemp>[0]) {
     const t = useTemp(c)
     const h = t.home
@@ -380,8 +380,8 @@ describe('statusline install', () => {
     assert.equal(run(['--sync']), '')
     assert.ok(readFileSync(copy).equals(readFileSync(join(SCRIPTS, 'statusline.ts'))))
     assert.ok(existsSync(join(copy, '..', 'model-prices.json')))
-    assert.ok(run(['--status']).includes('claude statusline: installed'))
-    assert.ok(run(['--status']).includes('claude band (desktop app): on'))
+    assert.ok(run(['--status']).includes('claude status line: installed'))
+    assert.ok(run(['--status']).includes('claude band row (desktop app, VS Code): on'))
   })
 
   test('leaves another status line alone', (c) => {
@@ -396,7 +396,7 @@ describe('statusline install', () => {
   test('the sync message names the band in the desktop app', (c) => {
     const { run } = setup(c)
     const msg = JSON.parse(run(['--sync'], { CLAUDE_CODE_ENTRYPOINT: 'claude-desktop' })).systemMessage
-    assert.ok(msg.includes('statusline installed'))
+    assert.ok(msg.includes('status line installed'))
     assert.ok(msg.includes('in the band above the prompt box'))
     run(['--uninstall', 'claude'])
     assert.ok(JSON.parse(run(['--sync'])).systemMessage.includes('restart Claude Code'))
@@ -607,7 +607,7 @@ describe('the agentarium command', { skip: !POSIX && 'uses a shell-script stand-
     return { t, h, env, settings, log, cli }
   }
 
-  test('setup installs the plugin, the statusline and the launcher', (c) => {
+  test('setup installs the plugin, the status line and the launcher', (c) => {
     const { h, settings, log, cli } = setup(c)
     assert.ok(cli('setup').includes('plugin installed'))
     assert.ok(readFileSync(log, 'utf8').includes('plugin install agentarium@agentarium'))

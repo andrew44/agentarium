@@ -126,7 +126,7 @@ Each reply inside the window keeps the cache warm for free. If the assistant has
 kettle: 3:20 to reply before the cache goes cold (62,010 tokens, about £0.23 at risk)
 ```
 
-The **statusline** and **band** show the same countdown as you work.
+The **status line** and **band** show the same countdown as you work.
 
 ### 2. Stop cleanly instead of drifting off
 
@@ -172,7 +172,7 @@ Anthropic's [prompt caching guide](https://platform.claude.com/docs/en/build-wit
 
 | Helper | What it tells you |
 |---|---|
-| **[statusline](reference.md#statusline)** and **[band](reference.md#band)** | A live countdown to the cache going cold |
+| **[status line](reference.md#status-line)** and **[band](reference.md#band)** | A live countdown to the cache going cold |
 | **[kettle](reference.md#kettle)** | A notification when the assistant is waiting, with time left and money at risk |
 | **[doggybag](reference.md#doggybag)** | Packs a note before the cache expires, so a fresh start is cheap |
 | **[cache-buster](reference.md#cache-buster)** | Prices an instruction or setup edit before it rebuilds the cache |

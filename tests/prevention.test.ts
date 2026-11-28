@@ -830,7 +830,7 @@ describe('Copilot: premium requests, forecast like a budget', () => {
     assert.deepEqual([over.over, over.runs_out, over.next], [true, 'now', 40])
   })
 
-  test('the statusline row', () => {
+  test('the status line row', () => {
     const style = new statusline.Style('dark', false)
     const row = statusline.renderPremium(statusline.premiumOutlook(150, a, new Date('2026-11-11T00:00:00Z')), style)
     assert.ok(row.includes('150 of 300 premium requests left this month'), row)
@@ -845,7 +845,7 @@ describe('Copilot: premium requests, forecast like a budget', () => {
   })
 })
 
-describe('the band and statusline show what pennywise saved', () => {
+describe('the band and status line show what pennywise saved', () => {
   const cfg = { ...statusline.DEFAULT_CFG, currency: 'GBP', usd_gbp: 0.76 }
   const info: statusline.Info = { model: 'Opus 5.5', total: 4e6, cost: 1.46, symbol: '£', estimated: false, pct: 20, ttl: 300, remaining: 250,
     raw: { modelId: 'claude-opus-5-5', ctx: 40_000, window: 200_000, requests: 10, output: 6_000, rate: 0.76 } }

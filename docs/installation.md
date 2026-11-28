@@ -52,8 +52,8 @@ In the **Code** tab, start a **local** (or SSH) session, click **+** next to the
 
 - **Skills:** `/agentarium:coach`, `/agentarium:spend-report`, `/agentarium:dashboard`, `/agentarium:statusline`. You don't need the slash: *"coach, review my prompts"* or *"open the agentarium dashboard"* works too.
 - **Hooks:** `till`, `pennywise`, `diet`, `colander`, `budget` and `doggybag` (and the other guard-rails), running automatically. `/hooks` lists them.
-- **The statusline** switches itself on at the start of your next session, as long as you don't already have a status line, and updates itself with the plugin. Set `AGENTARIUM_STATUSLINE=ask` to be asked first, or `off` to leave it off. `/agentarium:statusline` installs, removes or changes it.
-- **The band** (desktop app): the same line above the prompt box, on from your next session whether or not the statusline is installed. `/agentarium:statusline band off` hides it.
+- **The status line** switches itself on at the start of your next session, as long as you don't already have a status line, and updates itself with the plugin. Set `AGENTARIUM_STATUSLINE=ask` to be asked first, or `off` to leave it off. `/agentarium:statusline` installs, removes or changes it.
+- **A row in the band** (desktop app and VS Code): the same line, in the strip directly above the prompt box, on from your next session whether or not the status line is installed. `/agentarium:statusline band off` hides it.
 
 **Check it worked:** type `/` and look for `/agentarium:coach`.
 
@@ -110,14 +110,14 @@ How to open a terminal: on a **Mac** press `Cmd + Space`, type `Terminal`, press
 1. **Checks for Node.js 22.18+.** agentarium only uses Node's built-in modules. If there's no Node.js, or only an older one, it downloads a private copy of the official Node.js 24 LTS build (pinned, and checked against its SHA-256) into `~/.agentarium/runtime`: no admin rights, no pop-ups.
 2. **Downloads agentarium** to `~/.agentarium/app` (a plain download, not a git clone).
 3. **Adds the plugin** to every assistant it finds: Claude Code (`claude plugin install`, user scope) and/or GitHub Copilot CLI (`copilot plugin install`).
-4. **Switches on the statusline** for those assistants. If you already have a status line, it's left alone (replace it later with `agentarium statusline --install claude`).
+4. **Switches on the status line** for those assistants. If you already have a status line, it's left alone (replace it later with `agentarium statusline --install claude`).
 5. **Adds an `agentarium` command** (in `~/.local/bin` on macOS/Linux, `~/.agentarium/bin` on Windows, put on your PATH for you).
 
 It's safe to run again: it repairs and updates what's there. Want to look before you run? Read [install.sh](../install.sh) and [install.ps1](../install.ps1).
 
 **Options.** Skip parts with `sh -s -- --no-plugin` or `--no-statusline` (on Windows set `$env:AGENTARIUM_SETUP_ARGS = "--no-statusline"` first). To install from a fork, a tag or a branch, set `AGENTARIUM_REPO=your-org/agentarium` or `AGENTARIUM_REF=v0.0.1`. The default is `main`, which is always the latest release.
 
-**Check it worked:** run `agentarium`. It shows which assistants it found and where the statusline is installed. In Claude Code, type `/` and look for `/agentarium:coach`; `/hooks` lists the hooks.
+**Check it worked:** run `agentarium`. It shows which assistants it found and where the status line is installed. In Claude Code, type `/` and look for `/agentarium:coach`; `/hooks` lists the hooks.
 
 #### The `agentarium` command
 
@@ -126,11 +126,11 @@ It's safe to run again: it repairs and updates what's there. Want to look before
 | `agentarium` | What's installed and where your data is |
 | `agentarium dashboard` | Opens the dashboard in your browser (`--demo` for sample data, `--stop` to stop it) |
 | `agentarium report` | Spend report in the terminal (`--days 30`, `--json`) |
-| `agentarium statusline ...` | Statusline and band options: `--demo`, `--set-currency USD`, `--install both`, `--uninstall claude`, `--band-off` |
+| `agentarium statusline ...` | Status line and band options: `--demo`, `--set-currency USD`, `--install both`, `--uninstall claude`, `--band-off` |
 | `agentarium vscode [folder]` | Adds the VS Code agent hooks to a workspace (`.github/hooks/agentarium.json`); `--remove` takes them out, `--print` shows them, `--force` replaces a changed file. `--status-bar` puts Copilot's premium requests in VS Code's status bar (`--status-bar --remove` takes it out) |
 | `agentarium copilot` | Copilot's premium requests: left this month, the pace and when they run out (`--json`); `--window` keeps them in a small window, for the GitHub Copilot app (`--window --stop` to stop it) |
-| `agentarium update` | Downloads the latest version and updates the plugins and statusline |
-| `agentarium uninstall` | Removes the plugins, statusline and command (keeps your data; `--purge` deletes it too) |
+| `agentarium update` | Downloads the latest version and updates the plugins and status line |
+| `agentarium uninstall` | Removes the plugins, status line and command (keeps your data; `--purge` deletes it too) |
 | `agentarium --version` | The version installed |
 | `agentarium import` | Brings a tokenomics install's history and settings over (`--dry-run` first; see [Moving from tokenomics](#moving-from-tokenomics)) |
 | `agentarium bang-for-buck`, `split-the-bill` ... | Runs a helper by name. Each also answers to its name as one word, the way its setting spells it (`bangforbuck`, `splitthebill`, `coldsnap` ...) |
@@ -148,7 +148,7 @@ Every helper works on its own. Pick what you want:
 | **coach** (prompt review skill) | `npx skills@latest add andrew44/agentarium --skill coach` | Needs Node.js. Works in Claude Code and other assistants the `skills` CLI supports. Without the plugin it reviews the prompts it can see; with the plugin it also gets exact token and cache numbers. |
 | **spend-report** (weekly spend skill) | `npx skills@latest add andrew44/agentarium --skill spend-report` | Reports on what **till** has recorded, so install the plugin too. |
 | **Both skills** | `npx skills@latest add andrew44/agentarium` | Pick from the list (arrows to move, space to tick, Enter to confirm). Add `-g` to install globally, `--list` to preview. |
-| **statusline** only | `curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh \| sh -s -- --no-plugin` | Statusline and the `agentarium` command, no hooks. Needs only Node.js. `agentarium statusline --uninstall claude` removes it. |
+| **status line** only | `curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh \| sh -s -- --no-plugin` | Status line and the `agentarium` command, no hooks. Needs only Node.js. `agentarium statusline --uninstall claude` removes it. |
 | **dashboard** | `agentarium dashboard`, or `/agentarium:dashboard` with the plugin | Read-only view of the till database. |
 | **Just some of the hooks** | Install everything, then switch off the ones you don't want | See below. |
 
@@ -232,14 +232,14 @@ Tracking on the web isn't useful: the data would be saved on a temporary cloud m
 
 ## GitHub Copilot CLI
 
-The [one-line installer](#the-one-line-installer) sets up Copilot CLI too: the plugin and the statusline. To do it by hand instead:
+The [one-line installer](#the-one-line-installer) sets up Copilot CLI too: the plugin and the status line. To do it by hand instead:
 
 ```bash
 copilot plugin install andrew44/agentarium          # from GitHub
 copilot plugin install ./path/to/agentarium         # from a local folder
 ```
 
-Then start `copilot`, check that `/plugin list` shows `agentarium`, and send a prompt. Add the statusline with `agentarium statusline --install copilot`.
+Then start `copilot`, check that `/plugin list` shows `agentarium`, and send a prompt. Add the status line with `agentarium statusline --install copilot`.
 
 What works on Copilot:
 
@@ -249,7 +249,7 @@ What works on Copilot:
 | diet | ✅ |
 | colander | ✅ through `postToolUse` `modifiedResult`, successful commands only (documented; not yet confirmed on a real install) |
 | doggybag | ✅ best effort |
-| statusline | ✅ (countdown is approximate) |
+| status line | ✅ (countdown is approximate) |
 | dashboard | ✅ |
 | pennywise, budget | ❌ Copilot ignores prompt-hook output |
 | coach | ❌ no conversation file to read |
@@ -260,7 +260,7 @@ What works on Copilot:
 - Copilot reads `plugin.json` and `copilot-hooks.json` at the plugin root (`userPromptSubmitted`, `preToolUse`, `postToolUse` and `sessionEnd` hooks).
 - Copilot sends a session id with every hook, and till logs each session under it. If one is ever missing, till builds one from the working directory and date.
 - Copilot sessions are labelled from the words in each prompt **and** the tools Copilot used (file edits lean CAPEX, observability tools and commands like `kubectl logs` lean OPEX). Same scoring as Claude Code.
-- Copilot doesn't tell hooks how many tokens or premium requests a session used, so those columns stay empty (`usage_status = unavailable`). till never guesses a number for them. Prompts are counted, though: set `AGENTARIUM_COPILOT_ALLOWANCE` (your monthly premium requests) and the statusline forecasts what's left this month and when it runs out ([details](reference.md#copilot-premium-requests)).
+- Copilot doesn't tell hooks how many tokens or premium requests a session used, so those columns stay empty (`usage_status = unavailable`). till never guesses a number for them. Prompts are counted, though: set `AGENTARIUM_COPILOT_ALLOWANCE` (your monthly premium requests) and the status line forecasts what's left this month and when it runs out ([details](reference.md#copilot-premium-requests)).
 - The hook commands use relative paths (`scripts/run.sh`, `scripts\\till.ts`). If Copilot runs them from a different folder and you see "file not found" in `<db>.err`, change the path in `copilot-hooks.json` to an absolute one.
 - Copilot's plugin format is still changing; check the current Copilot docs if the install fails.
 </details>
@@ -276,7 +276,7 @@ The [GitHub Copilot app](https://docs.github.com/en/copilot/concepts/agents/gith
 Skills and MCP servers set up for Copilot CLI show up in the app on their own, so if the plugin is already installed for the CLI, check **Customize** before adding it again.
 
 - The hooks are the CLI's (`copilot-hooks.json`), so prompts and tool calls are recorded under the `copilot` platform, with the same helpers and limits as [Copilot CLI](#github-copilot-cli). Sessions from the app and the CLI share one premium-request allowance and one forecast.
-- The app has no terminal and no mods, so there's no statusline, band or pane. `agentarium copilot --window` opens [a small window](reference.md#copilot-in-vs-code-and-the-copilot-app) to keep beside the app: premium requests left this month, the pace and when they run out. `agentarium copilot --window --stop` closes its server.
+- The app has no terminal and no mods, so there's no status line, band or pane. `agentarium copilot --window` opens [a small window](reference.md#copilot-in-vs-code-and-the-copilot-app) to keep beside the app: premium requests left this month, the pace and when they run out. `agentarium copilot --window --stop` closes its server.
 - GitHub doesn't yet document the app's hook payloads separately from the CLI's. If a hook fails, look in `<db>.err`; if the app turns out to send a different shape, it gets an adapter of its own ([#28](https://github.com/andrew44/agentarium/issues/28)).
 
 ## Copilot in VS Code
@@ -319,7 +319,7 @@ Reload the window afterwards. If `code` isn't on your PATH, the command leaves `
 
 | You want... | You need |
 |---|---|
-| The plugin, statusline or dashboard | **Node.js 22.18+**. It runs the TypeScript directly, with built-in modules only: no packages, no build step, ever. The installers get it for you if it's missing. |
+| The plugin, status line or dashboard | **Node.js 22.18+**. It runs the TypeScript directly, with built-in modules only: no packages, no build step, ever. The installers get it for you if it's missing. |
 | To work on agentarium itself | **TypeScript** and `@types/node` (dev dependencies: `npm install`, then `npm run typecheck`). Not needed to use it. |
 | Skills via `npx skills` | Node.js |
 | Any of it | [Claude Code](https://code.claude.com/docs/en/setup) and/or [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-copilot-cli) |
@@ -332,8 +332,8 @@ Reload the window afterwards. If `code` isn't on your PATH, the command leaves `
 |---|---|
 | Check it's installed | In Claude Code, run `/plugin` and open the **Installed** tab, or run `claude plugin list` in a terminal. `/hooks` shows the hooks. |
 | Update it | Switch on auto-update: `/plugin` → **Marketplaces** → **agentarium**. Or by hand: `/plugin` → **Installed** → **Update now**, or `claude plugin update agentarium@agentarium`. Used the one-liner? `agentarium update` also works. |
-| Remove it | `/plugin uninstall agentarium@agentarium` (or `claude plugin uninstall agentarium@agentarium`). Used the one-liner? `agentarium uninstall` removes the plugins, statusline and command and keeps your data (`--purge` deletes `~/.agentarium` too). |
-| Update or remove the statusline | It updates itself with the plugin (or `agentarium update`). `agentarium statusline --uninstall claude` or `/agentarium:statusline uninstall` removes it; `agentarium statusline --status` shows where it's installed. |
+| Remove it | `/plugin uninstall agentarium@agentarium` (or `claude plugin uninstall agentarium@agentarium`). Used the one-liner? `agentarium uninstall` removes the plugins, status line and command and keeps your data (`--purge` deletes `~/.agentarium` too). |
+| Update or remove the status line | It updates itself with the plugin (or `agentarium update`). `agentarium statusline --uninstall claude` or `/agentarium:statusline uninstall` removes it; `agentarium statusline --status` shows where it's installed. |
 | Update or remove skills installed with `npx` | `npx skills update` or `npx skills remove coach`. `npx skills list` shows what's installed. |
 | Install for a whole team | See [For a team](#for-a-team). |
 
@@ -353,7 +353,7 @@ What comes over, into `~/.agentarium`, with tokenomics's own files left exactly 
 | `config.json`: the profile, per-folder profiles and settings | merged into `config.json`, with `TOKENOMICS_` names as `AGENTARIUM_` ones; a value agentarium already has is kept |
 | `statusline.json`, `router.json`, `providers.json`, `plans.json` and pennywise's learned thresholds and eval misses | merged the same way |
 | `TOKENOMICS_*` settings in your shell or in Claude Code's `settings.json` `"env"` | `config.json` `"settings"`, where agentarium reads them (agentarium doesn't read `TOKENOMICS_` variables; an `AGENTARIUM_` one still wins over the file) |
-| the statusline, if it runs tokenomics's copy | agentarium's copy (also done by itself at the first session start) |
+| the status line, if it runs tokenomics's copy | agentarium's copy (also done by itself at the first session start) |
 
 The names that changed: the plugin is `agentarium@agentarium` from `andrew44/agentarium`, the command is `agentarium`, settings start `AGENTARIUM_`, the data folder is `~/.agentarium`, **spendlens** is now **till** (its database `till.db`), the pane is `/agentarium-pane` and the VS Code hook file `.github/hooks/agentarium.json` (run `agentarium vscode` again in each workspace, and `agentarium vscode --status-bar` for the status bar item). A waistline baseline keeps working under its old file name; `--baseline` takes any path.
 
@@ -398,12 +398,12 @@ To host your own copy for a team, push the folder to your own Git repo and use `
 | Hooks don't seem to run (Claude Code) | Restart Claude Code, then run `/hooks`. Make sure the plugin is switched on in `/plugin`. |
 | Sessions are missing, or labelled `unknown` | Look for `till.db.err` next to the database (`~/.agentarium/`). Errors go there, never on screen. |
 | *Everything* is labelled `unknown` | Your prompts didn't match any keywords. Add terms to the pattern lists in `agentarium/engine/classifier.ts`, or switch on the [AI classifier](reference.md#optional-let-an-ai-model-decide). |
-| The statusline doesn't show | The statusline is for the terminal: restart the assistant there. Run `agentarium statusline --status` to see which settings file it's in (another status line wins until you replace it), or re-run `/agentarium:statusline`. |
-| The band doesn't show in the desktop app | It sits above the prompt box (in VS Code: the plugin's line above the prompt box). Start a new session after installing or updating the plugin, check `agentarium statusline --status` says the band is on, and that the band isn't collapsed (`[-]`). |
-| The pane doesn't show in the desktop app | Run `/agentarium-pane`: it opens the pane and, if the app isn't drawing it, says why (the band above the prompt box has the same numbers meanwhile). A pane you closed by hand stays closed in later sessions until you run it. Start a new session after updating the plugin. |
-| No pane or band in the GitHub Copilot app | Neither can show there: they are Claude Code mods, and Copilot has none. `agentarium copilot --window` opens a small window to keep beside the app. |
+| The status line doesn't show | The status line is for the terminal: restart the assistant there. Run `agentarium statusline --status` to see which settings file it's in (another status line wins until you replace it), or re-run `/agentarium:statusline`. |
+| agentarium's row doesn't show in the band | The band is the strip directly above the prompt box, in the desktop app and VS Code (VS Code also pins the line as the plugin's status line entry, under the prompt box). Start a new session after installing or updating the plugin, check `agentarium statusline --status` says the band row is on, and that the band isn't collapsed (`[-]`). |
+| The pane doesn't show in the desktop app | Run `/agentarium-pane`: it opens the pane and, if the app isn't drawing it, says why (agentarium's row in the band above the prompt box has the same numbers meanwhile). A pane you closed by hand stays closed in later sessions until you run it. Start a new session after updating the plugin. |
+| No pane or band row in the GitHub Copilot app | Neither can show there: a Claude Code mod draws them, and Copilot runs no mods. `agentarium copilot --window` opens a small window to keep beside the app. |
 | Copilot's numbers don't show in VS Code's status bar | Run `agentarium vscode --status-bar` again and reload the window. Hover the item: if it says it couldn't read the numbers, check `agentarium statusline --status`. Right-click the status bar to check **agentarium: Copilot premium requests** isn't hidden. |
-| Odd characters in the statusline | Use `--ascii`, or set `NO_COLOR=1` for no colours. |
+| Odd characters in the status line | Use `--ascii`, or set `NO_COLOR=1` for no colours. |
 
 ---
 

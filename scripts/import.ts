@@ -15,7 +15,7 @@
  *   TOKENOMICS_* settings    from this shell and from Claude Code's settings.json "env", into
  *                            config.json "settings", where agentarium reads them (an AGENTARIUM_*
  *                            variable still wins over the file)
- *   the statusline           moved to agentarium's copy if it still runs tokenomics's
+ *   the status line          moved to agentarium's copy if it still runs tokenomics's
  *
  * `agentarium setup` runs it by itself when agentarium has recorded nothing yet.
  *
@@ -266,7 +266,7 @@ export function summary(r: Result): string[] {
   }
   for (const f of r.files) L.push(`  ✓ ${f.name}: ${n(f.keys, 'value')}${f.created ? '' : ' added, yours kept'}`)
   if (r.settings.length) L.push(`  ✓ settings from your environment: ${r.settings.join(', ')}, into config.json (agentarium doesn't read TOKENOMICS_ variables)`)
-  if (r.statusline.length) L.push(`  ✓ statusline: agentarium's copy ${r.dryRun ? 'would replace' : 'replaced'} tokenomics's (${r.statusline.join(' and ')})`)
+  if (r.statusline.length) L.push(`  ✓ status line: agentarium's copy ${r.dryRun ? 'would replace' : 'replaced'} tokenomics's (${r.statusline.join(' and ')})`)
   if (L.length === 1) L.push('  · agentarium already has all of it')
   if (r.tokenomicsPluginOn) L.push('  ! tokenomics is still installed in Claude Code, so every prompt is checked twice. Remove it: claude plugin uninstall tokenomics@tokenomics')
   return L

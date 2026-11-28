@@ -55,7 +55,7 @@ const LESSONS: ((c: Context) => Lesson)[] = [
       'window it is re-read at a small fraction of the input price; after it, the whole conversation is written to the cache ' +
       'again at 1.25 times the full input price.',
     how: 'before a break, leave it: doggybag packs a note, and /clear when you come back starts from that note instead of ' +
-      'the whole conversation. Or send the next prompt before the statusline\'s cache countdown runs out.',
+      'the whole conversation. Or send the next prompt before the status line\'s cache countdown runs out.',
   }),
   () => ({
     key: 'repeated-rule', topic: 'Telling the AI the same rule every session',

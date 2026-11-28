@@ -5,7 +5,7 @@
  * Prompt hook (Claude Code: UserPromptSubmit). Shows a notice at 80% of a limit and pauses the
  * next prompt once a limit is reached; send the same prompt again (or start it with "over-budget:")
  * to carry on. Both say where the money usually goes (engine/lessons.ts). Spend is what till
- * recorded, priced like the statusline.
+ * recorded, priced like the status line.
  * Limits are in the display currency: AGENTARIUM_CURRENCY = GBP (default) | USD | EUR.
  * Copilot bills premium requests, not tokens, so it has no spend to budget against.
  *

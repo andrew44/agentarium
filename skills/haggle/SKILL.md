@@ -13,7 +13,7 @@ Give every substantial task a price before work starts. All figures come from th
 sh "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh" haggle.ts quote "<the task, in the user's words>" --price 2 --json
 ```
 
-- `--price` is the amount the user named, in their currency (omit if none). Pass `--model <id>` if they'll run it on a specific model, and `--context <tokens>` when continuing a long session (the statusline shows the context size).
+- `--price` is the amount the user named, in their currency (omit if none). Pass `--model <id>` if they'll run it on a specific model, and `--context <tokens>` when continuing a long session (the status line shows the context size).
 - If `CLAUDE_PLUGIN_ROOT` is empty: `find ~/.claude/plugins ./ -name haggle.ts -path "*agentarium*" 2>/dev/null | head -1`.
 
 ## 2. Reply format

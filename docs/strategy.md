@@ -53,7 +53,7 @@ What pennywise does now:
   starts in the background and points Claude Code at.
 - **Only routes when it pays.** Every route is priced net of the hand-off (the session's model still
   reads the conversation to pass the task on and relay the answer); a route down that the hand-off
-  would eat isn't taken. What it saved, net, shows on the statusline, the band and the weekly report,
+  would eat isn't taken. What it saved, net, shows on the status line, the band and the weekly report,
   and the routed subagent's real cost is measured from the transcript beside the estimate.
 - **Spends to the budget**, in the hook and the proxy. Once a daily or session budget passes its
   warning share, pennywise routes down harder (every tier threshold rises) and stops routing up, so
@@ -85,7 +85,7 @@ The original line (model, context, tokens, spent, cache countdown) stays above i
 line and the after-reply message (where mods can't run) carry the same outlook. All of it is
 arithmetic on the session's own figures: no model call, nothing stored.
 
-Since then: the outlook is the terminal statusline's second row, and both show what pennywise saved
+Since then: the outlook is the terminal status line's second row, and both show what pennywise saved
 this session, net of its hand-offs. Next for the band is in the [roadmap](#roadmap).
 
 ## Copilot compatibility is a strategic asset
@@ -97,7 +97,7 @@ assistant, and prevention that only works in one of them is a policy with a hole
 We're honest about the differences rather than pretending they don't exist:
 
 - **What prevents spend on Copilot today:** diet, groundhog, blinkers, doggybag, till and the
-  statusline, with a premium-request forecast: requests left this month, the pace, the day they run
+  status line, with a premium-request forecast: requests left this month, the pace, the day they run
   out, and what the next prompts use (`AGENTARIUM_COPILOT_ALLOWANCE`, `agentarium copilot`), each
   prompt counted at its own model's multiplier when Copilot's session state names the model.
 - **What can't yet:** Copilot ignores hook output on prompt submit, so pennywise's hook routing,
@@ -121,8 +121,8 @@ what the assistant can report, never a second implementation.
 | | What | Where it lives |
 |---|---|---|
 | ✅ | **The proxy spends to the budget too.** Squeezed thresholds and no routing up, as in the hook. | `pennywise.ts` `Router.decide` |
-| ✅ | **The outlook on the terminal statusline**, as a second row. | `statusline.ts` `renderOutlook` |
-| ✅ | **pennywise's savings, net of the hand-off.** Every route is priced (stay − hand-off − routed); a route down the hand-off would eat isn't taken; savings are logged per route and shown on the statusline, the band, `router status` and the weekly report. Routes up are counted as what quality cost, never as savings. | `estimateHandoff`, `estimateRequest`, `pennywise_events.saved_usd` |
+| ✅ | **The outlook on the terminal status line**, as a second row. | `statusline.ts` `renderOutlook` |
+| ✅ | **pennywise's savings, net of the hand-off.** Every route is priced (stay − hand-off − routed); a route down the hand-off would eat isn't taken; savings are logged per route and shown on the status line, the band, `router status` and the weekly report. Routes up are counted as what quality cost, never as savings. | `estimateHandoff`, `estimateRequest`, `pennywise_events.saved_usd` |
 | ✅ | **Cache- and context-aware hook routing** (part one). The hook reads the session's context size from the transcript, so the hand-off's price, and the decision, scale with it. | `lastTurn`, `estimateHandoff` |
 | ✅ | **The proxy as the recommended way to run.** `agentarium router on / off / status`: the proxy in the background, Claude Code pointed at it, restarted by a SessionStart hook when it's down. | `startBackground`, `setProxyEnv`, `ensure` |
 | ✅ | **One session controller.** The eight prompt-time helpers run in one process, in decision order; the first pause decides alone, otherwise one message. | `controller.ts` |
@@ -131,7 +131,7 @@ what the assistant can report, never a second implementation.
 | ✅ | **Move back up when a routed answer didn't land** (hook: the session's model; proxy: one tier up). | `FAILED_RE`, `ESCALATE_WINDOW` |
 | ✅ | **Profiles and one config file.** `frugal` / `balanced` / `quality`, and `~/.agentarium/config.json` for your own defaults; env > file > profile. | `agentarium/profile.ts`, `agentarium profile` |
 | ✅ | **Fewer things to learn.** Three groups (prevent, look forward, prove and audit) and one `audit` that runs every leak check, biggest money first. | `audit.ts`, the README |
-| ✅ | **Copilot: a premium-request budget and forecast** on the statusline and `agentarium copilot`. | `premiumOutlook`, `renderPremium` |
+| ✅ | **Copilot: a premium-request budget and forecast** on the status line and `agentarium copilot`. | `premiumOutlook`, `renderPremium` |
 | ✅ | **Measured, not just estimated, savings.** The next prompt reads what the routed subagent really used from the transcript and logs it beside the estimate; `router status` shows both; `learn` calibrates the task shape (`WORK`) from the measured routes. | `measureSidechain`, `work()`, `measuredSummary` |
 | ✅ | **Cache-aware hook routing** (part two). The hook prices the hand-off with the session's cache: cold, both sides pay the context re-write (so it's priced, but it doesn't change whether a route pays: the Agent call re-writes it too); warm, a routed task that outlasts the cache costs the relay a re-write, which stops big-context routes down. | `cacheState`, `estimateHandoff(…, cache)` |
 | ✅ | **Escalate on evidence, not only words.** A routed-down answer that ended on a failing check, was reverted or refused, or tripped groundhog counts as a miss in the hook; in the proxy's tool loop, two failing checks in a row, a revert or a groundhog refusal moves up one tier mid-loop. | `missEvidence`, `loopEvidence` |
@@ -141,9 +141,9 @@ what the assistant can report, never a second implementation.
 | ✅ | **Profiles per project and per phase.** `"projects"` in config.json picks a profile by folder (longest prefix wins); with `budget_profile` set, the budget hook marks a day past its warning share and that profile applies for the rest of it. | `projectProfile`, `inBudgetPhase`, `budget.markPhase` |
 | ✅ | **A growing evaluation set.** Each escalation and `keep-model:` is kept as a labelled case (hash and score; the text only with `AGENTARIUM_PENNYWISE_EVAL=text`); `router eval --mine` scores them; `router eval --check` fails CI on a scorer regression. | `addCase`, `pennywise_eval.json`, `tests.yml` |
 | ✅ | **Copilot model multipliers.** The Copilot adapter reads the session's model from Copilot's session state (or config) when it's there; each prompt is recorded at that model's multiplier (`AGENTARIUM_COPILOT_MULTIPLIERS`, your figures: GitHub lists them per plan) and the forecast adds them up. | `sessionModel`, `engine/premium.ts`, `copilotUsage` |
-| ✅ | **Copilot Fusion routing.** When the pick is Copilot Fusion, the adapter reports the model Fusion routed to and Fusion as the router; the prompt counts at the routed model's multiplier and the statusline shows `Copilot Fusion → <model>`. | `sessionRoute`, `telemetry_events.router`, `copilotRoute` |
+| ✅ | **Copilot Fusion routing.** When the pick is Copilot Fusion, the adapter reports the model Fusion routed to and Fusion as the router; the prompt counts at the routed model's multiplier and the status line shows `Copilot Fusion → <model>`. | `sessionRoute`, `telemetry_events.router`, `copilotRoute` |
 | ✅ | **Copilot in VS Code.** A `vscode` adapter for VS Code's agent hooks (preview): prompts and tool calls recorded, diet, groundhog and blinkers on tool calls, and the premium guard, which can pause there. `agentarium vscode` installs the hooks into a workspace. | `adapters/vscode.ts`, `vscode-hooks.json`, `premiumBilled` |
-| ✅ | **The pane.** The band's numbers beside the chat in three tabs (Now, Ahead, Advice), the advice listed in full, most urgent first; a glance when minimised. | `hooks/pane.tsx`, `advise` |
+| ✅ | **The pane.** The band row's numbers beside the transcript in three tabs (Now, Ahead, Advice), the advice listed in full, most urgent first; a glance when minimised. | `hooks/pane.tsx`, `advise` |
 | ✅ | **Controller latency in `agentarium doctor`.** The controller times each prompt-time helper (`controller_events`); `doctor` shows each one's median and p90 and flags one that slows every prompt. | `latency`, `latencyLines` |
 | ✅ | **Every Claude Code hook event in use.** `PostToolUse` (diet learns what each program prints), `SubagentStop` (each subagent's real cost), `PreCompact` (doggybag before compaction) and `Notification` (kettle: time left on the cache). Two new guards catch spend before it happens: cache-buster (an instruction-file edit mid-session) and too-many-cooks (a subagent not worth sending). | `cachebuster.ts`, `toomanycooks.ts`, `kettle.ts`, `engine/prefix.ts` |
 | ✅ | **A guard on pasted logs.** hold-up pauses a prompt of 10,000 tokens or more before it joins the conversation, says whether it's a log, data, an encoded blob, a diff, source code, a document or other text, prices carrying it and suggests pointing the agent at the file instead. It also pauses a short prompt that is blatantly too broad ("refactor the whole codebase") with nothing named to start from. Claude Code and VS Code. | `holdup.ts`, `engine/holdup.ts` |
@@ -218,7 +218,7 @@ and `till.ts capabilities` prints the lot as JSON. So the work is closing five g
   seen from the payload. The adapter declares it per platform version (Copilot's CLI version, read the way
   `sessionModel` reads session state) with `AGENTARIUM_<PLATFORM>_CAPS` as a user override, for example
   `AGENTARIUM_COPILOT_CAPS=prompt_decision:native`. The premium guard then flips on with no release.
-- **Four new capabilities:** `statusline` (a command-driven status bar), `proxy_endpoint` (the tool can
+- **Four new capabilities:** `statusline` (a command-driven status line), `proxy_endpoint` (the tool can
   use a custom base URL, so the router can sit in front of it), `tool_decision` (a pre-tool hook can deny
   or ask) and `reported_cost` (the platform states money or credits itself). `tool_output_interception`
   goes back to meaning only "can rewrite a tool's result".
@@ -599,7 +599,7 @@ every Codex figure shows as tokens only.
 | blinkers, haggle guard | yes, warn or deny | no ask: the override goes in the deny reason |
 | budget | yes | pauses on `UserPromptSubmit` from measured spend once prices exist |
 | ballast, parrot, doggybag | yes | context on `UserPromptSubmit` and `SessionStart` |
-| the band's forecast | in the after-reply `systemMessage` | no statusline to put it on |
+| the band's forecast | in the after-reply `systemMessage` | no status line to put it on |
 | pennywise | records the tier it would pick, routes nothing | the hook can't change the model and the router only speaks Anthropic Messages; see the ideas below |
 | bang-for-buck, taste-test, sherlock | yes, from `Stop` | not from `SessionEnd`: 1 s is too short |
 

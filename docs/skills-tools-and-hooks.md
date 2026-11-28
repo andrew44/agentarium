@@ -20,8 +20,8 @@ New to tokens, the prompt cache or why context costs money? Read [How tokens wor
 |--------------|-----------|------|
 | Know why a session was expensive, or get better at prompting | [coach](#coach) | Skill |
 | See what I spent this week / month, and where | [spend-report](#spend-report) | Skill |
-| Know how full the conversation is and what it has cost, right now | [statusline](#statusline) | Tool |
-| Know how long until the prompt cache goes cold | [statusline](#statusline) | Tool |
+| Know how full the conversation is and what it has cost, right now | [status line](#status-line) | Tool |
+| Know how long until the prompt cache goes cold | [status line](#status-line) | Tool |
 | See OPEX vs CAPEX, spend trends and what agentarium saved as charts | [dashboard](#dashboard) | Tool |
 | Check where I am against my spending limit | [budget status](#budget-1) | Tool |
 | Stop myself overspending | [budget](#budget) | Hook |
@@ -63,7 +63,7 @@ New to tokens, the prompt cache or why context costs money? Read [How tokens wor
 flowchart TD
     Q{"What do you need?"} -->|"Advice on how I'm working"| CF["coach<br/>(skill)"]
     Q -->|"A summary of spend over time"| SR["spend-report<br/>(skill)"]
-    Q -->|"A live view while I work"| SB["statusline<br/>(tool)"]
+    Q -->|"A live view while I work"| SB["status line<br/>(tool)"]
     Q -->|"Charts"| DB["dashboard<br/>(tool)"]
     Q -->|"Guard rails that act on their own"| H["Hooks:<br/>pennywise, diet, colander, budget, hold-up,<br/>doggybag, haggle, groundhog,<br/>cache-buster, too-many-cooks, kettle"]
     Q -->|"Value, waste and quality"| V["bang-for-buck, sherlock, waistline,<br/>taste-test, spring-clean (skills)"]
@@ -84,7 +84,7 @@ Skills are instructions the assistant follows when you ask. They only run when y
 **Reach for it when:**
 
 - A session felt slow or expensive and you want to know why.
-- The statusline shows a big cost or a nearly full context and you're not sure what caused it.
+- The status line shows a big cost or a nearly full context and you're not sure what caused it.
 - spend-report names one session as the costliest and you want the detail (give it the session id).
 - You want to improve your prompting habits generally. Running it at the end of a long session is a good routine.
 
@@ -442,9 +442,9 @@ Quiet record-keepers for the skills above. **bang-for-buck** writes each session
 
 Scripts you run yourself. All need only Node.js 22.18+ (they're TypeScript, run directly) and live in `scripts/`. Run them from the repo (or plugin) folder.
 
-### statusline
+### status line
 
-`scripts/statusline.ts`: a live line at the bottom of Claude Code or Copilot CLI in a terminal, showing model, context fill, total tokens, cost and the cache countdown. In the Claude desktop app the same line is the **band** above the prompt box (`hooks/band.tsx`), and the **pane** beside the chat (`hooks/pane.tsx`) shows it in tabs with the advice in full.
+`scripts/statusline.ts`: a live line at the bottom of Claude Code or Copilot CLI in a terminal, showing model, context fill, total tokens, cost and the cache countdown. In the Claude desktop app and VS Code the same line is agentarium's row in the **band** above the prompt box (`hooks/band.tsx`), and the **pane** beside the transcript (`hooks/pane.tsx`) shows it in tabs with the advice in full.
 
 **Reach for it when:** you want to *see* cost as you go rather than find out afterwards. It's the best everyday early warning: start a fresh conversation when the context bar goes red, and finish your thought (or let doggybag pack a note) before the cache timer runs out.
 
@@ -454,14 +454,14 @@ Scripts you run yourself. All need only Node.js 22.18+ (they're TypeScript, run 
 | `agentarium statusline --band-off` (`--band-on`) | Hide (or show) the band in the desktop app, and Copilot's status bar item and window. |
 | `agentarium vscode --status-bar` | Put Copilot's numbers in VS Code's status bar: premium requests left and when they run out. |
 | `agentarium copilot --window` | The same in a small window beside the GitHub Copilot app. |
-| `/agentarium-pane` | Open the pane: Now, Ahead and Advice tabs beside the chat. If the app isn't drawing it, it says why. |
-| `agentarium statusline --outlook-off` (`--outlook-on`) | Hide (or show) the forecast row under the terminal statusline. |
+| `/agentarium-pane` | Open the pane: Now, Ahead and Advice tabs beside the transcript. If the app isn't drawing it, it says why. |
+| `agentarium statusline --outlook-off` (`--outlook-on`) | Hide (or show) the forecast row under the terminal status line. |
 | `agentarium statusline --set-currency USD` | Choose £, $ or € for every cost agentarium shows. |
 | `agentarium statusline --update-rate` | Fetch today's exchange rates. |
 | `agentarium statusline --watch` | A smoothly ticking countdown in a spare terminal pane. |
 | `agentarium statusline --demo --theme light` | Preview every state and colour. |
 
-Details: [statusline](reference.md#statusline), [band](reference.md#band) and [pane](reference.md#pane) reference.
+Details: [status line](reference.md#status-line), [band](reference.md#band) and [pane](reference.md#pane) reference.
 
 ### dashboard
 
@@ -569,7 +569,7 @@ node scripts/update_prices.ts --check    # exit 1 if out of date
 
 ## A sensible setup
 
-- **Everyone:** install the plugin (till, diet, doggybag and pennywise run by default) and the [statusline](#statusline).
+- **Everyone:** install the plugin (till, diet, doggybag and pennywise run by default) and the [status line](#status-line).
 - **Paying personally or on an allowance:** also set a [budget](#budget).
 - **Weekly:** ask for a [spend-report](#spend-report).
 - **After any session that surprised you:** ask the [coach](#coach), then [sherlock](#sherlock) for the wasted steps.

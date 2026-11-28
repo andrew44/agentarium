@@ -4,7 +4,7 @@
 // Plain JavaScript, unlike the rest of agentarium: VS Code loads extensions in its own Electron
 // build of Node.js, which can't be relied on to strip types. It only draws. The numbers come from
 // scripts/statusline.ts --copilot --json, run with agentarium's own Node.js, so the status bar, the
-// Copilot CLI statusline and `agentarium copilot` always agree.
+// Copilot CLI status line and `agentarium copilot` always agree.
 //
 // Installed by `agentarium vscode --status-bar`, which writes the install's path in place of the
 // placeholder below; `agentarium vscode --status-bar --remove` takes it out.

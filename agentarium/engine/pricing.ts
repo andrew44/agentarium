@@ -1,7 +1,7 @@
 /**
  * Cost calculation for token-billed platforms (Anthropic). Platform-independent.
  *
- * Overrides come from the same place as the statusline's: "prices" in ~/.agentarium/statusline.json
+ * Overrides come from the same place as the status line's: "prices" in ~/.agentarium/statusline.json
  * (or $AGENTARIUM_HOME/statusline.json).
  * Converting to the display currency: engine/currency.ts.
  *

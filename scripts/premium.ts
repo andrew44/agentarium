@@ -5,7 +5,7 @@
  *
  * Prompt hook (Copilot: userPromptSubmitted, run by the controller). Once this month's premium
  * requests reach AGENTARIUM_COPILOT_ALLOWANCE (each prompt counted at its model's multiplier, see
- * engine/premium.ts; the same figures as the statusline and `agentarium copilot`), the next prompt is paused with what
+ * engine/premium.ts; the same figures as the status line and `agentarium copilot`), the next prompt is paused with what
  * was used and what to do. Send the same prompt again to carry on.
  *
  * VS Code honours the pause (its adapter declares `prompt_decision`). Copilot CLI ignores prompt-hook output today: the Copilot adapter declares no `prompt_decision`

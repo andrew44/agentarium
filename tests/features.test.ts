@@ -29,7 +29,7 @@ function sonnetMsg(mid: string, usage: object = SONNET) {
 }
 
 describe('pricing', () => {
-  test('the engine and the statusline agree for every model', () => {
+  test('the engine and the status line agree for every model', () => {
     // statusline.ts keeps its own copy of the lookup (it is installed as a single file).
     const models = Object.keys(JSON.parse(readFileSync(join(ROOT, 'data', 'model-prices.json'), 'utf8')).models)
     const names = [...models, 'claude-opus-4-1-20250805', 'Opus 5.5', 'claude-opus-5-5[1m]', 'gpt-5', 'mystery',
@@ -95,7 +95,7 @@ describe('pricing', () => {
 describe('currency', () => {
   const clean: Env = { AGENTARIUM_HOME: '/nonexistent', AGENTARIUM_CURRENCY: undefined, AGENTARIUM_USD_GBP: undefined, AGENTARIUM_USD_EUR: undefined }
 
-  test('the block matches the statusline copy', () => {
+  test('the block matches the status line copy', () => {
     const block = (path: string) => {
       const text = readFileSync(path, 'utf8')
       const start = text.indexOf('\n', text.indexOf('// BEGIN CURRENCY')) + 1
@@ -131,7 +131,7 @@ describe('currency', () => {
     assert.equal(currency.formatMoney(25.01, '£'), '£25')
   })
 
-  test('the statusline shows the chosen currency', () => withEnv(clean, () => {
+  test('the status line shows the chosen currency', () => withEnv(clean, () => {
     const style = new statusline.Style('dark', false, true)
     const payload = { model: { id: 'claude-opus-5-5' }, cost: { total_cost_usd: 2.0 }, context_window: { used_percentage: 10 } }
     for (const [cfg, want] of [[{}, '£1.52'], [{ currency: 'USD' }, '$2.00'], [{ currency: 'EUR' }, '€1.72']] as [object, string][]) {
@@ -140,7 +140,7 @@ describe('currency', () => {
     }
   }))
 
-  test('statusline flags', (c) => {
+  test('status line flags', (c) => {
     const t = useTemp(c)
     const env = t.env({ AGENTARIUM_HOME: t.home })
     const run = (...a: string[]) => runScript('statusline.ts', ['--no-color', ...a], { input: JSON.stringify({ cost: { total_cost_usd: 1.0 } }), env })
@@ -153,8 +153,8 @@ describe('currency', () => {
   })
 
   test('the message stands in for the band in the apps', (c) => {
-    // The CLI statusline is the terminal's; in the apps, where mods can't run, the Stop hook
-    // posts the line. It goes with the band, not with the CLI statusline being installed.
+    // The CLI status line is the terminal's; in the apps, where mods can't run, the Stop hook
+    // posts the line. It goes with the band, not with the CLI status line being installed.
     const t = useTemp(c)
     const claudeDir = join(t.home, '.claude')
     const tx = writeTranscript(t.home, 's1', [user('hi'), sonnetMsg('m1')])
@@ -170,7 +170,7 @@ describe('currency', () => {
       assert.ok(msg.includes('~£2.28'))                        // (1M in @2 + 0.1M out @10) * 0.76
       assert.ok(!msg.includes('\x1b'))                         // plain text, no ANSI
     }
-    assert.equal(run('cli', ['--message']).stdout, '')         // the terminal has the CLI statusline
+    assert.equal(run('cli', ['--message']).stdout, '')         // the terminal has the CLI status line
     assert.equal(run('', ['--message']).stdout, '')
     assert.equal(run('claude-desktop', ['--message'], { AGENTARIUM_BAND: 'off' }).stdout, '')
 
@@ -182,7 +182,7 @@ describe('currency', () => {
     // --band-off is saved and wins until --band-on
     assert.ok(run('cli', ['--band-off']).stdout.includes('now off'))
     assert.equal(run('claude-desktop', ['--message']).stdout, '')
-    assert.ok(run('cli', ['--status']).stdout.includes('band (desktop app): off'))
+    assert.ok(run('cli', ['--status']).stdout.includes('band row (desktop app, VS Code): off'))
     assert.ok(run('claude-desktop', ['--message'], { AGENTARIUM_BAND: 'on' }).stdout.includes('systemMessage'))
     run('cli', ['--band-on'])
     assert.ok(run('claude-desktop', ['--message']).stdout.includes('systemMessage'))
@@ -295,7 +295,7 @@ describe('the band outlook: prevention, not a receipt', () => {
     })
   })
 
-  test('the terminal statusline shows the forecast row under the line', async (c) => {
+  test('the terminal status line shows the forecast row under the line', async (c) => {
     const style = new statusline.Style('dark', false)
     await withEnv({ ...noBudget, AGENTARIUM_BUDGET_DAILY: '£5' }, () => {
       const i = info({ remaining: 100 })
@@ -720,7 +720,7 @@ describe('monthly allowance', () => {
     assert.equal(budget.dailyCap(db, budget.limits({}), 1, '£', at), null)
   })
 
-  test('the statusline agrees with the engine', async () => {
+  test('the status line agrees with the engine', async () => {
     const envs = [{}, { AGENTARIUM_BUDGET_RESET_DAY: '31', AGENTARIUM_BUDGET_WORKDAYS: 'sun-thu' },
       { AGENTARIUM_BUDGET_RESET_DAY: '15', AGENTARIUM_BUDGET_DAYS_OFF: '2026-12-20..2027-01-02,2027-02-01' }]
     for (const e of envs) {
@@ -735,7 +735,7 @@ describe('monthly allowance', () => {
     }
   })
 
-  test('the statusline shows what is left of today\'s share', () => withEnv({ AGENTARIUM_BUDGET_DAILY: undefined,
+  test('the status line shows what is left of today\'s share', () => withEnv({ AGENTARIUM_BUDGET_DAILY: undefined,
     AGENTARIUM_BUDGET_SESSION: undefined, AGENTARIUM_BUDGET_MODE: undefined, AGENTARIUM_BUDGET_MONTHLY: '500',
     AGENTARIUM_BUDGET_RESET_DAY: undefined, AGENTARIUM_BUDGET_WORKDAYS: undefined, AGENTARIUM_BUDGET_DAYS_OFF: undefined }, () => {
     const b = statusline.budgetLeft(0, 1, 1, 10, 100, day('2026-11-23'))!

@@ -51,7 +51,7 @@ export class ClaudeCodeAdapter extends PlatformAdapter {
     [Capability.TOKEN_USAGE]: support(NATIVE, 'usage on assistant messages in the transcript'),
     [Capability.CACHE_INFO]: support(NATIVE, 'cache_creation/cache_read_input_tokens'),
     [Capability.SKILL_TRACKING]: support(NATIVE, 'Skill tool calls and slash commands'),
-    [Capability.MODEL_SELECTION]: support(PARTIAL, 'model visible in transcript and statusline payload'),
+    [Capability.MODEL_SELECTION]: support(PARTIAL, 'model visible in transcript and status line payload'),
     [Capability.CONTEXT_INFO]: support(PARTIAL, 'derivable from transcript usage'),
     [Capability.CONTEXT_INJECTION]: support(NATIVE, 'UserPromptSubmit / SessionStart stdout'),
     [Capability.PROMPT_DECISION]: support(NATIVE, 'UserPromptSubmit {"decision": "block"}'),

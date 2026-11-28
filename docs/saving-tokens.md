@@ -41,7 +41,7 @@ The AI has no memory between messages: **the whole conversation is sent again ev
 - **Start a new conversation when you change task.** Fixing a bug and then "while you're here, can you also look at the login page" drags the whole bug-fix history into the login work. In Claude Code, `/clear` starts afresh. The **ballast** hook spots the switch and tells you what carrying on would cost.
 - **Avoid side quests.** A quick unrelated question mid-task ("what's the syntax for X again?") gets re-sent for the rest of the session. Ask it in a separate window.
 - **Summarise and restart long sessions.** If a session has grown huge but you're not finished, compact it (`/compact` in Claude Code) or let **doggybag** pack a short note and `/clear` to continue from it.
-- **Watch the fuel gauge.** The agentarium **statusline** shows how full the conversation is. When it is past halfway, consider wrapping up or restarting.
+- **Watch the fuel gauge.** The agentarium **status line** shows how full the conversation is. When it is past halfway, consider wrapping up or restarting.
 
 ---
 
@@ -104,7 +104,7 @@ The prompt cache lets the AI re-read recent conversation at roughly a tenth of t
 
 **Tips**
 
-- **Keep momentum on big sessions.** Each reply within the cache window keeps it warm. The **statusline** cache clock shows how long you've got.
+- **Keep momentum on big sessions.** Each reply within the cache window keeps it warm. The **status line** cache clock shows how long you've got.
 - **Stop cleanly instead of drifting off.** Coming back to a large, cold session means paying to load the whole thing again. Let **doggybag** pack a short note before the cache runs out, then `/clear` and carry on from it.
 - **Don't switch models mid-session.** Each model has its own cache, so switching starts cold. If you want a different model for a different job, do it in a new session.
 - **Don't change the start of the conversation.** Editing the instructions file (for example `CLAUDE.md`) or adding tools mid-session changes the beginning of the prompt, and everything after it misses the cache. Make those changes between sessions.
@@ -187,7 +187,7 @@ These costs are mostly cached and cheap per message, but they add up over hundre
 
 Habits are easier to change when you can see the effect.
 
-- **statusline** shows tokens used, cost so far and the cache timer as you work.
+- **status line** shows tokens used, cost so far and the cache timer as you work.
 - **coach** reviews a finished conversation and points out the biggest wastes, such as large pastes, cache rebuilds and long outputs.
 - **till** records every session so you can compare before and after.
 - **parrot** spots the instructions you keep re-typing every session; written into `CLAUDE.md` once, they stop costing you a correction each time.

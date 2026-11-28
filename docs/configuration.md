@@ -63,7 +63,7 @@ A lower-case key is the setting's name without `AGENTARIUM_` (`budget_daily` = `
 
 **A profile for a tight day.** Set `"budget_profile": "frugal"` under `"settings"` (or `AGENTARIUM_BUDGET_PROFILE=frugal`). Once today's budget (`AGENTARIUM_BUDGET_DAILY`, or the monthly allowance's share for today) passes its warning share, the budget hook marks the day in `~/.agentarium/budget_phase.json`. From the next prompt to the end of the day, that profile applies everywhere, over `"projects"` and `"profile"`. It's off until you set it. A session budget doesn't trigger it: a profile applies to every session at once.
 
-**Which profile wins:** `AGENTARIUM_PROFILE`, then the budget phase, then `"projects"`, then `"profile"`. `agentarium profile` says which one is in effect and why. Every helper reads its settings the same way, including the standalone statusline (which reads `"settings"` but has no profile-dependent settings).
+**Which profile wins:** `AGENTARIUM_PROFILE`, then the budget phase, then `"projects"`, then `"profile"`. `agentarium profile` says which one is in effect and why. Every helper reads its settings the same way, including the standalone status line (which reads `"settings"` but has no profile-dependent settings).
 
 ---
 
@@ -192,23 +192,23 @@ Score thresholds go in `~/.agentarium/router.json` as `"thresholds": {"MEDIUM": 
 
 | Setting | Default | What it does |
 |---|---|---|
-| `AGENTARIUM_STATUSLINE` | `auto` | The CLI statusline (terminal): what the plugin does at session start when no status line is set. `auto` (or unset) installs the statusline, `ask` shows a one-time tip instead, `off` stays quiet. Someone else's status line is never replaced, and an installed statusline is always kept up to date. |
-| `AGENTARIUM_BAND` | on | The band: `off` hides the line above the prompt box in the desktop app, the VS Code line and after-reply message that stand in for it, the pane's numbers, and Copilot's numbers (VS Code's status bar item and the `agentarium copilot --window` window); `on` shows them. Overrides `--band-off` / `--band-on`. |
-| `AGENTARIUM_OUTLOOK` | on | The forecast row under the terminal statusline: `off` keeps the statusline to one line; `on` shows the row. Overrides `--outlook-off` / `--outlook-on`. |
-| `AGENTARIUM_THEME` | `system` | Statusline colours in the terminal: `light`, `dark` or `system`. |
+| `AGENTARIUM_STATUSLINE` | `auto` | The CLI status line (terminal): what the plugin does at session start when no status line is set. `auto` (or unset) installs the status line, `ask` shows a one-time tip instead, `off` stays quiet. Someone else's status line is never replaced, and an installed status line is always kept up to date. |
+| `AGENTARIUM_BAND` | on | The band row: `off` hides agentarium's row in the band above the prompt box (desktop app, VS Code), VS Code's status line entry and the after-reply message that stand in for it, the pane's numbers, and Copilot's numbers (VS Code's status bar item and the `agentarium copilot --window` window); `on` shows them. Overrides `--band-off` / `--band-on`. |
+| `AGENTARIUM_OUTLOOK` | on | The forecast row under the terminal status line: `off` keeps the status line to one line; `on` shows the row. Overrides `--outlook-off` / `--outlook-on`. |
+| `AGENTARIUM_THEME` | `system` | Status line colours in the terminal: `light`, `dark` or `system`. |
 | `AGENTARIUM_CURRENCY` | `GBP` | Currency for every cost shown, to two decimal places up to 25 and in whole units above it: `GBP` (£), `USD` ($) or `EUR` (€). Also saved by `statusline.ts --set-currency`. |
 | `AGENTARIUM_USD_EUR` | `0.86` | Euros per dollar, when the currency is EUR. |
 | `AGENTARIUM_USD_GBP` | `0.76` | Pounds per dollar, when the currency is GBP. |
-| `AGENTARIUM_CACHE_TTL` | auto | Cache lifetime in seconds for the statusline's countdown, and for pennywise's warm or cold cache when it prices a hand-off. |
-| `AGENTARIUM_ASCII` | off | `1` draws the statusline in plain characters (as `--ascii` does). `NO_COLOR=1` (or `--no-color`) drops the colours. |
+| `AGENTARIUM_CACHE_TTL` | auto | Cache lifetime in seconds for the status line's countdown, and for pennywise's warm or cold cache when it prices a hand-off. |
+| `AGENTARIUM_ASCII` | off | `1` draws the status line in plain characters (as `--ascii` does). `NO_COLOR=1` (or `--no-color`) drops the colours. |
 | `AGENTARIUM_TIMER_ICONS` | the pie clock | Three icons for the cache countdown, full to empty, e.g. `🟢,🟡,🔴`. |
-| `AGENTARIUM_COPILOT_ALLOWANCE` | not set | Your monthly Copilot premium requests (e.g. 300). Turns on the Copilot statusline's forecast row, `agentarium copilot` and the premium guard. |
+| `AGENTARIUM_COPILOT_ALLOWANCE` | not set | Your monthly Copilot premium requests (e.g. 300). Turns on the Copilot status line's forecast row, `agentarium copilot` and the premium guard. |
 | `AGENTARIUM_PREMIUM` | `block` | The Copilot premium guard: `block` pauses the next prompt once the allowance is used up (send it again to carry on), `warn` shows a notice, `off`. Copilot ignores prompt-hook output today, so until it honours it the guard only records `would-pause` in `premium_events`. |
 | `AGENTARIUM_COPILOT_MULTIPLIER` | `1` | Premium requests one prompt costs on a Copilot model that `AGENTARIUM_COPILOT_MULTIPLIERS` doesn't name, or when the model isn't known. |
 | `AGENTARIUM_COPILOT_MULTIPLIERS` | none | Per-model multipliers, e.g. `claude-haiku-4.5=0.33,gpt-4.1=0,claude-opus=10`. A key matches any model id that contains it; the longest wins. Take the figures from GitHub's page for your plan. Under Copilot Fusion the key for the model it routed to applies. |
 | `AGENTARIUM_COPILOT_HOME` | `COPILOT_HOME`, else `~/.copilot` | Where Copilot CLI keeps `session-state/` and `config.json`, read for the session's model. |
 | `TOKENOMICS_HOME`, `TOKENOMICS_DB` | `~/.tokenomics`, `spendlens.db` in it | Where `agentarium import` looks for a tokenomics install (from the shell or Claude Code's `settings.json` `"env"`). `--from` wins. |
-| `AGENTARIUM_HOME` | `~/.agentarium` | The data folder: the database (unless `AGENTARIUM_DB` says otherwise) and the statusline, router, plan, provider and profile settings (`config.json`). |
+| `AGENTARIUM_HOME` | `~/.agentarium` | The data folder: the database (unless `AGENTARIUM_DB` says otherwise) and the status line, router, plan, provider and profile settings (`config.json`). |
 
 ---
 
@@ -221,7 +221,7 @@ node ~/.agentarium/statusline.mts --set-currency USD     # or EUR, or GBP
 export AGENTARIUM_CURRENCY=EUR                            # or set it per shell / in Claude Code's "env"
 ```
 
-The choice is saved as `"currency"` in `~/.agentarium/statusline.json`, and the statusline, budget, spend report and doggybags all use it (`$`, `€` and `£` work too, e.g. `--set-currency €`). `AGENTARIUM_CURRENCY` wins over the saved choice, and `--currency USD` on a single statusline or report run wins over both.
+The choice is saved as `"currency"` in `~/.agentarium/statusline.json`, and the status line, budget, spend report and doggybags all use it (`$`, `€` and `£` work too, e.g. `--set-currency €`). `AGENTARIUM_CURRENCY` wins over the saved choice, and `--currency USD` on a single status line or report run wins over both.
 
 Prices are in dollars, so dollars need no conversion; pounds and euros are converted at 0.76 and 0.86 per dollar unless you set the rate. Run `node ~/.agentarium/statusline.mts --update-rate` to fetch today's rates, or set `"usd_gbp"` / `"usd_eur"` in the same file (or `AGENTARIUM_USD_GBP` / `AGENTARIUM_USD_EUR`).
 
@@ -234,7 +234,7 @@ When the assistant doesn't report a cost itself (Copilot, older Claude Code), an
 For example, Fable 5.2 is $8/$40 per million input/output tokens, Opus 5.5 $4/$20, Sonnet 5.5 $2/$10, Haiku 5.5 $0.10/$0.50 (or $0.50/$2.50 for prompts over 100K tokens). Each model's own cache rates are used (e.g. cache reads cost $0.20 on Fable 5.2 and $0.10 on Sonnet 5.5), fast mode counts double, and a model switch mid-session is priced message by message.
 
 - **Kept fresh automatically.** A scheduled GitHub Action (`.github/workflows/update-prices.yml`) refreshes the file from Claude's pricing page every Monday and commits any change. Retired models that drop off the page keep their last known price.
-- **Refresh it yourself** with `node scripts/update_prices.ts`. The statusline's `--install` copies the current file next to the installed statusline.
+- **Refresh it yourself** with `node scripts/update_prices.ts`. The status line's `--install` copies the current file next to the installed status line.
 - **Override a price** in `~/.agentarium/statusline.json`, by model version (input, output and optionally cache read, dollars per million tokens; the most specific key wins):
 
   ```json
@@ -243,9 +243,9 @@ For example, Fable 5.2 is $8/$40 per million input/output tokens, Opus 5.5 $4/$2
 
 ---
 
-## Statusline file
+## Status line file
 
-`~/.agentarium/statusline.json` (or `$AGENTARIUM_HOME/statusline.json`) holds the statusline's own options, all optional:
+`~/.agentarium/statusline.json` (or `$AGENTARIUM_HOME/statusline.json`) holds the status line's own options, all optional:
 
 | Key | Example | What it does |
 |---|---|---|
@@ -255,7 +255,7 @@ For example, Fable 5.2 is $8/$40 per million input/output tokens, Opus 5.5 $4/$2
 | `prices` | see above | Per-model price overrides. |
 | `cache_ttl` | `3600` | Cache lifetime in seconds for the countdown. |
 | `band` | `false` | Hide the band in the desktop app (`--band-off` writes it, `--band-on` sets it back). |
-| `outlook` | `false` | Hide the forecast row under the terminal statusline (`--outlook-off` writes it, `--outlook-on` sets it back). |
+| `outlook` | `false` | Hide the forecast row under the terminal status line (`--outlook-off` writes it, `--outlook-on` sets it back). |
 
 ---
 

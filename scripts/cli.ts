@@ -7,7 +7,7 @@
  *   agentarium                    what's installed, and what to try next
  *   agentarium dashboard [--demo] open the dashboard (runs in the background; --stop to stop it)
  *   agentarium report [--days N]  spend report in the terminal
- *   agentarium statusline [...]   statusline and band options, e.g. --demo, --set-currency USD,
+ *   agentarium statusline [...]   status line and band options, e.g. --demo, --set-currency USD,
  *                                 --band-off, --status
  *   agentarium router [...]       pennywise model router: on | off [--project] (the proxy, in the
  *                                 background), status, learn, eval, serve [--port N], explain "prompt", env
@@ -57,8 +57,8 @@
  *                                 setup does it by itself the first time)
  *
  * Setup does, for each assistant it finds on this computer:
- *   Claude Code  -> adds the plugin (skills + hooks + the desktop app's band) and the statusline
- *   Copilot CLI  -> adds the plugin and the statusline
+ *   Claude Code  -> adds the plugin (skills + hooks + its row in the apps' band) and the status line
+ *   Copilot CLI  -> adds the plugin and the status line
  * It never replaces a status line you already have. Node.js 22.18+, built-ins only.
  */
 import { spawn, spawnSync } from 'node:child_process'
@@ -324,7 +324,7 @@ function setup(args: string[]): number {
       if (lines.join('\n').includes('Skipped')) {
         say(`  · ${name}: kept your existing status line (replace it with: agentarium statusline --install ${cli})`)
       } else {
-        say(`  ✓ ${name}: statusline installed`)
+        say(`  ✓ ${name}: status line installed`)
       }
     }
   }
@@ -408,7 +408,7 @@ async function update(args: string[]): Promise<number> {
   }
   if (has('claude')) say(claudePlugin('update') ? '  ✓ Claude Code plugin updated' : '  · Claude Code plugin: no update applied')
   if (has('copilot')) say(copilotPlugin('update') ? '  ✓ Copilot CLI plugin updated' : '  · Copilot CLI plugin: no update applied')
-  // Re-run setup from the fresh copy so the statusline, launcher and anything new are current.
+  // Re-run setup from the fresh copy so the status line, launcher and anything new are current.
   return spawnSync(process.execPath, [...NODE_FLAGS, join(APP_DIR, 'scripts', 'cli.ts'), 'setup', '--no-plugin', ...args],
     { stdio: ['ignore', 'inherit', 'inherit'] }).status ?? 1
 }

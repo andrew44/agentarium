@@ -69,7 +69,7 @@ agentarium is built for exactly this. **groundhog** spots the agent going round 
 - **Be clear about the goal**, and what "done" looks like ("the tests pass", "only change this folder").
 - **Keep the approvals on for risky actions.** Good agents ask before deleting things, pushing code or spending money.
 - **Check the result**, not just the summary. Agents can be confidently wrong, just like the LLM inside them.
-- **Watch the cost.** The agentarium statusline shows it live, and **budget** can stop a task before it overspends.
+- **Watch the cost.** The agentarium status line shows it live, and **budget** can stop a task before it overspends.
 
 That's the big picture. If you want the machinery, read on.
 

@@ -1,4 +1,4 @@
-/** The statusline's numbers, as `statusline.ts --json` gives them (already formatted), for the band. */
+/** The status line's numbers, as `statusline.ts --json` gives them (already formatted), for the band. */
 export type Line = {
   show: boolean
   model?: string

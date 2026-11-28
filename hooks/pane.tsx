@@ -1,4 +1,4 @@
-// The agentarium pane: the session's numbers and what to do about them, in a pane beside the chat
+// The agentarium pane: the session's numbers and what to do about them, in a pane beside the transcript
 // (a mod: see https://code.claude.com/docs/en/plugins/mods/interface#build-a-pane-with-tabs).
 // Three tabs, hotkeys 1-3 once the pane has the keys:
 //   * Now: model, context fill, tokens, spend and the cache countdown.
@@ -7,7 +7,7 @@
 //   * Advice: every change worth making right now, the most urgent first.
 // Minimised to a widget in the desktop app it shows a glance: spend, context and the top advice.
 // The numbers are the band's (hooks/band.tsx writes `line` from statusline.ts --json), so the pane,
-// the band and the CLI statusline always agree. band.tsx, the plugin's one hooks module, calls
+// the band and the CLI status line always agree. band.tsx, the plugin's one hooks module, calls
 // registerPane and startPane.
 // Usage:
 //   /agentarium-pane         open it, in any surface, the terminal included
@@ -141,7 +141,7 @@ async function tellIfUndrawn($: EngineInterface) {
   if (!pane || pane.isPlaced || toldWaiting) return
   toldWaiting = true
   $.ui.log(`agentarium: the pane is open but this app isn't drawing it (${reason}). ` +
-    `The band above the prompt box shows the same numbers; an update of the app may bring the pane.`)
+    `agentarium's row in the band above the prompt box shows the same numbers; an update of the app may bring the pane.`)
 }
 
 async function open($: EngineInterface) {
@@ -162,7 +162,7 @@ export function registerPane(on: On) {
     waiting = null                 // asked: this reply says it, the timer needn't
     if (placed.isPlaced) return { text: 'Agentarium pane opened.' }
     return { text: `Agentarium pane opened, but nothing here draws it yet: ${placed.reason}. ` +
-      'The band above the prompt box (the statusline in a terminal) shows the same numbers.' }
+      'agentarium\'s row in the band above the prompt box (in a terminal, the status line) shows the same numbers.' }
   })
 
   // the desktop and mobile apps attach after session.start, which saw no surface

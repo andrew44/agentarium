@@ -3,7 +3,7 @@
 #   irm https://raw.githubusercontent.com/andrew44/agentarium/main/install.ps1 | iex
 #
 # Downloads agentarium to %USERPROFILE%\.agentarium\app (no git needed), then sets up whichever
-# assistants it finds: the Claude Code / Copilot CLI plugin (skills + hooks), the statusline, and a
+# assistants it finds: the Claude Code / Copilot CLI plugin (skills + hooks), the status line, and a
 # `agentarium` command. It never replaces a status line you already have. Safe to run again.
 #
 # agentarium is TypeScript run directly by Node.js 22.18 or newer (no build step, no npm install).
@@ -114,7 +114,7 @@
     }
     if (-not (($env:Path -split ';') -contains $bin)) { $env:Path = "$env:Path;$bin" }
 
-    # 4. Set everything up (plugin, statusline, `agentarium` command)
+    # 4. Set everything up (plugin, status line, `agentarium` command)
     Write-Host ''
     $setupArgs = if ($env:AGENTARIUM_SETUP_ARGS) { $env:AGENTARIUM_SETUP_ARGS -split ' ' } else { @() }
     & $node --disable-warning=ExperimentalWarning (Join-Path $app 'scripts\cli.ts') setup @setupArgs

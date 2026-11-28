@@ -1,5 +1,5 @@
 // What the band (hooks/band.tsx) and the pane (hooks/pane.tsx) share: the helpers that turn the
-// statusline's numbers (the `line` session value) into words, colours and pictures. Not a hooks
+// status line's numbers (the `line` session value) into words, colours and pictures. Not a hooks
 // module itself: both import it, so they never disagree. The engine reads each module's state
 // references from its own file, so each declares `line` itself.
 import type { Line, Outlook } from '../types'

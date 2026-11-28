@@ -1,4 +1,4 @@
-/** Moving from tokenomics: `agentarium import` (scripts/import.ts) and the statusline hand-over. */
+/** Moving from tokenomics: `agentarium import` (scripts/import.ts) and the status line hand-over. */
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -12,7 +12,7 @@ import * as dashboard from '../scripts/dashboard.ts'
 import { envSettings, merge, translateConfig } from '../scripts/import.ts'
 
 /** A tokenomics install as 4.x left it: its history (doggybag's table under its old name, the
- *  controller's first step called spendlens), its settings and its statusline in Claude Code. */
+ *  controller's first step called spendlens), its settings and its status line in Claude Code. */
 function setup(c: Parameters<typeof useTemp>[0], { plugin = true } = {}) {
   const t = useTemp(c)
   const h = t.home
@@ -31,7 +31,7 @@ function setup(c: Parameters<typeof useTemp>[0], { plugin = true } = {}) {
   writeFileSync(join(tk, 'config.json'), JSON.stringify({ profile: 'frugal', projects: { '~/work/api': 'quality' },
     settings: { currency: 'USD', TOKENOMICS_DIET_MAX_KB: 128 } }))
   writeFileSync(join(tk, 'statusline.json'), JSON.stringify({ theme: 'light', currency: 'USD' }))
-  writeFileSync(join(tk, 'statusline.mts'), '// tokenomics\'s statusline\n')
+  writeFileSync(join(tk, 'statusline.mts'), '// tokenomics\'s status line\n')
   const settings = join(h, '.claude', 'settings.json')
   mkdirSync(join(h, '.claude'), { recursive: true })
   writeFileSync(settings, JSON.stringify({
@@ -61,7 +61,7 @@ function setup(c: Parameters<typeof useTemp>[0], { plugin = true } = {}) {
 }
 
 describe('agentarium import', () => {
-  test('brings the history, settings and statusline over, and leaves tokenomics as it was', (c) => {
+  test('brings the history, settings and status line over, and leaves tokenomics as it was', (c) => {
     const { tk, ours, settings, run, rows, json, snapshot } = setup(c)
     const before = snapshot()
     const sessions = (() => {
@@ -96,7 +96,7 @@ describe('agentarium import', () => {
     assert.deepEqual(cfg.settings, { currency: 'USD', AGENTARIUM_DIET_MAX_KB: 128, budget_daily: '20' })   // not TOKENOMICS_HOME
     assert.equal(json(join(ours, 'statusline.json')).theme, 'light')
 
-    // the statusline runs agentarium's copy now
+    // the status line runs agentarium's copy now
     assert.ok(json(settings).statusLine.command.includes(join(ours, 'statusline.mts')))
     assert.ok(existsSync(join(ours, 'statusline.mts')))
 
@@ -173,27 +173,27 @@ describe('agentarium import', () => {
   })
 })
 
-describe('the statusline hand-over from tokenomics', () => {
-  test("a session start moves tokenomics's statusline to agentarium's and says once what is left", (c) => {
+describe('the status line hand-over from tokenomics', () => {
+  test("a session start moves tokenomics's status line to agentarium's and says once what is left", (c) => {
     const { h, tk, ours, settings, run, json } = setup(c)
     const copilot = join(h, '.copilot', 'settings.json')
     mkdirSync(join(h, '.copilot'), { recursive: true })
     writeFileSync(copilot, JSON.stringify({ statusLine: { type: 'command', command: `"node" "${join(tk, 'statusline.mts')}"` },
       feature_flags: { enabled: ['STATUS_LINE'] } }))
-    assert.ok(run('statusline.ts', ['--status']).includes("claude statusline: tokenomics's copy"))
+    assert.ok(run('statusline.ts', ['--status']).includes("claude status line: tokenomics's copy"))
 
     const msg = JSON.parse(run('statusline.ts', ['--sync'])).systemMessage as string
     for (const path of [settings, copilot]) assert.ok(json(path).statusLine.command.includes(join(ours, 'statusline.mts')), path)
     assert.ok(msg.startsWith('agentarium, moving from tokenomics:'), msg)
-    assert.ok(msg.includes("The statusline is agentarium's now."), msg)
+    assert.ok(msg.includes("The status line is agentarium's now."), msg)
     assert.ok(msg.includes('/plugin uninstall tokenomics@tokenomics'), msg)
     assert.ok(msg.includes('`agentarium import` brings it over'), msg)
-    assert.ok(readFileSync(join(tk, 'statusline.mts'), 'utf8').includes("tokenomics's statusline"), "tokenomics's copy is left alone")
+    assert.ok(readFileSync(join(tk, 'statusline.mts'), 'utf8').includes("tokenomics's status line"), "tokenomics's copy is left alone")
 
     assert.equal(run('statusline.ts', ['--sync']), '', 'said once')
   })
 
-  test("--keep-existing replaces tokenomics's statusline: it is an older copy of this one", (c) => {
+  test("--keep-existing replaces tokenomics's status line: it is an older copy of this one", (c) => {
     const { ours, settings, run, json } = setup(c)
     assert.ok(!run('statusline.ts', ['--install', 'claude', '--keep-existing']).includes('Skipped'))
     assert.ok(json(settings).statusLine.command.includes(join(ours, 'statusline.mts')))

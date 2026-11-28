@@ -1,15 +1,17 @@
-// The band: the agentarium statusline in Claude Code's apps, which don't draw the CLI's
-// `statusLine` setting (a mod: see https://code.claude.com/docs/en/plugins/mods/interface).
-//   * Claude desktop app (and mobile): a row in the band above the prompt box (AbovePrompt).
-//   * VS Code, which has no band: the plugin's status line above the prompt box ($.ui.status).
-//   * Terminal: nothing here; the CLI statusline is scripts/statusline.ts itself.
-// The band looks forward, not back: under the line sits the outlook (what the next steps will cost,
+// agentarium's mod (https://code.claude.com/docs/en/plugins/mods/interface): its row in the band,
+// the strip directly above the prompt box where each mod draws a row (AbovePrompt). It shows the
+// status line's numbers where Claude Code draws no status line (the `statusLine` setting's command):
+//   * Claude desktop app (and mobile): the row in the band.
+//   * VS Code: the row in the band, and the same line pinned as this plugin's status line entry,
+//     under the prompt box ($.ui.status).
+//   * Terminal: no row; the CLI status line is scripts/statusline.ts itself.
+// The row looks forward, not back: under the line sits the outlook (what the next steps will cost,
 // the budget left and how many steps it buys, what a cold cache would cost, and the one change that
 // saves most), so it stops spend before it happens instead of reporting it afterwards.
-// The numbers come from scripts/statusline.ts --json, fed the same figures the CLI statusline
+// The numbers come from scripts/statusline.ts --json, fed the same figures the CLI status line
 // gets ($.session.usage), so both show the same line. A timer started at session.start redraws
 // the cache countdown each second and re-reads the numbers when the transcript grows mid-turn.
-// If statusline.ts can't run (no shell or Node.js 22.18+ the app can start), the band shows the
+// If statusline.ts can't run (no shell or Node.js 22.18+ the app can start), the row shows the
 // engine's own figures instead and says why once in the transcript (the details: claude --debug).
 // Off with `agentarium statusline --band-off` or AGENTARIUM_BAND=off (statusline.ts decides).
 // This is the plugin's one hooks module, so it also registers the pane (hooks/pane.tsx).
@@ -101,7 +103,7 @@ async function appSurfaces($: EngineInterface) {
   return (await $.session.surfaces()).filter(s => s !== 'terminal')
 }
 
-/** Re-read the numbers from statusline.ts, with the figures the CLI statusline gets. */
+/** Re-read the numbers from statusline.ts, with the figures the CLI status line gets. */
 async function refresh($: EngineInterface) {
   lastRun = Date.now()
   let model = ''
@@ -147,7 +149,7 @@ async function refresh($: EngineInterface) {
 /** Each second: redraw the countdown, and re-read the numbers when the transcript grew. */
 async function tick($: EngineInterface) {
   const apps = await appSurfaces($)
-  if (!apps.length) return                        // terminal only: the CLI statusline does this
+  if (!apps.length) return                        // terminal only: the CLI status line does this
   $.ui.invalidate('ui.render')
   const b = await read($, line)
   if (apps.includes('vscode') && b?.show) {

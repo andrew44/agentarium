@@ -130,7 +130,7 @@ export function activity(db: Db, since: string): Activity {
   if (on('pennywise_events')) {
     const t = tally(db, 'pennywise_events', since)
     const cols = db.columns('pennywise_events')
-    // the same sums the statusline, the band and the weekly report show
+    // the same sums the status line, the band and the weekly report show
     const v = cols.has('saved_usd') ? db.get('SELECT COALESCE(SUM(CASE WHEN saved_usd>0 THEN saved_usd END),0) AS saved, ' +
       'COALESCE(-SUM(CASE WHEN saved_usd<0 THEN saved_usd END),0) AS extra FROM pennywise_events WHERE substr(ts,1,10) >= ?', since) : null
     add('pennywise', { stopped: pick(t, ['routed', 'routed-up', 'proxy-routed']), flagged: pick(t, ['warned', 'blocked']),

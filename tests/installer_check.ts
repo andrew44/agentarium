@@ -67,17 +67,17 @@ async function main(args: string[]): Promise<void> {
 
   const settings = JSON.parse(readFileSync(CLAUDE_SETTINGS, 'utf8'))
   const cmd: string = settings.statusLine?.command ?? ''
-  ok(cmd.includes('statusline.mts'), 'statusline is set in Claude Code settings', JSON.stringify(settings))
+  ok(cmd.includes('statusline.mts'), 'status line is set in Claude Code settings', JSON.stringify(settings))
   const logArg = args.indexOf('--expect-plugin-log')
   if (logArg >= 0) {
     const log = readFileSync(args[logArg + 1], 'utf8')
     ok(log.includes('plugin install agentarium@agentarium'), 'the installer added the Claude Code plugin', log)
   }
 
-  // 2. The statusline renders through the exact command written to settings.json
+  // 2. The status line renders through the exact command written to settings.json
   const sb = spawnSync(cmd, { shell: true, input: JSON.stringify({ model: { display_name: 'Opus' }, context_window: { used_percentage: 40 } }),
     encoding: 'utf8', timeout: 60_000 })
-  ok(sb.status === 0 && sb.stdout.includes('Opus'), 'statusline renders', sb.stdout + sb.stderr)
+  ok(sb.status === 0 && sb.stdout.includes('Opus'), 'status line renders', sb.stdout + sb.stderr)
 
   // 3. Every Claude Code hook, run as Claude Code runs it
   const hooks = JSON.parse(readFileSync(join(APP, 'hooks', 'hooks.json'), 'utf8')).hooks
@@ -128,7 +128,7 @@ async function main(args: string[]): Promise<void> {
   r = agentarium('uninstall')
   ok(r.status === 0, '`agentarium uninstall`', r.stdout + r.stderr)
   const after = JSON.parse(readFileSync(CLAUDE_SETTINGS, 'utf8'))
-  ok(!('statusLine' in after), 'uninstall removed the statusline', JSON.stringify(after))
+  ok(!('statusLine' in after), 'uninstall removed the status line', JSON.stringify(after))
   ok(!existsSync(join(APP, 'scripts')), 'uninstall removed the app')
   ok(isFile(dbPath), 'uninstall kept the recorded data')
   process.stdout.write('\nAll installer checks passed.\n')

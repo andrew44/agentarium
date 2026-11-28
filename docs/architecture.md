@@ -56,7 +56,7 @@ flowchart LR
 
 Everything is TypeScript. Node.js 22.18+ runs the `.ts` files directly (it strips the types itself), so there is no build step and nothing is compiled; SQLite comes from Node's built-in `node:sqlite`. There are no runtime packages at all: TypeScript and `@types/node` are dev dependencies, used only to type-check (`npm run typecheck`).
 
-The older tools (statusline, pennywise, doggybag, coach) are still standalone scripts; the statusline must stay a single file because `--install` copies it to `~/.agentarium/statusline.mts` (and the plugin's `statusline.ts --sync` SessionStart hook refreshes that copy after each plugin update). The band (`hooks/band.tsx`) is a [mod](https://code.claude.com/docs/en/plugins/mods/interface) that draws the statusline's numbers (`statusline.ts --json`) above the prompt box in the desktop app, where there is no statusline. The pane (`hooks/pane.tsx`) draws the same numbers beside the chat, in tabs, with the advice in full. Copilot has no mods, so its numbers are drawn elsewhere from `statusline.ts --copilot --json`: a VS Code extension (`vscode/extension.js`) puts it in the status bar, and the dashboard server's `/copilot` page (`dashboard/copilot.html`) is a small window for the Copilot app. The extension is plain JavaScript because VS Code loads it with its own Electron build of Node.js, which can't be counted on to strip types; it only draws. A plugin has one hooks module, so `band.tsx` is it and calls the pane's `registerPane` and `startPane`; `hooks/lens.ts` holds the helpers both draw with (the cache timer, the budget's words, the pictures). Their tests (`tests/band.test.tsx`, `tests/pane.test.tsx`) run with `claude plugin test .`.
+The older tools (status line, pennywise, doggybag, coach) are still standalone scripts; the status line must stay a single file because `--install` copies it to `~/.agentarium/statusline.mts` (and the plugin's `statusline.ts --sync` SessionStart hook refreshes that copy after each plugin update). agentarium's [mod](https://code.claude.com/docs/en/plugins/mods/interface) draws the status line's numbers (`statusline.ts --json`) as its row in the band, the strip above the prompt box, in the desktop app and VS Code, where there is no status line (`hooks/band.tsx`). Its pane (`hooks/pane.tsx`) draws the same numbers beside the transcript, in tabs, with the advice in full. Copilot runs no mods, so its numbers are drawn elsewhere from `statusline.ts --copilot --json`: a VS Code extension (`vscode/extension.js`) puts it in the status bar, and the dashboard server's `/copilot` page (`dashboard/copilot.html`) is a small window for the Copilot app. The extension is plain JavaScript because VS Code loads it with its own Electron build of Node.js, which can't be counted on to strip types; it only draws. A plugin has one hooks module, so `band.tsx` is it and calls the pane's `registerPane` and `startPane`; `hooks/lens.ts` holds the helpers both draw with (the cache timer, the budget's words, the pictures). Their tests (`tests/band.test.tsx`, `tests/pane.test.tsx`) run with `claude plugin test .`.
 
 ## Handy commands
 
@@ -76,9 +76,9 @@ agentarium/
 ├── .claude-plugin/
 │   ├── plugin.json                 Claude Code manifest
 │   └── marketplace.json            lets the repo be added as a marketplace
-├── hooks/hooks.json                Claude Code hooks (and the band module)
-├── hooks/band.tsx                  the band: the statusline in the desktop app, above the prompt box (a mod)
-├── hooks/pane.tsx                  the pane: the numbers and advice beside the chat, in tabs (part of the mod)
+├── hooks/hooks.json                Claude Code hooks, and the mod's hooks module (band.tsx)
+├── hooks/band.tsx                  the mod: agentarium's row in the band above the prompt box (desktop app, VS Code)
+├── hooks/pane.tsx                  the pane: the numbers and advice beside the transcript, in tabs (part of the mod)
 ├── hooks/lens.ts                   what the band and the pane share: the cache timer, budget words, pictures
 ├── plugin.json                     Copilot CLI manifest
 ├── copilot-hooks.json              Copilot CLI hooks
@@ -90,7 +90,7 @@ agentarium/
 │   ├── coach/SKILL.md              prompt and cache review skill
 │   ├── spend-report/SKILL.md       weekly spend report skill
 │   ├── dashboard/SKILL.md          opens the dashboard (/agentarium:dashboard)
-│   ├── statusline/SKILL.md         installs / removes the statusline, band on/off (/agentarium:statusline)
+│   ├── statusline/SKILL.md         installs / removes the status line, band on/off (/agentarium:statusline)
 │   ├── bang-for-buck/ haggle/ sherlock/ waistline/ taste-test/ spring-clean/ groundhog/
 │   │                               value, waste and quality skills (each a SKILL.md over its script)
 │   ├── split-the-bill/ bazaar/ blinkers/ crystal-ball/ deadwood/
@@ -136,7 +136,7 @@ agentarium/
 │   ├── premium.ts                  Copilot's premium-request allowance guard (run by the controller)
 │   ├── report.ts                   spend report (used by the spend-report skill)
 │   ├── coach.ts                    transcript analyser used by the coach skill
-│   ├── statusline.ts               the statusline for Claude Code and Copilot CLI (terminal); --json feeds the band,
+│   ├── statusline.ts               the status line for Claude Code and Copilot CLI (terminal); --json feeds the band,
 │   │                               --copilot --json Copilot's numbers (VS Code's status bar, the Copilot window)
 │   ├── dashboard.ts                local web server over the till database (--background): spend, OPEX / CAPEX
 │   │                               and what agentarium did; /copilot is the small window for the Copilot app

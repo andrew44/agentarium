@@ -4,7 +4,7 @@
  *
  * The prompt cache keeps the conversation for 5 minutes after the last request (an hour on the 1-hour
  * cache). Reply inside that and the next prompt re-reads it at a tenth of the input price; reply after
- * it and the whole conversation is written to the cache again. The statusline counts this down, but
+ * it and the whole conversation is written to the cache again. The status line counts this down, but
  * only while you are looking. kettle puts the deadline and the money into the notification you get
  * when Claude Code goes idle or waits for a permission:
  *
