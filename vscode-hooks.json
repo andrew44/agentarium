@@ -1,0 +1,48 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "sh \"${AGENTARIUM_ROOT}/scripts/run.sh\" controller.ts prompt vscode",
+        "windows": "$n = Get-Content \"$HOME/.agentarium/node\" -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $n) { $n = \"node\" }; & $n --disable-warning=ExperimentalWarning \"${AGENTARIUM_ROOT}/scripts/controller.ts\" prompt vscode",
+        "timeout": 15
+      }
+    ],
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "sh \"${AGENTARIUM_ROOT}/scripts/run.sh\" diet.ts vscode",
+        "windows": "$n = Get-Content \"$HOME/.agentarium/node\" -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $n) { $n = \"node\" }; & $n --disable-warning=ExperimentalWarning \"${AGENTARIUM_ROOT}/scripts/diet.ts\" vscode",
+        "timeout": 10
+      },
+      {
+        "type": "command",
+        "command": "sh \"${AGENTARIUM_ROOT}/scripts/run.sh\" groundhog.ts vscode",
+        "windows": "$n = Get-Content \"$HOME/.agentarium/node\" -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $n) { $n = \"node\" }; & $n --disable-warning=ExperimentalWarning \"${AGENTARIUM_ROOT}/scripts/groundhog.ts\" vscode",
+        "timeout": 10
+      },
+      {
+        "type": "command",
+        "command": "sh \"${AGENTARIUM_ROOT}/scripts/run.sh\" blinkers.ts guard vscode",
+        "windows": "$n = Get-Content \"$HOME/.agentarium/node\" -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $n) { $n = \"node\" }; & $n --disable-warning=ExperimentalWarning \"${AGENTARIUM_ROOT}/scripts/blinkers.ts\" guard vscode",
+        "timeout": 10
+      }
+    ],
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "sh \"${AGENTARIUM_ROOT}/scripts/run.sh\" till.ts tool vscode",
+        "windows": "$n = Get-Content \"$HOME/.agentarium/node\" -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $n) { $n = \"node\" }; & $n --disable-warning=ExperimentalWarning \"${AGENTARIUM_ROOT}/scripts/till.ts\" tool vscode",
+        "timeout": 10
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "sh \"${AGENTARIUM_ROOT}/scripts/run.sh\" till.ts finalize vscode",
+        "windows": "$n = Get-Content \"$HOME/.agentarium/node\" -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $n) { $n = \"node\" }; & $n --disable-warning=ExperimentalWarning \"${AGENTARIUM_ROOT}/scripts/till.ts\" finalize vscode",
+        "timeout": 20
+      }
+    ]
+  }
+}

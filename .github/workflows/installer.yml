@@ -1,0 +1,159 @@
+name: installer
+
+# Runs the real one-line installers, exactly as a user would, on macOS, Windows and Linux, then
+# checks that every hook fires the way Claude Code runs it (tests/installer_check.ts).
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unix:
+    name: ${{ matrix.os }} · ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        node: [system, standalone]         # standalone = a machine with no usable Node.js
+    steps:
+      - uses: actions/setup-node@v4
+        if: matrix.node == 'system'
+        with:
+          node-version: "24"
+      - name: Stand-in for the claude CLI (records what the installer asks it to do)
+        run: |
+          mkdir -p "$RUNNER_TEMP/fakebin"
+          printf '#!/bin/sh\necho "$*" >> "%s/claude.log"\n' "$RUNNER_TEMP" > "$RUNNER_TEMP/fakebin/claude"
+          chmod +x "$RUNNER_TEMP/fakebin/claude"
+          echo "$RUNNER_TEMP/fakebin" >> "$GITHUB_PATH"
+      - name: The one-liner from the README
+        env:
+          AGENTARIUM_REPO: ${{ github.repository }}
+          AGENTARIUM_REF: ${{ github.sha }}
+          AGENTARIUM_NODE: ${{ matrix.node == 'standalone' && 'standalone' || '' }}
+        run: curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh" | sh
+      - name: Check the install
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/tests/installer_check.ts" -o "$RUNNER_TEMP/check.mts"
+          "$(cat ~/.agentarium/node)" "$RUNNER_TEMP/check.mts" --expect-plugin-log "$RUNNER_TEMP/claude.log" \
+            ${{ matrix.node == 'standalone' && '--expect-private-node' || '' }}
+      - name: Running it again repairs, doesn't duplicate anything and keeps the data
+        env:
+          AGENTARIUM_REPO: ${{ github.repository }}
+          AGENTARIUM_REF: ${{ github.sha }}
+        run: |
+          db="$HOME/.agentarium/till.db"                    # recorded by the check above, kept by its uninstall
+          [ -f "$db" ] || { echo "no $db to keep"; exit 1; }
+          before=$(shasum "$db" | cut -d' ' -f1)
+          curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh" | sh
+          curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.sh" | sh
+          [ "$(shasum "$db" | cut -d' ' -f1)" = "$before" ] || { echo "till.db changed across re-installs"; exit 1; }
+          for rc in ~/.zshrc ~/.bashrc ~/.bash_profile ~/.profile; do
+            [ -f "$rc" ] || continue
+            n=$(grep -c "agentarium installer" "$rc" || true)
+            [ "$n" -le 1 ] || { echo "$rc has $n PATH lines"; exit 1; }
+          done
+          ! grep -q statusline.mts ~/.claude/settings.json.agentarium.bak || { echo "the settings backup is agentarium's own"; exit 1; }
+
+  windows:
+    name: windows · ${{ matrix.shell }} · ${{ matrix.node }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]          # Windows PowerShell 5.1 and PowerShell 7
+        node: [system, standalone]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/setup-node@v4
+        if: matrix.node == 'system'
+        with:
+          node-version: "24"
+      - name: Stand-in for the claude CLI (a .cmd, like the npm install)
+        run: |
+          $fake = Join-Path $env:RUNNER_TEMP 'fakebin'
+          New-Item -ItemType Directory -Path $fake -Force | Out-Null
+          Set-Content -Path (Join-Path $fake 'claude.cmd') -Encoding ASCII -Value "@echo %* >> `"$env:RUNNER_TEMP\claude.log`""
+          Add-Content -Path $env:GITHUB_PATH -Value $fake
+      - name: The one-liner from the README
+        env:
+          AGENTARIUM_REPO: ${{ github.repository }}
+          AGENTARIUM_REF: ${{ github.sha }}
+          AGENTARIUM_NODE: ${{ matrix.node == 'standalone' && 'standalone' || '' }}
+        run: |
+          irm "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.ps1" | iex
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Check the install
+        run: |
+          $env:Path = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path   # as a new terminal would
+          $check = Join-Path $env:RUNNER_TEMP 'check.mts'
+          Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/tests/installer_check.ts" -OutFile $check
+          $node = (Get-Content "$HOME\.agentarium\node" | Select-Object -First 1)
+          $extra = @()
+          if ('${{ matrix.node }}' -eq 'standalone') { $extra += '--expect-private-node' }
+          & $node $check --expect-plugin-log "$env:RUNNER_TEMP\claude.log" @extra
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Running it again repairs, doesn't duplicate anything and keeps the data
+        env:
+          AGENTARIUM_REPO: ${{ github.repository }}
+          AGENTARIUM_REF: ${{ github.sha }}
+        run: |
+          $db = Join-Path $HOME '.agentarium\till.db'        # recorded by the check above, kept by its uninstall
+          if (-not (Test-Path $db)) { Write-Host "no $db to keep"; exit 1 }
+          $before = (Get-FileHash $db).Hash
+          foreach ($i in 1, 2) {
+            irm "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/install.ps1" | iex
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+          }
+          if ((Get-FileHash $db).Hash -ne $before) { Write-Host 'till.db changed across re-installs'; exit 1 }
+          $bin = Join-Path $HOME '.agentarium\bin'
+          $n = @([Environment]::GetEnvironmentVariable('Path', 'User') -split ';' | Where-Object { $_ -eq $bin }).Count
+          if ($n -ne 1) { Write-Host "the user PATH has $n entries for $bin"; exit 1 }
+          if (-not (Test-Path (Join-Path $HOME '.agentarium\app\scripts\cli.ts'))) { Write-Host 'no app after the re-run'; exit 1 }
+          if (Get-ChildItem (Join-Path $HOME '.agentarium') -Directory -Filter 'app.old-*') { Write-Host 'an old app was left behind'; exit 1 }
+
+  real-claude-code:
+    # Informational: the installer against the real Claude Code CLI (no login needed for plugins).
+    # Setup adds the marketplace at AGENTARIUM_REF, and Claude Code takes only a commit that a branch
+    # or tag holds, so a pull request runs at its head, not at the merge commit github.sha names there.
+    name: real Claude Code · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    env:
+      AGENTARIUM_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+      AGENTARIUM_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g @anthropic-ai/claude-code
+      - name: Install and check (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/$AGENTARIUM_REPO/$AGENTARIUM_REF/install.sh" | sh
+          claude plugin list
+          export PATH="$HOME/.local/bin:$PATH"
+          curl -fsSL "https://raw.githubusercontent.com/$AGENTARIUM_REPO/$AGENTARIUM_REF/tests/installer_check.ts" -o "$RUNNER_TEMP/check.mts"
+          "$(cat ~/.agentarium/node)" "$RUNNER_TEMP/check.mts" --expect-claude-plugin
+      - name: Install and check (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          irm "https://raw.githubusercontent.com/$env:AGENTARIUM_REPO/$env:AGENTARIUM_REF/install.ps1" | iex
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          claude plugin list
+          $env:Path = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path   # as a new terminal would
+          $check = Join-Path $env:RUNNER_TEMP 'check.mts'
+          Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/$env:AGENTARIUM_REPO/$env:AGENTARIUM_REF/tests/installer_check.ts" -OutFile $check
+          $node = (Get-Content "$HOME\.agentarium\node" | Select-Object -First 1)
+          & $node $check --expect-claude-plugin
+          if ($LASTEXITCODE -ne 0) { exit 1 }

@@ -1,0 +1,82 @@
+name: release
+
+# Every update to main becomes a GitHub release (vX.Y.Z), once the tests pass.
+#
+# Users install from main. Its manifests already carry the new version: the version workflow
+# (version.yml) bumps it on each pull request before it merges, and the weekly price update bumps
+# it in its own commit. So this only tags main's version and publishes the release. Claude Code
+# only sends plugin users an update when the version changes, which is why every merge must
+# raise it. If a merge didn't (two pull requests took the same number), nothing is released and
+# the run says so; the next pull request moves past it.
+
+on:
+  push:
+    branches: [main]
+  # Commits pushed by other workflows (the weekly price update) don't trigger `push`.
+  workflow_run:
+    workflows: ["Update model prices"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release                # one at a time, in order; never cancel a release half-way
+  cancel-in-progress: false
+
+jobs:
+  test:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Unit tests
+        run: npm test
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0          # all tags and history, to find the last release
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Work out the version
+        id: v
+        run: node .github/scripts/next_version.ts --release | tee -a "$GITHUB_OUTPUT"
+
+      - name: Version not raised
+        if: steps.v.outputs.release != 'true'
+        run: |
+          if [ -n "${{ steps.v.outputs.previous }}" ] && [ -n "$(git rev-list "${{ steps.v.outputs.previous }}..HEAD")" ]; then
+            echo "::warning::main has changes since ${{ steps.v.outputs.previous }} but its version is still ${{ steps.v.outputs.version }}; no release. The next pull request bumps past it."
+          else
+            echo "Nothing new since ${{ steps.v.outputs.previous }}; no release."
+          fi
+
+      - name: Publish the release
+        if: steps.v.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prev="${{ steps.v.outputs.previous }}"
+          gh release create "${{ steps.v.outputs.tag }}" \
+            --target "$(git rev-parse HEAD)" \
+            --title "agentarium ${{ steps.v.outputs.tag }}" \
+            --generate-notes ${prev:+--notes-start-tag "$prev"} \
+            install.sh install.ps1
+          {
+            echo "### Released ${{ steps.v.outputs.tag }}"
+            echo "Claude Code users get it from \`/plugin\` (or automatically, with auto-update on)."
+          } >> "$GITHUB_STEP_SUMMARY"

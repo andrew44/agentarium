@@ -1,0 +1,41 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unittest:
+    # Node.js 22.18 is the oldest version agentarium supports (type stripping on by default,
+    # node:sqlite built in). The tests use node:test, so nothing has to be installed.
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15           # a hung runner should fail fast, not sit for hours
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, node: "22.18.0" }
+          - { os: ubuntu-latest, node: "24" }
+          - { os: macos-latest, node: "24" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Run tests (Node built-ins only, nothing to install)
+        run: npm test
+      - name: sommelier routes the labelled set as well as before (a scorer regression fails here)
+        run: node scripts/sommelier.ts eval --check --min-accuracy 0.85 --max-under 3
+
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Type-check with TypeScript
+        run: npm run typecheck

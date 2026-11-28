@@ -1,0 +1,63 @@
+name: version
+
+# Every pull request to main carries its own release version, so main always holds the version
+# it is released as and there is no branch for the release workflow to write to.
+#
+# This works out the next version (.github/scripts/next_version.ts) and, if the branch hasn't
+# raised it already, commits the patch bump to both plugin manifests on the pull request's branch.
+# For a minor or major release, raise "version" in .claude-plugin/plugin.json and plugin.json
+# yourself; a version past main and the latest tag is kept as it is.
+#
+# Commits pushed with the default token don't start other workflows, so the bump commit gets no
+# test run of its own. If branch protection requires checks, add a RELEASE_TOKEN secret (a token
+# that can push to this repo) and the bump commit is tested like any other.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+          fetch-depth: 0          # all tags, to find the last release
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Work out the version
+        id: v
+        run: |
+          git fetch origin main --tags
+          node .github/scripts/next_version.ts --base FETCH_HEAD | tee -a "$GITHUB_OUTPUT"
+
+      - name: Bump the version on this branch
+        if: steps.v.outputs.bump == 'true'
+        env:
+          FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          if [ "$FORK" = "true" ]; then
+            echo "::error::Set \"version\" to ${{ steps.v.outputs.version }} in .claude-plugin/plugin.json and plugin.json (run: node .github/scripts/next_version.ts --write ${{ steps.v.outputs.version }})."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node .github/scripts/next_version.ts --write "${{ steps.v.outputs.version }}"
+          git commit -am "Release ${{ steps.v.outputs.tag }}"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
+      - name: Summary
+        run: echo "### Merging this releases ${{ steps.v.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"

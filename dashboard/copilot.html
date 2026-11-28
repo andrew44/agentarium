@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agentarium · Copilot</title>
+<!-- A small window for apps with no status line (the GitHub Copilot app): Copilot's premium requests,
+     from /api/copilot (statusline.ts copilotStatus), refreshed every 5 seconds. No fonts or scripts
+     from outside: it opens with nothing but the local server. -->
+<style>
+:root{
+  --bg:#fcfcfb; --ink:#16181d; --ink2:#4a505c; --muted:#7a808c; --line:#e6e7ea;
+  --green:#2f9e5b; --yellow:#c48a0a; --red:#d0393e;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#1a1a19; --ink:#f1f1ee; --ink2:#b9bcc3; --muted:#8b909a; --line:#32332f;
+    --green:#4cc27b; --yellow:#e0a92a; --red:#ef5a5f; }
+}
+html{background:var(--bg)}
+body{margin:0;padding:14px 16px;background:var(--bg);color:var(--ink);font:14px/1.4 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+.row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.n{font-size:28px;font-weight:800;letter-spacing:-.03em}
+.of{color:var(--muted);font-weight:600}
+.cap{font-size:12px;color:var(--muted)}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:8px 0}
+.bar div{height:100%;width:0;border-radius:4px;background:var(--green);transition:width .4s}
+.level-yellow .bar div{background:var(--yellow)}
+.level-red .bar div{background:var(--red)}
+.level-yellow .warn{color:var(--yellow)}
+.level-red .warn{color:var(--red)}
+.text{color:var(--ink2);font-size:13px}
+.hint{color:var(--muted);font-size:12px;margin-top:6px}
+</style>
+</head>
+<body>
+<main id="live" aria-live="polite">
+  <div class="row"><span class="n" id="n">…</span><span class="of" id="of"></span><span class="cap warn" id="out"></span></div>
+  <div class="bar" id="barwrap" hidden><div id="bar"></div></div>
+  <div class="text" id="text"></div>
+  <div class="hint" id="hint" hidden></div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id)
+const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
+function draw(b) {
+  if (!b || (b.show !== false && !b.today)) {
+    $('text').textContent = `agentarium couldn't read the numbers${b && b.error ? `: ${b.error}` : ''}.`
+    return
+  }
+  if (b.show === false) {
+    $('n').textContent = 'hidden'
+    $('of').textContent = ''
+    $('out').textContent = ''
+    $('text').textContent = 'agentarium statusline --band-on brings it back.'
+    $('barwrap').hidden = true
+    return
+  }
+  $('live').className = 'level-' + (b.level || 'green')
+  const p = b.premium
+  if (p) {
+    $('n').textContent = fmt(Math.max(0, p.left))
+    $('of').textContent = `of ${p.allowance} premium requests left`
+    $('out').textContent = p.over ? 'over the allowance' : p.runs_out ? `runs out ~${new Date(p.runs_out + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}` : ''
+    $('barwrap').hidden = false
+    $('bar').style.width = Math.min(100, p.pct) + '%'
+  } else {
+    $('n').textContent = String(b.today.prompts)
+    $('of').textContent = `Copilot prompt${b.today.prompts === 1 ? '' : 's'} today`
+    $('out').textContent = ''
+    $('barwrap').hidden = true
+  }
+  const today = `today ${b.today.prompts} prompt${b.today.prompts === 1 ? '' : 's'}, ${fmt(b.today.requests)} requests`
+  $('text').textContent = p ? `~${fmt(p.per_day)} a day · ~${p.projected} by month end · next ${p.steps} prompts use ${fmt(p.next)} · ${today}`
+    : `${b.month_prompts} this month · ${today}`
+  $('hint').hidden = !b.hint
+  $('hint').textContent = b.hint || ''
+  document.title = `${b.short} · agentarium`
+}
+async function tick() {
+  try {
+    draw(await (await fetch('/api/copilot', { cache: 'no-store' })).json())
+  } catch {
+    $('text').textContent = 'Lost the local server: run agentarium copilot --window again.'
+  }
+}
+tick()
+setInterval(tick, 5000)
+</script>
+</body>
+</html>

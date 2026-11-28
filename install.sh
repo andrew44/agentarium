@@ -1,0 +1,127 @@
+#!/bin/sh
+# agentarium installer for macOS and Linux.
+#
+#   curl -fsSL https://raw.githubusercontent.com/andrew44/agentarium/main/install.sh | sh
+#
+# Downloads agentarium to ~/.agentarium/app (no git needed), then sets up whichever assistants it
+# finds: the Claude Code / Copilot CLI plugin (skills + hooks), the status line, and an `agentarium`
+# command. It never replaces a status line you already have. Safe to run again: it repairs the app
+# and leaves your recorded data and settings as they are.
+#
+# agentarium is TypeScript run directly by Node.js 22.18 or newer (no build step, no npm install).
+# No Node.js, or an older one? It downloads a private copy into ~/.agentarium/runtime (no admin
+# rights, no pop-ups, nothing else on your system changes).
+#
+# Options (after `sh -s --`): --no-plugin  --no-statusline
+# Environment: AGENTARIUM_REPO (default andrew44/agentarium), AGENTARIUM_REF (default main),
+#              AGENTARIUM_HOME (default ~/.agentarium),
+#              AGENTARIUM_NODE (a node to use, or "standalone" to always use a private copy)
+
+# Everything is inside main() so a half-downloaded script never runs.
+main() {
+    set -eu
+    repo="${AGENTARIUM_REPO:-andrew44/agentarium}"
+    ref="${AGENTARIUM_REF:-main}"
+    home="${AGENTARIUM_HOME:-$HOME/.agentarium}"
+    app="$home/app"
+    private="$home/runtime/node/bin/node"
+
+    say() { printf '%s\n' "$*"; }
+    fail() { printf '\nagentarium: %s\n' "$*" >&2; exit 1; }
+
+    fetch() {   # fetch URL FILE
+        if command -v curl >/dev/null 2>&1; then
+            curl -fsSL --retry 3 "$1" -o "$2"
+        elif command -v wget >/dev/null 2>&1; then
+            wget -q "$1" -O "$2"
+        else
+            fail "curl or wget is needed to download agentarium."
+        fi
+    }
+
+    usable() {  # usable NODE -> true if it is Node.js 22.18 or newer
+        "$1" -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=18)?0:1)' \
+            </dev/null >/dev/null 2>&1
+    }
+
+    standalone_node() {
+        # The official Node.js 24 LTS build from nodejs.org, pinned and checked against its
+        # published SHA-256, unpacked into $home/runtime. No API calls, so no rate limits.
+        version=v24.22.2
+        case "$(uname -s)-$(uname -m)" in
+            Darwin-arm64)              plat=darwin-arm64; sum=aa9549349e47dffaa42dcf95d6e06ade8c4bdafc980979883b88767670df385a ;;
+            Darwin-x86_64)             plat=darwin-x64;   sum=d5e336d588c45be0c37dbd52cc29895593009ca4997a77a1fd02815131ed0e52 ;;
+            Linux-x86_64)              plat=linux-x64;    sum=361718c444e49af2ca5a110c83ba6a8901143f23ab285ebbef0341f391f482a9 ;;
+            Linux-aarch64|Linux-arm64) plat=linux-arm64;  sum=95c264150aceb7f3437a29fd6984924f5f8d1511ea3cbd6c508b83f6c555dae2 ;;
+            *) return 1 ;;
+        esac
+        say "Downloading a private Node.js for agentarium (one time, about 50 MB)..."
+        fetch "https://nodejs.org/dist/$version/node-$version-$plat.tar.gz" "$tmp/node.tar.gz" || return 1
+        if command -v sha256sum >/dev/null 2>&1; then
+            got="$(sha256sum "$tmp/node.tar.gz" | cut -d' ' -f1)"
+        else
+            got="$(shasum -a 256 "$tmp/node.tar.gz" | cut -d' ' -f1)"
+        fi
+        [ "$got" = "$sum" ] || { say "The Node.js download didn't match its checksum; not using it."; return 1; }
+        rm -rf "$home/runtime"
+        mkdir -p "$home/runtime"
+        tar -xzf "$tmp/node.tar.gz" -C "$home/runtime" || return 1
+        mv "$home/runtime/node-$version-$plat" "$home/runtime/node" || return 1
+        [ -x "$private" ] && usable "$private"
+    }
+
+    tmp="$(mktemp -d 2>/dev/null || mktemp -d -t agentarium)"
+    trap 'rm -rf "$tmp"' EXIT INT TERM
+    mkdir -p "$home"
+
+    # 1. Node.js 22.18+ (built-in modules only; nothing gets npm-installed)
+    node=""
+    want="${AGENTARIUM_NODE:-}"
+    if [ -n "$want" ] && [ "$want" != standalone ]; then
+        usable "$want" || fail "AGENTARIUM_NODE=$want isn't a working Node.js 22.18+."
+        node="$(command -v "$want")"
+    elif [ -z "$want" ]; then
+        if [ -x "$private" ] && usable "$private"; then
+            node="$private"                                  # from an earlier install
+        elif command -v node >/dev/null 2>&1 && usable node; then
+            node="$(command -v node)"
+        fi
+    fi
+    if [ -z "$node" ]; then
+        if standalone_node; then
+            node="$private"
+        else
+            case "$(uname -s)" in
+                Darwin) hint="install it from https://nodejs.org (or: brew install node)" ;;
+                *)      hint="install it from https://nodejs.org or with your package manager" ;;
+            esac
+            fail "agentarium needs Node.js 22.18 or newer and couldn't download it. Please $hint, then run this installer again."
+        fi
+    fi
+
+    # 2. Download agentarium (a tarball, so git isn't needed)
+    url="https://github.com/$repo/archive/$ref.tar.gz"
+    say "Downloading agentarium ($repo@$ref)..."
+    fetch "$url" "$tmp/src.tar.gz" || fail "download failed: $url  (check your internet connection and try again)"
+    mkdir -p "$tmp/src"
+    tar -xzf "$tmp/src.tar.gz" -C "$tmp/src" || fail "couldn't unpack the download."
+    src="$(find "$tmp/src" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+    [ -f "$src/scripts/cli.ts" ] || fail "the download doesn't look like agentarium."
+    # Replace only a folder this installer made, and by renaming: the old copy steps aside before the
+    # new one moves in, so a run that stops half-way still leaves a working app. Nothing else in
+    # $home (your recorded data, your settings) is touched.
+    if [ -e "$app" ] && [ ! -f "$app/scripts/cli.ts" ]; then
+        fail "$app exists but isn't an agentarium install; move it out of the way and run this again."
+    fi
+    rm -rf "$app.new" "$app.old"
+    mv "$src" "$app.new"
+    if [ -e "$app" ]; then mv "$app" "$app.old"; fi
+    mv "$app.new" "$app" || { [ -e "$app.old" ] && mv "$app.old" "$app"; fail "couldn't put the new copy in place; the old one is kept."; }
+    rm -rf "$app.old"
+
+    # 3. Set everything up (plugin, status line, `agentarium` command)
+    say ""
+    "$node" --disable-warning=ExperimentalWarning "$app/scripts/cli.ts" setup "$@" </dev/null
+}
+
+main "$@"
